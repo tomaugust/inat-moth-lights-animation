@@ -20,8 +20,9 @@ Current State
 - Exiting moths now fade before reaching the right edge so their blurred glow is not clipped into a visible line.
 - Moths now use deterministic seeded erratic movement, driven by each moth's `erraticness` setting.
 - Moths now draw short fading trails, driven by each moth's `trailLength` setting.
+- The animation now has a bottom clock and scrub bar overlay, including manual timeline control and pause/resume while dragging.
 - The JSON structure separates whole-animation settings, scene settings, light settings, species defaults, and individual moth observations.
-- Next selected implementation step: add clock and scrub bar.
+- Next selected implementation step: add species labels.
 
 
 Target Experience
@@ -250,23 +251,18 @@ Top-level sections:
 Implementation Phases
 ---------------------
 
-1. Add clock and scrub bar. [NEXT]
-   - Canvas clock or HTML overlay.
-   - Range input for scrub control.
-   - Auto-play pause/resume while dragging.
-
-2. Add species labels.
+1. Add species labels. [NEXT]
    - Species name appears on entry.
    - Tag line connects label to moth.
    - Fade and collision handling.
 
-3. Add windchime audio.
+2. Add windchime audio.
    - Web Audio API synth.
    - Species-to-note mapping.
    - User gesture handling for audio unlock.
    - Low-volume, non-intrusive playback.
 
-4. Polish and test.
+3. Polish and test.
    - Check generated file opens directly.
    - Check no external dependencies.
    - Check mobile layout.

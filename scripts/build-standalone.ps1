@@ -147,7 +147,9 @@ function Read-AnimationConfig {
       duration = ConvertTo-PositiveNumber (Get-ConfigValue $animation "duration" 80) 80 1
       loop = [bool](Get-ConfigValue $animation "loop" $true)
       playbackSpeed = ConvertTo-PositiveNumber (Get-ConfigValue $animation "playbackSpeed" 1) 1 0.01
+      startClockTime = [string](Get-ConfigValue $animation "startClockTime" "22:00")
       textColor = [string](Get-ConfigValue $animation "textColor" "#f5f5f5")
+      timeLabel = [string](Get-ConfigValue $animation "timeLabel" "Time")
       title = [string](Get-ConfigValue $animation "title" "Orbit Animation")
     }
     light = @{
@@ -264,11 +266,51 @@ $html = @"
         opacity: 0.76;
       }
 
+      .timeline-control {
+        align-items: center;
+        bottom: clamp(14px, 2.4vw, 28px);
+        display: grid;
+        gap: 12px;
+        grid-template-columns: auto minmax(160px, 520px);
+        left: 50%;
+        max-width: calc(100vw - 32px);
+        position: absolute;
+        transform: translateX(-50%);
+        width: min(620px, calc(100vw - 32px));
+        z-index: 2;
+      }
+
+      .time-readout {
+        font-size: 0.82rem;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0;
+        min-width: 4.8rem;
+        opacity: 0.82;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .timeline-control input[type="range"] {
+        accent-color: $safeTextColor;
+        cursor: pointer;
+        height: 24px;
+        width: 100%;
+      }
+
       @media (max-width: 620px) {
         .animation-heading {
           max-width: calc(100vw - 32px);
           right: 16px;
           top: 16px;
+        }
+
+        .timeline-control {
+          grid-template-columns: 1fr;
+          gap: 4px;
+        }
+
+        .time-readout {
+          text-align: left;
         }
       }
     </style>
@@ -280,6 +322,10 @@ $html = @"
         <div class="animation-heading" aria-label="Animation details">
           <h1>$safeTitle</h1>
           <p>$safeDescription</p>
+        </div>
+        <div class="timeline-control" aria-label="Animation timeline">
+          <output class="time-readout" id="time-readout">00:00</output>
+          <input id="timeline-scrubber" type="range" min="0" max="80" step="0.01" value="0" aria-label="Scrub animation time" />
         </div>
       </section>
     </main>
@@ -671,11 +717,54 @@ $html = @"
         projectedMoths.filter((moth) => moth.depth >= 0).forEach((moth) => drawMoth(context, moth));
       }
 
+      function parseClockTime(value) {
+        const match = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(String(value || ""));
+        if (!match) {
+          return 0;
+        }
+
+        const hours = Number(match[1]);
+        const minutes = Number(match[2]);
+        const seconds = Number(match[3] || 0);
+        return ((hours * 60 + minutes) * 60 + seconds) % 86400;
+      }
+
+      function formatClockTime(animationTime) {
+        const startSeconds = parseClockTime(config.animation.startClockTime);
+        const totalSeconds = Math.floor(startSeconds + animationTime * 60) % 86400;
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        return String(hours).padStart(2, "0") + ":" + String(minutes).padStart(2, "0");
+      }
+
+      function normalizeAnimationTime(animationTime) {
+        if (config.animation.loop) {
+          return ((animationTime % config.animation.duration) + config.animation.duration) % config.animation.duration;
+        }
+
+        return Math.max(0, Math.min(config.animation.duration, animationTime));
+      }
+
+      function clampAnimationTime(animationTime) {
+        return Math.max(0, Math.min(config.animation.duration, animationTime));
+      }
+
       function setupOrbitAnimation() {
         const canvas = document.getElementById("orbit-canvas");
         const context = canvas.getContext("2d");
+        const scrubber = document.getElementById("timeline-scrubber");
+        const timeReadout = document.getElementById("time-readout");
         let moths = [];
-        let startTimestamp = null;
+        let animationTime = 0;
+        let lastTimestamp = null;
+        let isPlaying = config.animation.autoplay;
+        let wasPlayingBeforeScrub = false;
+
+        function updateTimelineControls() {
+          scrubber.max = String(config.animation.duration);
+          scrubber.value = String(animationTime);
+          timeReadout.textContent = config.animation.timeLabel + " " + formatClockTime(animationTime);
+        }
 
         function resizeCanvas() {
           const rect = canvas.getBoundingClientRect();
@@ -687,26 +776,48 @@ $html = @"
         }
 
         function tick(timestamp) {
-          if (startTimestamp === null) {
-            startTimestamp = timestamp;
+          if (lastTimestamp === null) {
+            lastTimestamp = timestamp;
           }
 
-          const elapsedSeconds = ((timestamp - startTimestamp) / 1000) * config.animation.playbackSpeed;
-          const animationTime = config.animation.loop
-            ? elapsedSeconds % config.animation.duration
-            : Math.min(config.animation.duration, elapsedSeconds);
+          const deltaSeconds = ((timestamp - lastTimestamp) / 1000) * config.animation.playbackSpeed;
+          lastTimestamp = timestamp;
+
+          if (isPlaying) {
+            animationTime = normalizeAnimationTime(animationTime + deltaSeconds);
+          }
 
           drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, timestamp, animationTime);
+          updateTimelineControls();
           requestAnimationFrame(tick);
         }
+
+        scrubber.addEventListener("pointerdown", () => {
+          wasPlayingBeforeScrub = isPlaying;
+          isPlaying = false;
+        });
+
+        scrubber.addEventListener("input", () => {
+          animationTime = clampAnimationTime(Number(scrubber.value));
+          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime);
+          updateTimelineControls();
+        });
+
+        scrubber.addEventListener("pointerup", () => {
+          isPlaying = wasPlayingBeforeScrub;
+          lastTimestamp = null;
+        });
+
+        scrubber.addEventListener("change", () => {
+          animationTime = clampAnimationTime(Number(scrubber.value));
+          isPlaying = wasPlayingBeforeScrub;
+          lastTimestamp = null;
+        });
 
         window.addEventListener("resize", resizeCanvas);
         resizeCanvas();
-        if (config.animation.autoplay) {
-          requestAnimationFrame(tick);
-        } else {
-          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, 0, 0);
-        }
+        updateTimelineControls();
+        requestAnimationFrame(tick);
       }
 
       setupOrbitAnimation();

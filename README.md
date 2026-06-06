@@ -21,6 +21,8 @@ Use this shape:
     "textColor": "#f5f1e8",
     "canvasBackground": "radial-gradient(circle at center, #252018 0%, #07080a 100%)",
     "duration": 80,
+    "timeLabel": "Time",
+    "startClockTime": "22:00",
     "playbackSpeed": 1,
     "autoplay": true,
     "loop": true
@@ -70,7 +72,9 @@ Use this shape:
 
 `animation` controls whole-file presentation, including the title and description shown as top-right overlay text. `scene` controls the optional ground plane and oblique projection. `light` controls the bright trap light, glow, flicker, and hanging bulb fixture. `species` defines shared visual and sound defaults. `moths` defines individual moth observations.
 
-Animation timing fields are measured in seconds. `animation.duration` controls the loop length, and each moth's `entryTime` and `exitTime` control when it flies in, orbits, and flies out. `animation.playbackSpeed` is a multiplier for overall playback speed; `2` plays twice as fast and `0.5` plays half speed.
+Animation timing fields are animation seconds. `animation.duration` controls the loop length, and each moth's `entryTime` and `exitTime` control when it flies in, orbits, and flies out. For the displayed clock, each animation second is represented as one clock minute. `animation.playbackSpeed` is a multiplier for overall playback speed; `2` plays twice as fast and `0.5` plays half speed. `animation.startClockTime` sets the `HH:MM` clock shown in the bottom timeline overlay, and `animation.timeLabel` controls its label.
+
+The generated animation includes a bottom timeline overlay. The clock updates as the animation plays, and the scrub bar lets viewers move backward and forward manually. Dragging the scrub bar pauses playback and releasing it resumes autoplay when autoplay was active.
 
 The light is drawn as a hanging bulb: a fixed-size white core, a small dark fixture above it, and a cord fading upward into black. `light.flickerStrength` changes only the glow opacity and radius; it does not resize the bulb circle.
 

@@ -74,11 +74,51 @@
         opacity: 0.76;
       }
 
+      .timeline-control {
+        align-items: center;
+        bottom: clamp(14px, 2.4vw, 28px);
+        display: grid;
+        gap: 12px;
+        grid-template-columns: auto minmax(160px, 520px);
+        left: 50%;
+        max-width: calc(100vw - 32px);
+        position: absolute;
+        transform: translateX(-50%);
+        width: min(620px, calc(100vw - 32px));
+        z-index: 2;
+      }
+
+      .time-readout {
+        font-size: 0.82rem;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0;
+        min-width: 4.8rem;
+        opacity: 0.82;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .timeline-control input[type="range"] {
+        accent-color: #f5f1e8;
+        cursor: pointer;
+        height: 24px;
+        width: 100%;
+      }
+
       @media (max-width: 620px) {
         .animation-heading {
           max-width: calc(100vw - 32px);
           right: 16px;
           top: 16px;
+        }
+
+        .timeline-control {
+          grid-template-columns: 1fr;
+          gap: 4px;
+        }
+
+        .time-readout {
+          text-align: left;
         }
       }
     </style>
@@ -91,11 +131,15 @@
           <h1>Moth Light Animation</h1>
           <p>A standalone animation generated from species and moth observations.</p>
         </div>
+        <div class="timeline-control" aria-label="Animation timeline">
+          <output class="time-readout" id="time-readout">00:00</output>
+          <input id="timeline-scrubber" type="range" min="0" max="80" step="0.01" value="0" aria-label="Scrub animation time" />
+        </div>
       </section>
     </main>
 
     <script>
-      const config = {"moths":[{"size":7,"id":"moth-001","exitTime":62,"erraticness":3,"chimeNote":"E3","color":"#d7b46a","species":"large-yellow-underwing","speed":0.85,"label":"Large Yellow Underwing","trailLength":18,"angle":15,"entryTime":4,"shadowColor":"rgba(255, 224, 151, 0.24)","radius":230,"speciesName":"Large Yellow Underwing","shadowBlur":16},{"size":6,"id":"moth-002","exitTime":70,"erraticness":2.5,"chimeNote":"A4","color":"#b8c5d8","species":"silver-y","speed":1.35,"label":"Silver Y","trailLength":20,"angle":95,"entryTime":10,"shadowColor":"rgba(218, 235, 255, 0.2)","radius":0,"speciesName":"Silver Y","shadowBlur":12},{"size":3,"id":"moth-003","exitTime":74,"erraticness":2,"chimeNote":"C5","color":"#e2d56f","species":"brimstone-moth","speed":5,"label":"Brimstone Moth","trailLength":22,"angle":185,"entryTime":18,"shadowColor":"rgba(255, 244, 172, 0.2)","radius":0,"speciesName":"Brimstone Moth","shadowBlur":9},{"size":10,"id":"moth-004","exitTime":58,"erraticness":2.5,"chimeNote":"A4","color":"#b8c5d8","species":"silver-y","speed":1.1,"label":"Silver Y","trailLength":20,"angle":275,"entryTime":25,"shadowColor":"rgba(218, 235, 255, 0.2)","radius":0,"speciesName":"Silver Y","shadowBlur":12},{"size":7,"id":"moth-005","exitTime":78,"erraticness":0.88,"chimeNote":"E3","color":"#d7b46a","species":"large-yellow-underwing","speed":0.85,"label":"Large Yellow Underwing","trailLength":24,"angle":330,"entryTime":34,"shadowColor":"rgba(255, 224, 151, 0.24)","radius":180,"speciesName":"Large Yellow Underwing","shadowBlur":16}],"scene":{"backgroundMothOpacity":1,"horizonYRatio":0.34,"foregroundMothOpacity":0.6,"lightPoolColor":"rgba(255, 239, 188, 0.58)","orbitTilt":0.28,"groundMidColor":"#bfbfbf","lightPoolRadius":430,"groundFrontColor":"#dbdbdb","groundBackColor":"#212121","showGround":false,"centerYRatio":0.56},"species":[{"erraticness":3,"id":"large-yellow-underwing","chimeNote":"E3","size":7,"speed":0.85,"color":"#d7b46a","name":"Large Yellow Underwing","shadowBlur":16,"shadowColor":"rgba(255, 224, 151, 0.24)","trailLength":18},{"erraticness":2.5,"id":"silver-y","chimeNote":"A4","size":6,"speed":1.35,"color":"#b8c5d8","name":"Silver Y","shadowBlur":12,"shadowColor":"rgba(218, 235, 255, 0.2)","trailLength":20},{"erraticness":2,"id":"brimstone-moth","chimeNote":"C5","size":3,"speed":5,"color":"#e2d56f","name":"Brimstone Moth","shadowBlur":9,"shadowColor":"rgba(255, 244, 172, 0.2)","trailLength":22}],"light":{"size":15,"color":"#fffdf4","flickerStrength":0.05,"haloColor":"rgba(255, 244, 201, 0.26)","glowColor":"rgba(255, 250, 226, 0.82)","flickerSpeed":0.006,"glowRadius":200,"shadowBlur":20},"animation":{"canvasBorderColor":"rgba(255, 255, 255, 0.16)","description":"A standalone animation generated from species and moth observations.","textColor":"#f5f1e8","playbackSpeed":2,"autoplay":true,"loop":true,"canvasBackground":"radial-gradient(circle at center, #252018 0%, #111114 58%, #07080a 100%)","title":"Moth Light Animation","backgroundColor":"#101114","duration":80}};
+      const config = {"moths":[{"size":7,"id":"moth-001","exitTime":62,"erraticness":3,"chimeNote":"E3","color":"#d7b46a","species":"large-yellow-underwing","speed":0.85,"label":"Large Yellow Underwing","trailLength":18,"angle":15,"entryTime":4,"shadowColor":"rgba(255, 224, 151, 0.24)","radius":230,"speciesName":"Large Yellow Underwing","shadowBlur":16},{"size":6,"id":"moth-002","exitTime":70,"erraticness":2.5,"chimeNote":"A4","color":"#b8c5d8","species":"silver-y","speed":1.35,"label":"Silver Y","trailLength":20,"angle":95,"entryTime":10,"shadowColor":"rgba(218, 235, 255, 0.2)","radius":0,"speciesName":"Silver Y","shadowBlur":12},{"size":3,"id":"moth-003","exitTime":74,"erraticness":2,"chimeNote":"C5","color":"#e2d56f","species":"brimstone-moth","speed":5,"label":"Brimstone Moth","trailLength":22,"angle":185,"entryTime":18,"shadowColor":"rgba(255, 244, 172, 0.2)","radius":0,"speciesName":"Brimstone Moth","shadowBlur":9},{"size":10,"id":"moth-004","exitTime":58,"erraticness":2.5,"chimeNote":"A4","color":"#b8c5d8","species":"silver-y","speed":1.1,"label":"Silver Y","trailLength":20,"angle":275,"entryTime":25,"shadowColor":"rgba(218, 235, 255, 0.2)","radius":0,"speciesName":"Silver Y","shadowBlur":12},{"size":7,"id":"moth-005","exitTime":78,"erraticness":0.88,"chimeNote":"E3","color":"#d7b46a","species":"large-yellow-underwing","speed":0.85,"label":"Large Yellow Underwing","trailLength":24,"angle":330,"entryTime":34,"shadowColor":"rgba(255, 224, 151, 0.24)","radius":180,"speciesName":"Large Yellow Underwing","shadowBlur":16}],"scene":{"backgroundMothOpacity":1,"horizonYRatio":0.34,"foregroundMothOpacity":0.6,"lightPoolColor":"rgba(255, 239, 188, 0.58)","orbitTilt":0.28,"groundMidColor":"#bfbfbf","lightPoolRadius":430,"groundFrontColor":"#dbdbdb","groundBackColor":"#212121","showGround":false,"centerYRatio":0.56},"species":[{"erraticness":3,"id":"large-yellow-underwing","chimeNote":"E3","size":7,"speed":0.85,"color":"#d7b46a","name":"Large Yellow Underwing","shadowBlur":16,"shadowColor":"rgba(255, 224, 151, 0.24)","trailLength":18},{"erraticness":2.5,"id":"silver-y","chimeNote":"A4","size":6,"speed":1.35,"color":"#b8c5d8","name":"Silver Y","shadowBlur":12,"shadowColor":"rgba(218, 235, 255, 0.2)","trailLength":20},{"erraticness":2,"id":"brimstone-moth","chimeNote":"C5","size":3,"speed":5,"color":"#e2d56f","name":"Brimstone Moth","shadowBlur":9,"shadowColor":"rgba(255, 244, 172, 0.2)","trailLength":22}],"light":{"size":15,"color":"#fffdf4","flickerStrength":0.05,"haloColor":"rgba(255, 244, 201, 0.26)","glowColor":"rgba(255, 250, 226, 0.82)","flickerSpeed":0.006,"glowRadius":200,"shadowBlur":20},"animation":{"canvasBorderColor":"rgba(255, 255, 255, 0.16)","description":"A standalone animation generated from species and moth observations.","textColor":"#f5f1e8","playbackSpeed":2,"autoplay":true,"title":"Moth Light Animation","loop":true,"startClockTime":"22:00","canvasBackground":"radial-gradient(circle at center, #252018 0%, #111114 58%, #07080a 100%)","timeLabel":"Time","backgroundColor":"#101114","duration":80}};
 
       function createMoths(config, width, height) {
         const maxMothSize = config.moths.reduce((largest, moth) => Math.max(largest, moth.size), 0);
@@ -481,11 +525,54 @@
         projectedMoths.filter((moth) => moth.depth >= 0).forEach((moth) => drawMoth(context, moth));
       }
 
+      function parseClockTime(value) {
+        const match = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(String(value || ""));
+        if (!match) {
+          return 0;
+        }
+
+        const hours = Number(match[1]);
+        const minutes = Number(match[2]);
+        const seconds = Number(match[3] || 0);
+        return ((hours * 60 + minutes) * 60 + seconds) % 86400;
+      }
+
+      function formatClockTime(animationTime) {
+        const startSeconds = parseClockTime(config.animation.startClockTime);
+        const totalSeconds = Math.floor(startSeconds + animationTime * 60) % 86400;
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        return String(hours).padStart(2, "0") + ":" + String(minutes).padStart(2, "0");
+      }
+
+      function normalizeAnimationTime(animationTime) {
+        if (config.animation.loop) {
+          return ((animationTime % config.animation.duration) + config.animation.duration) % config.animation.duration;
+        }
+
+        return Math.max(0, Math.min(config.animation.duration, animationTime));
+      }
+
+      function clampAnimationTime(animationTime) {
+        return Math.max(0, Math.min(config.animation.duration, animationTime));
+      }
+
       function setupOrbitAnimation() {
         const canvas = document.getElementById("orbit-canvas");
         const context = canvas.getContext("2d");
+        const scrubber = document.getElementById("timeline-scrubber");
+        const timeReadout = document.getElementById("time-readout");
         let moths = [];
-        let startTimestamp = null;
+        let animationTime = 0;
+        let lastTimestamp = null;
+        let isPlaying = config.animation.autoplay;
+        let wasPlayingBeforeScrub = false;
+
+        function updateTimelineControls() {
+          scrubber.max = String(config.animation.duration);
+          scrubber.value = String(animationTime);
+          timeReadout.textContent = config.animation.timeLabel + " " + formatClockTime(animationTime);
+        }
 
         function resizeCanvas() {
           const rect = canvas.getBoundingClientRect();
@@ -497,26 +584,48 @@
         }
 
         function tick(timestamp) {
-          if (startTimestamp === null) {
-            startTimestamp = timestamp;
+          if (lastTimestamp === null) {
+            lastTimestamp = timestamp;
           }
 
-          const elapsedSeconds = ((timestamp - startTimestamp) / 1000) * config.animation.playbackSpeed;
-          const animationTime = config.animation.loop
-            ? elapsedSeconds % config.animation.duration
-            : Math.min(config.animation.duration, elapsedSeconds);
+          const deltaSeconds = ((timestamp - lastTimestamp) / 1000) * config.animation.playbackSpeed;
+          lastTimestamp = timestamp;
+
+          if (isPlaying) {
+            animationTime = normalizeAnimationTime(animationTime + deltaSeconds);
+          }
 
           drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, timestamp, animationTime);
+          updateTimelineControls();
           requestAnimationFrame(tick);
         }
+
+        scrubber.addEventListener("pointerdown", () => {
+          wasPlayingBeforeScrub = isPlaying;
+          isPlaying = false;
+        });
+
+        scrubber.addEventListener("input", () => {
+          animationTime = clampAnimationTime(Number(scrubber.value));
+          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime);
+          updateTimelineControls();
+        });
+
+        scrubber.addEventListener("pointerup", () => {
+          isPlaying = wasPlayingBeforeScrub;
+          lastTimestamp = null;
+        });
+
+        scrubber.addEventListener("change", () => {
+          animationTime = clampAnimationTime(Number(scrubber.value));
+          isPlaying = wasPlayingBeforeScrub;
+          lastTimestamp = null;
+        });
 
         window.addEventListener("resize", resizeCanvas);
         resizeCanvas();
-        if (config.animation.autoplay) {
-          requestAnimationFrame(tick);
-        } else {
-          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, 0, 0);
-        }
+        updateTimelineControls();
+        requestAnimationFrame(tick);
       }
 
       setupOrbitAnimation();

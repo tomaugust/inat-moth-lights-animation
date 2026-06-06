@@ -9,6 +9,8 @@
     "canvasBackground": "radial-gradient(circle at center, #252018 0%, #111114 58%, #07080a 100%)",
     "canvasBorderColor": "rgba(255, 255, 255, 0.16)",
     "duration": 80,
+    "timeLabel": "Time",
+    "startClockTime": "22:00",
     "playbackSpeed": 2,
     "autoplay": true,
     "loop": true

@@ -8,8 +8,8 @@
     "panelBorderColor": "rgba(255, 255, 255, 0.12)",
     "canvasBackground": "radial-gradient(circle at center, #252018 0%, #111114 58%, #07080a 100%)",
     "canvasBorderColor": "rgba(255, 255, 255, 0.16)",
-    "orbitStrokeColor": "rgba(255, 244, 201, 0.1)",
     "duration": 80,
+    "playbackSpeed": 2,
     "autoplay": true,
     "loop": true
   },
@@ -19,7 +19,7 @@
     "horizonYRatio": 0.34,
     "orbitTilt": 0.28,
     "backgroundMothOpacity": 1,
-    "foregroundMothOpacity": 0.4,
+    "foregroundMothOpacity": 0.6,
     "groundBackColor": "#212121",
     "groundMidColor": "#bfbfbf",
     "groundFrontColor": "#dbdbdb",
@@ -31,10 +31,10 @@
     "color": "#fffdf4",
     "glowColor": "rgba(255, 250, 226, 0.82)",
     "haloColor": "rgba(255, 244, 201, 0.26)",
-    "glowRadius": 210,
-    "shadowBlur": 54,
-    "flickerStrength": 0.08,
-    "flickerSpeed": 0.002
+    "glowRadius": 200,
+    "shadowBlur": 20,
+    "flickerStrength": 0.05,
+    "flickerSpeed": 0.006
   },
   "species": [
     {
@@ -42,9 +42,10 @@
       "name": "Large Yellow Underwing",
       "color": "#d7b46a",
       "chimeNote": "E3",
-      "size": 13,
+      "size": 7,
       "speed": 0.85,
-      "erraticness": 0.18,
+      "erraticness": 3,
+      "trailLength": 18,
       "shadowColor": "rgba(255, 224, 151, 0.24)",
       "shadowBlur": 16
     },
@@ -53,9 +54,10 @@
       "name": "Silver Y",
       "color": "#b8c5d8",
       "chimeNote": "A4",
-      "size": 8,
+      "size": 6,
       "speed": 1.35,
-      "erraticness": 0.45,
+      "erraticness": 2.5,
+      "trailLength": 20,
       "shadowColor": "rgba(218, 235, 255, 0.2)",
       "shadowBlur": 12
     },
@@ -64,9 +66,10 @@
       "name": "Brimstone Moth",
       "color": "#e2d56f",
       "chimeNote": "C5",
-      "size": 6,
-      "speed": 1.75,
-      "erraticness": 0.6,
+      "size": 3,
+      "speed": 5,
+      "erraticness": 2,
+      "trailLength": 22,
       "shadowColor": "rgba(255, 244, 172, 0.2)",
       "shadowBlur": 9
     }
@@ -110,7 +113,8 @@
       "exitTime": 78,
       "angle": 330,
       "radius": 180,
-      "erraticness": 0.28
+      "erraticness": 0.88,
+      "trailLength": 24
     }
   ]
 }

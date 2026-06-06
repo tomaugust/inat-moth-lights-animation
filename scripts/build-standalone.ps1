@@ -95,7 +95,6 @@ function Read-AnimationConfig {
       erraticness = ConvertTo-PositiveNumber (Get-ConfigValue $speciesRecord "erraticness" 0) 0 0
       id = $speciesId
       name = [string](Get-ConfigValue $speciesRecord "name" $speciesId)
-      orbitStrokeColor = [string](Get-ConfigValue $speciesRecord "orbitStrokeColor" "")
       shadowBlur = ConvertTo-PositiveNumber (Get-ConfigValue $speciesRecord "shadowBlur" 12) 12 0
       shadowColor = [string](Get-ConfigValue $speciesRecord "shadowColor" "rgba(255, 255, 255, 0.12)")
       size = ConvertTo-PositiveNumber (Get-ConfigValue $speciesRecord "size" 10) 10 2
@@ -127,7 +126,6 @@ function Read-AnimationConfig {
       exitTime = $exitTime
       id = [string](Get-ConfigValue $moth "id" "moth-$($index + 1)")
       label = [string](Get-ConfigValue $moth "label" $speciesDefaults.name)
-      orbitStrokeColor = [string](Get-ConfigValue $moth "orbitStrokeColor" $speciesDefaults.orbitStrokeColor)
       radius = ConvertTo-PositiveNumber (Get-ConfigValue $moth "radius" 0) 0 0
       shadowBlur = ConvertTo-PositiveNumber (Get-ConfigValue $moth "shadowBlur" $speciesDefaults.shadowBlur) $speciesDefaults.shadowBlur 0
       shadowColor = [string](Get-ConfigValue $moth "shadowColor" $speciesDefaults.shadowColor)
@@ -148,9 +146,7 @@ function Read-AnimationConfig {
       description = [string](Get-ConfigValue $animation "description" "This standalone animation was generated from a JSON configuration and can be opened directly from the file.")
       duration = ConvertTo-PositiveNumber (Get-ConfigValue $animation "duration" 80) 80 1
       loop = [bool](Get-ConfigValue $animation "loop" $true)
-      orbitStrokeColor = [string](Get-ConfigValue $animation "orbitStrokeColor" "rgba(255, 255, 255, 0.09)")
-      panelBackground = [string](Get-ConfigValue $animation "panelBackground" "rgba(255, 255, 255, 0.06)")
-      panelBorderColor = [string](Get-ConfigValue $animation "panelBorderColor" "rgba(255, 255, 255, 0.08)")
+      playbackSpeed = ConvertTo-PositiveNumber (Get-ConfigValue $animation "playbackSpeed" 1) 1 0.01
       textColor = [string](Get-ConfigValue $animation "textColor" "#f5f5f5")
       title = [string](Get-ConfigValue $animation "title" "Orbit Animation")
     }
@@ -188,8 +184,6 @@ $safeTitle = ConvertTo-HtmlText $config.animation.title
 $safeDescription = ConvertTo-HtmlText $config.animation.description
 $safeBackgroundColor = ConvertTo-HtmlText $config.animation.backgroundColor
 $safeTextColor = ConvertTo-HtmlText $config.animation.textColor
-$safePanelBackground = ConvertTo-HtmlText $config.animation.panelBackground
-$safePanelBorderColor = ConvertTo-HtmlText $config.animation.panelBorderColor
 $safeCanvasBackground = ConvertTo-HtmlText $config.animation.canvasBackground
 $safeCanvasBorderColor = ConvertTo-HtmlText $config.animation.canvasBorderColor
 
@@ -215,82 +209,78 @@ $html = @"
       html,
       body {
         margin: 0;
-        min-height: 100vh;
+        height: 100%;
+        min-height: 100%;
       }
 
       body {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 24px;
         background: $safeBackgroundColor;
         color: $safeTextColor;
+        overflow: hidden;
       }
 
       .app-shell {
-        display: grid;
-        gap: 24px;
-        grid-template-columns: minmax(220px, 360px) minmax(320px, 1fr);
-        max-width: 1200px;
+        height: 100vh;
+        min-height: 100vh;
+        position: relative;
         width: 100%;
       }
 
-      .panel {
-        background: $safePanelBackground;
-        border: 1px solid $safePanelBorderColor;
-        border-radius: 8px;
-        padding: 20px;
-      }
-
-      .panel h1 {
-        font-size: 1.7rem;
-        margin: 0 0 12px;
-      }
-
-      .panel p {
-        line-height: 1.5;
-        margin: 0;
-      }
-
       .canvas-shell {
-        min-height: 580px;
+        height: 100%;
+        min-height: 100%;
+        position: relative;
       }
 
       canvas {
         display: block;
         width: 100%;
-        min-height: 580px;
         height: 100%;
-        border: 1px solid $safeCanvasBorderColor;
-        border-radius: 8px;
         background: $safeCanvasBackground;
       }
 
-      @media (max-width: 760px) {
-        body {
-          align-items: stretch;
-          padding: 16px;
-        }
+      .animation-heading {
+        max-width: min(360px, calc(100vw - 40px));
+        pointer-events: none;
+        position: absolute;
+        right: clamp(18px, 4vw, 48px);
+        text-align: right;
+        top: clamp(18px, 4vw, 42px);
+        z-index: 2;
+      }
 
-        .app-shell {
-          grid-template-columns: 1fr;
-        }
+      .animation-heading h1 {
+        font-size: clamp(1.25rem, 2.4vw, 2.35rem);
+        font-weight: 650;
+        line-height: 1.05;
+        margin: 0 0 8px;
+      }
 
-        .canvas-shell,
-        canvas {
-          min-height: min(70vh, 520px);
+      .animation-heading p {
+        color: $safeTextColor;
+        font-size: clamp(0.78rem, 1.1vw, 0.98rem);
+        line-height: 1.35;
+        margin: 0;
+        opacity: 0.76;
+      }
+
+      @media (max-width: 620px) {
+        .animation-heading {
+          max-width: calc(100vw - 32px);
+          right: 16px;
+          top: 16px;
         }
       }
     </style>
   </head>
   <body>
     <main class="app-shell">
-      <section class="panel" aria-label="Animation details">
-        <h1>$safeTitle</h1>
-        <p>$safeDescription</p>
-      </section>
       <section class="canvas-shell" aria-label="Orbit animation">
         <canvas id="orbit-canvas"></canvas>
+        <div class="animation-heading" aria-label="Animation details">
+          <h1>$safeTitle</h1>
+          <p>$safeDescription</p>
+        </div>
       </section>
     </main>
 
@@ -312,7 +302,7 @@ $html = @"
           exitTime: moth.exitTime,
           id: moth.id,
           label: moth.label,
-          orbitStrokeColor: moth.orbitStrokeColor || config.animation.orbitStrokeColor,
+          noiseSeed: hashString(moth.id || moth.species || String(index)),
           radius: moth.radius > 0 ? Math.min(moth.radius, usableRadius) : Math.min(usableRadius, minRadius + index * autoStep),
           shadowBlur: moth.shadowBlur,
           shadowColor: moth.shadowColor,
@@ -336,18 +326,49 @@ $html = @"
         };
       }
 
+      function hashString(value) {
+        let hash = 2166136261;
+        const text = String(value);
+        for (let index = 0; index < text.length; index += 1) {
+          hash ^= text.charCodeAt(index);
+          hash = Math.imul(hash, 16777619);
+        }
+        return hash >>> 0;
+      }
+
+      function seededUnit(seed, salt) {
+        let value = seed + Math.imul(salt + 1, 374761393);
+        value = Math.imul(value ^ (value >>> 15), 2246822519);
+        value = Math.imul(value ^ (value >>> 13), 3266489917);
+        return ((value ^ (value >>> 16)) >>> 0) / 4294967295;
+      }
+
+      function erraticWave(moth, activeTime, salt, baseFrequency) {
+        const phaseA = seededUnit(moth.noiseSeed, salt) * Math.PI * 2;
+        const phaseB = seededUnit(moth.noiseSeed, salt + 19) * Math.PI * 2;
+        const frequencyA = baseFrequency * (0.75 + seededUnit(moth.noiseSeed, salt + 37) * 0.65);
+        const frequencyB = baseFrequency * (1.35 + seededUnit(moth.noiseSeed, salt + 53) * 0.8);
+        return Math.sin(activeTime * frequencyA + phaseA) * 0.62 +
+          Math.sin(activeTime * frequencyB + phaseB) * 0.38;
+      }
+
       function orbitPosition(moth, animationTime, cx, cy) {
         const activeTime = Math.max(0, animationTime - moth.entryTime);
-        const angle = moth.angle + activeTime * moth.speed;
+        const erraticness = Math.max(0, moth.erraticness || 0);
+        const angleJitter = erraticWave(moth, activeTime, 3, 1.9) * erraticness * 0.22;
+        const radiusJitter = erraticWave(moth, activeTime, 11, 1.35) * moth.radius * erraticness * 0.08;
+        const verticalJitter = erraticWave(moth, activeTime, 23, 2.3) * moth.radius * erraticness * 0.065;
+        const angle = moth.angle + activeTime * moth.speed + angleJitter;
+        const radius = Math.max(12, moth.radius + radiusJitter);
         const depth = Math.sin(angle);
         return {
           depth,
-          x: cx + Math.cos(angle) * moth.radius,
-          y: cy + depth * moth.radius * config.scene.orbitTilt
+          x: cx + Math.cos(angle) * radius,
+          y: cy + depth * radius * config.scene.orbitTilt + verticalJitter
         };
       }
 
-      function projectMoth(moth, animationTime, width, height, cx, cy) {
+      function projectMoth(moth, animationTime, width, height, cx, cy, includeTrail = true) {
         if (animationTime < moth.entryTime || animationTime > moth.exitTime) {
           return null;
         }
@@ -400,19 +421,82 @@ $html = @"
           depth: orbit.depth,
           opacity: Math.max(0, Math.min(1, opacity)),
           phase,
+          trail: includeTrail ? buildTrail(moth, animationTime, width, height, cx, cy) : [],
           x,
           y
         };
       }
 
-      function drawOrbit(context, moth, cx, cy) {
+      function buildTrail(moth, animationTime, width, height, cx, cy) {
+        const points = [];
+        const sampleCount = Math.max(2, Math.round(moth.trailLength || 2));
+        const sampleStep = 0.08;
+
+        for (let index = sampleCount - 1; index >= 0; index -= 1) {
+          const sampleTime = animationTime - index * sampleStep;
+          const point = projectMoth(moth, sampleTime, width, height, cx, cy, false);
+          if (point && point.opacity > 0.01) {
+            points.push(point);
+          }
+        }
+
+        return points;
+      }
+
+      function drawTrail(context, moth) {
+        if (!moth.trail || moth.trail.length < 2) {
+          return;
+        }
+
+        const first = moth.trail[0];
+        const last = moth.trail[moth.trail.length - 1];
+        const trailGradient = context.createLinearGradient(first.x, first.y, last.x, last.y);
+        trailGradient.addColorStop(0, "transparent");
+        trailGradient.addColorStop(0.28, colorWithAlpha(moth.color, 0.08));
+        trailGradient.addColorStop(1, colorWithAlpha(moth.color, Math.min(0.62, last.opacity * 0.62)));
+
         context.save();
-        context.strokeStyle = moth.orbitStrokeColor;
-        context.lineWidth = 1;
+        context.globalAlpha = Math.max(0, Math.min(1, last.opacity));
+        context.lineCap = "round";
+        context.lineJoin = "round";
+        context.strokeStyle = trailGradient;
+        context.lineWidth = Math.max(1.2, moth.size * 0.42);
         context.beginPath();
-        context.ellipse(cx, cy, moth.radius, moth.radius * config.scene.orbitTilt, 0, 0, Math.PI * 2);
+        context.moveTo(first.x, first.y);
+
+        for (let index = 1; index < moth.trail.length - 1; index += 1) {
+          const point = moth.trail[index];
+          const next = moth.trail[index + 1];
+          context.quadraticCurveTo(point.x, point.y, (point.x + next.x) * 0.5, (point.y + next.y) * 0.5);
+        }
+
+        context.lineTo(last.x, last.y);
         context.stroke();
         context.restore();
+      }
+
+      function colorWithAlpha(color, alpha) {
+        const clampedAlpha = Math.max(0, Math.min(1, alpha));
+        const hexMatch = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color);
+
+        if (hexMatch) {
+          const hex = hexMatch[1];
+          const expanded = hex.length === 3
+            ? hex.split("").map((character) => character + character).join("")
+            : hex;
+          const red = parseInt(expanded.slice(0, 2), 16);
+          const green = parseInt(expanded.slice(2, 4), 16);
+          const blue = parseInt(expanded.slice(4, 6), 16);
+          return "rgba(" + red + ", " + green + ", " + blue + ", " + clampedAlpha + ")";
+        }
+
+        const rgbaMatch = /^rgba?\(([^)]+)\)$/i.exec(color);
+        if (rgbaMatch) {
+          const channels = rgbaMatch[1].split(",").slice(0, 3).map((channel) => channel.trim());
+          return "rgba(" + channels.join(", ") + ", " + clampedAlpha + ")";
+        }
+
+        return color;
       }
 
       function drawMoth(context, moth) {
@@ -483,13 +567,69 @@ $html = @"
         return wave * 0.72 + shimmer * 0.28;
       }
 
-      function drawLight(context, cx, cy, elapsed) {
-        const flicker = lightFlicker(elapsed);
-        const pulse = 1 - config.light.flickerStrength + flicker * config.light.flickerStrength * 2;
-        const glowRadius = config.light.glowRadius * (0.88 + flicker * 0.22);
+      function drawRoundedRect(context, x, y, width, height, radius) {
+        const corner = Math.min(radius, width * 0.5, height * 0.5);
+        context.beginPath();
+        context.moveTo(x + corner, y);
+        context.lineTo(x + width - corner, y);
+        context.quadraticCurveTo(x + width, y, x + width, y + corner);
+        context.lineTo(x + width, y + height - corner);
+        context.quadraticCurveTo(x + width, y + height, x + width - corner, y + height);
+        context.lineTo(x + corner, y + height);
+        context.quadraticCurveTo(x, y + height, x, y + height - corner);
+        context.lineTo(x, y + corner);
+        context.quadraticCurveTo(x, y, x + corner, y);
+      }
+
+      function drawLightFixture(context, cx, cy) {
+        const bulbDiameter = config.light.size * 2;
+        const fixtureWidth = bulbDiameter / 3;
+        const fixtureHeight = bulbDiameter / 2;
+        const fixtureX = cx - fixtureWidth * 0.5;
+        const fixtureY = cy - config.light.size - fixtureHeight * 0.8;
+        const cableBottom = fixtureY + 3;
+        const cableTop = 0;
+        const cableGradient = context.createLinearGradient(cx, cableBottom, cx, Math.max(cableTop, cableBottom * 0.5));
+
+        cableGradient.addColorStop(0, "rgba(82, 82, 82, 0.72)");
+        cableGradient.addColorStop(0.5, "rgba(0, 0, 0, 0.82)");
+        cableGradient.addColorStop(1, "rgba(0, 0, 0, 0)");
 
         context.save();
-        context.globalAlpha = Math.max(0.65, Math.min(1, pulse));
+        context.strokeStyle = cableGradient;
+        context.lineCap = "round";
+        context.lineWidth = Math.max(2, config.light.size * 0.22);
+        context.beginPath();
+        context.moveTo(cx, cableBottom);
+        context.lineTo(cx, cableTop);
+        context.stroke();
+        context.restore();
+
+        const fixtureGradient = context.createLinearGradient(fixtureX, fixtureY, fixtureX + fixtureWidth, fixtureY);
+        fixtureGradient.addColorStop(0, "#575757");
+        fixtureGradient.addColorStop(0.5, "#151515");
+        fixtureGradient.addColorStop(1, "#1e1e1e");
+
+        context.save();
+        context.fillStyle = fixtureGradient;
+        context.shadowColor = "rgba(0, 0, 0, 0.46)";
+        context.shadowBlur = 8;
+        drawRoundedRect(context, fixtureX, fixtureY, fixtureWidth, fixtureHeight, Math.max(2, fixtureWidth * 0.3));
+        context.fill();
+        context.strokeStyle = "rgba(95, 95, 95, 0.42)";
+        context.lineWidth = 1;
+        context.stroke();
+        context.restore();
+      }
+
+      function drawLight(context, cx, cy, elapsed) {
+        const flicker = lightFlicker(elapsed);
+        const flickerStrength = Math.max(0, config.light.flickerStrength);
+        const glowPulse = 1 - flickerStrength + flicker * flickerStrength * 2;
+        const glowRadius = config.light.glowRadius * (1 - flickerStrength * 0.7 + flicker * flickerStrength * 1.4);
+
+        context.save();
+        context.globalAlpha = Math.max(0.35, Math.min(1, glowPulse));
         const halo = context.createRadialGradient(cx, cy, 0, cx, cy, glowRadius);
         halo.addColorStop(0, config.light.glowColor);
         halo.addColorStop(0.28, config.light.haloColor);
@@ -500,13 +640,15 @@ $html = @"
         context.fill();
         context.restore();
 
+        drawLightFixture(context, cx, cy);
+
         context.save();
-        context.globalAlpha = Math.max(0.86, Math.min(1, pulse));
+        context.globalAlpha = 1;
         context.fillStyle = config.light.color;
         context.shadowColor = config.light.glowColor;
-        context.shadowBlur = config.light.shadowBlur * (0.7 + flicker * 0.5);
+        context.shadowBlur = config.light.shadowBlur;
         context.beginPath();
-        context.arc(cx, cy, config.light.size * (0.92 + flicker * 0.12), 0, Math.PI * 2);
+        context.arc(cx, cy, config.light.size, 0, Math.PI * 2);
         context.fill();
         context.restore();
       }
@@ -522,9 +664,10 @@ $html = @"
           .sort((a, b) => a.depth - b.depth);
 
         drawGround(context, width, height, cx, cy);
-        moths.forEach((moth) => drawOrbit(context, moth, cx, cy));
+        projectedMoths.filter((moth) => moth.depth < 0).forEach((moth) => drawTrail(context, moth));
         projectedMoths.filter((moth) => moth.depth < 0).forEach((moth) => drawMoth(context, moth));
         drawLight(context, cx, cy, elapsed);
+        projectedMoths.filter((moth) => moth.depth >= 0).forEach((moth) => drawTrail(context, moth));
         projectedMoths.filter((moth) => moth.depth >= 0).forEach((moth) => drawMoth(context, moth));
       }
 
@@ -548,7 +691,7 @@ $html = @"
             startTimestamp = timestamp;
           }
 
-          const elapsedSeconds = (timestamp - startTimestamp) / 1000;
+          const elapsedSeconds = ((timestamp - startTimestamp) / 1000) * config.animation.playbackSpeed;
           const animationTime = config.animation.loop
             ? elapsedSeconds % config.animation.duration
             : Math.min(config.animation.duration, elapsedSeconds);

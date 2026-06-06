@@ -1,0 +1,14 @@
+Project context for moth-lights-animation:
+
+- Purpose: Generate standalone HTML orbit animation files from JSON config.
+- Main workflow: JSON config + PowerShell script -> self-contained HTML attachment.
+- Stack: Plain HTML/CSS/JavaScript in generated output; PowerShell generator script.
+- Renderer: Canvas.
+- Target behavior: data-driven moths orbit a bright trap light in an oblique 3D-feel scene.
+- Config source: `public/example-config.json` by default, or any JSON file passed to `scripts/build-standalone.ps1`.
+- Planned config shape: `animation`, `scene`, `light`, `species`, `moths`, and `audio`.
+- Current config implementation uses `animation`, `centerDot`, `species`, and `moths`; moth-level values override species defaults.
+- Next implementation task in `dev-plan.txt`: build the oblique 3D-feel projection.
+- Current generated attachment is `index.html`.
+- Planning document: `dev-plan.txt` describes the next major target, including moth lifecycle timing, species metadata, trails, clock/scrub controls, and windchime audio.
+- User decisions from edited plan: final visualization should be full screen with trap/location info top right; animation time should represent real time; species colours are aesthetic; future moth counts/timings will come from real data; audio control should be subtle in the bottom right.

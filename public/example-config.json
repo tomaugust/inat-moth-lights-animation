@@ -1,0 +1,86 @@
+{
+  "animation": {
+    "title": "Moth Light Animation",
+    "description": "A standalone animation generated from species and moth observations.",
+    "backgroundColor": "#101114",
+    "textColor": "#f5f1e8",
+    "panelBackground": "rgba(255, 255, 255, 0.07)",
+    "panelBorderColor": "rgba(255, 255, 255, 0.12)",
+    "canvasBackground": "radial-gradient(circle at center, #252018 0%, #111114 58%, #07080a 100%)",
+    "canvasBorderColor": "rgba(255, 255, 255, 0.16)",
+    "orbitStrokeColor": "rgba(255, 244, 201, 0.1)"
+  },
+  "centerDot": {
+    "size": 18,
+    "color": "#fff4bc",
+    "glowColor": "rgba(255, 232, 142, 0.6)",
+    "shadowBlur": 28
+  },
+  "species": [
+    {
+      "id": "large-yellow-underwing",
+      "name": "Large Yellow Underwing",
+      "color": "#d7b46a",
+      "chimeNote": "E3",
+      "size": 13,
+      "speed": 0.85,
+      "erraticness": 0.18,
+      "shadowColor": "rgba(255, 224, 151, 0.24)",
+      "shadowBlur": 16
+    },
+    {
+      "id": "silver-y",
+      "name": "Silver Y",
+      "color": "#b8c5d8",
+      "chimeNote": "A4",
+      "size": 8,
+      "speed": 1.35,
+      "erraticness": 0.45,
+      "shadowColor": "rgba(218, 235, 255, 0.2)",
+      "shadowBlur": 12
+    },
+    {
+      "id": "brimstone-moth",
+      "name": "Brimstone Moth",
+      "color": "#e2d56f",
+      "chimeNote": "C5",
+      "size": 6,
+      "speed": 1.75,
+      "erraticness": 0.6,
+      "shadowColor": "rgba(255, 244, 172, 0.2)",
+      "shadowBlur": 9
+    }
+  ],
+  "moths": [
+    {
+      "id": "moth-001",
+      "species": "large-yellow-underwing",
+      "angle": 15,
+      "radius": 230
+    },
+    {
+      "id": "moth-002",
+      "species": "silver-y",
+      "angle": 95
+    },
+    {
+      "id": "moth-003",
+      "species": "brimstone-moth",
+      "angle": 185
+    },
+    {
+      "id": "moth-004",
+      "species": "silver-y",
+      "angle": 275,
+      "size": 10,
+      "speed": 1.1
+    },
+    {
+      "id": "moth-005",
+      "species": "large-yellow-underwing",
+      "angle": 330,
+      "radius": 180,
+      "erraticness": 0.28
+    }
+  ]
+}

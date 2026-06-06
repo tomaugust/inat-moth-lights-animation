@@ -69,6 +69,7 @@ function Read-AnimationConfig {
   $rawConfig = Get-Content -Raw -LiteralPath $resolvedPath | ConvertFrom-Json
   $animation = Get-ConfigValue $rawConfig "animation" ([pscustomobject]@{})
   $centerDot = Get-ConfigValue $rawConfig "centerDot" ([pscustomobject]@{})
+  $scene = Get-ConfigValue $rawConfig "scene" ([pscustomobject]@{})
   $species = @(Get-ConfigValue $rawConfig "species" @())
   $moths = @(Get-ConfigValue $rawConfig "moths" @())
 
@@ -152,6 +153,12 @@ function Read-AnimationConfig {
       size = ConvertTo-PositiveNumber (Get-ConfigValue $centerDot "size" 16) 16 2
     }
     moths = $normalizedMoths
+    scene = @{
+      backgroundMothOpacity = ConvertTo-PositiveNumber (Get-ConfigValue $scene "backgroundMothOpacity" 0.45) 0.45 0
+      centerYRatio = ConvertTo-PositiveNumber (Get-ConfigValue $scene "centerYRatio" 0.55) 0.55 0.1
+      foregroundMothOpacity = ConvertTo-PositiveNumber (Get-ConfigValue $scene "foregroundMothOpacity" 1) 1 0
+      orbitTilt = ConvertTo-PositiveNumber (Get-ConfigValue $scene "orbitTilt" 0.3) 0.3 0.05
+    }
     species = $normalizedSpecies
   }
 }
@@ -273,7 +280,7 @@ $html = @"
 
       function createMoths(config, width, height) {
         const maxMothSize = config.moths.reduce((largest, moth) => Math.max(largest, moth.size), 0);
-        const usableRadius = Math.max(32, Math.min(width, height) * 0.5 - maxMothSize - 18);
+        const usableRadius = Math.max(32, Math.min(width, height) * 0.48 - maxMothSize - 18);
         const minRadius = Math.min(72, usableRadius);
         const autoStep = config.moths.length > 1 ? Math.max(0, (usableRadius - minRadius) / (config.moths.length - 1)) : 0;
 
@@ -296,12 +303,47 @@ $html = @"
         }));
       }
 
-      function drawScene(context, moths, width, height, elapsed) {
-        context.clearRect(0, 0, width, height);
+      function projectMoth(moth, elapsed, cx, cy) {
+        const angle = moth.angle + elapsed * moth.speed * 0.001;
+        const depth = Math.sin(angle);
+        const x = cx + Math.cos(angle) * moth.radius;
+        const y = cy + depth * moth.radius * config.scene.orbitTilt;
+        const depthRatio = (depth + 1) * 0.5;
+        const opacity = config.scene.backgroundMothOpacity +
+          (config.scene.foregroundMothOpacity - config.scene.backgroundMothOpacity) * depthRatio;
 
-        const cx = width / 2;
-        const cy = height / 2;
+        return {
+          ...moth,
+          depth,
+          opacity: Math.max(0, Math.min(1, opacity)),
+          x,
+          y
+        };
+      }
 
+      function drawOrbit(context, moth, cx, cy) {
+        context.save();
+        context.strokeStyle = moth.orbitStrokeColor;
+        context.lineWidth = 1;
+        context.beginPath();
+        context.ellipse(cx, cy, moth.radius, moth.radius * config.scene.orbitTilt, 0, 0, Math.PI * 2);
+        context.stroke();
+        context.restore();
+      }
+
+      function drawMoth(context, moth) {
+        context.save();
+        context.globalAlpha = moth.opacity;
+        context.fillStyle = moth.color;
+        context.shadowColor = moth.shadowColor;
+        context.shadowBlur = moth.shadowBlur;
+        context.beginPath();
+        context.arc(moth.x, moth.y, moth.size, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+      }
+
+      function drawLight(context, cx, cy) {
         context.save();
         context.fillStyle = config.centerDot.color;
         context.shadowColor = config.centerDot.glowColor;
@@ -310,29 +352,21 @@ $html = @"
         context.arc(cx, cy, config.centerDot.size, 0, Math.PI * 2);
         context.fill();
         context.restore();
+      }
 
-        moths.forEach((moth) => {
-          const angle = moth.angle + elapsed * moth.speed * 0.001;
-          const x = cx + Math.cos(angle) * moth.radius;
-          const y = cy + Math.sin(angle) * moth.radius;
+      function drawScene(context, moths, width, height, elapsed) {
+        context.clearRect(0, 0, width, height);
 
-          context.save();
-          context.strokeStyle = moth.orbitStrokeColor;
-          context.lineWidth = 1;
-          context.beginPath();
-          context.arc(cx, cy, moth.radius, 0, Math.PI * 2);
-          context.stroke();
-          context.restore();
+        const cx = width / 2;
+        const cy = height * config.scene.centerYRatio;
+        const projectedMoths = moths
+          .map((moth) => projectMoth(moth, elapsed, cx, cy))
+          .sort((a, b) => a.depth - b.depth);
 
-          context.save();
-          context.fillStyle = moth.color;
-          context.shadowColor = moth.shadowColor;
-          context.shadowBlur = moth.shadowBlur;
-          context.beginPath();
-          context.arc(x, y, moth.size, 0, Math.PI * 2);
-          context.fill();
-          context.restore();
-        });
+        moths.forEach((moth) => drawOrbit(context, moth, cx, cy));
+        projectedMoths.filter((moth) => moth.depth < 0).forEach((moth) => drawMoth(context, moth));
+        drawLight(context, cx, cy);
+        projectedMoths.filter((moth) => moth.depth >= 0).forEach((moth) => drawMoth(context, moth));
       }
 
       function setupOrbitAnimation() {

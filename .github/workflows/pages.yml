@@ -30,9 +30,8 @@ jobs:
 
       - name: Prepare site
         run: |
-          mkdir -p _site/outputs
+          mkdir -p _site
           cp index.html _site/index.html
-          cp outputs/example-json-animation.html _site/outputs/example-json-animation.html
           touch _site/.nojekyll
 
       - name: Configure Pages

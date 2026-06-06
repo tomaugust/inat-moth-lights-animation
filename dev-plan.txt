@@ -14,7 +14,7 @@ Current State
 
 - The project currently generates standalone HTML from JSON using `scripts/build-standalone.ps1`.
 - The generated animation is canvas-based and self-contained.
-- The current visual model is still close to a flat orbit with a centre dot.
+- The current visual model uses oblique elliptical orbits with depth sorting, so background moths pass behind the light and foreground moths pass in front.
 - The JSON structure separates whole-animation settings, the centre light, species defaults, and individual moth observations.
 
 
@@ -244,47 +244,41 @@ Top-level sections:
 Implementation Phases
 ---------------------
 
-1. Build oblique 3D-feel projection.
-   - Elliptical orbit.
-   - Depth sorting.
-   - Foreground/background draw ordering.
-   - Size and opacity depth cues.
-
-2. Rework light and ground.
+1. Rework light and ground.
    - Ground gradient.
    - Light pool.
    - Bright core.
    - Extended glow.
    - Subtle flicker.
 
-3. Add moth lifecycle timing.
+2. Add moth lifecycle timing.
    - Entry path from left.
    - Orbit phase.
    - Exit path to right.
    - Looping timeline.
 
-4. Add erratic movement and trails.
+3. Add erratic movement and trails.
    - Seeded per-moth noise.
    - Configurable erraticness.
    - Configurable trail length.
 
-5. Add clock and scrub bar.
+4. Add clock and scrub bar.
    - Canvas clock or HTML overlay.
    - Range input for scrub control.
    - Auto-play pause/resume while dragging.
 
-6. Add species labels.
+5. Add species labels.
    - Species name appears on entry.
    - Tag line connects label to moth.
    - Fade and collision handling.
 
-7. Add windchime audio.
+6. Add windchime audio.
    - Web Audio API synth.
    - Species-to-note mapping.
    - User gesture handling for audio unlock.
    - Low-volume, non-intrusive playback.
 
-8. Polish and test.
+7. Polish and test.
    - Check generated file opens directly.
    - Check no external dependencies.
    - Check mobile layout.

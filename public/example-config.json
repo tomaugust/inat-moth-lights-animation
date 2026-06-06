@@ -16,6 +16,12 @@
     "glowColor": "rgba(255, 232, 142, 0.6)",
     "shadowBlur": 28
   },
+  "scene": {
+    "centerYRatio": 0.56,
+    "orbitTilt": 0.28,
+    "backgroundMothOpacity": 0.42,
+    "foregroundMothOpacity": 1
+  },
   "species": [
     {
       "id": "large-yellow-underwing",

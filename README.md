@@ -1,5 +1,7 @@
 # Moth Trap Animation Generator
 
+IN DEVELOPMENT
+
 Create a standalone HTML moth-trap animation from a JSON config file. The generated HTML has all CSS, JavaScript, and animation data embedded, so it can be emailed as an attachment and opened directly in a browser.
 
 View the current example on GitHub Pages:
@@ -90,12 +92,6 @@ You can then email the generated `.html` file as an attachment.
 
 - `scripts\build-standalone.ps1` generates the HTML attachment.
 - `public\example-config.json` is the example JSON input.
-- `index.html` is the current generated standalone animation.
-- `outputs\example-json-animation.html` is an example generated attachment.
+- `index.html` is the current generated standalone animation and the GitHub Pages example.
 - `.github\workflows\pages.yml` publishes the example to GitHub Pages.
 - `README.md` and `context.txt` describe the project and workflow.
-
-## Notes
-
-- The generated HTML does not need Vite, npm, TypeScript, or a web server.
-- JavaScript animations usually will not run when pasted into the body of an email. Send the generated file as an attachment instead.

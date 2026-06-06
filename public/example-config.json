@@ -10,17 +10,28 @@
     "canvasBorderColor": "rgba(255, 255, 255, 0.16)",
     "orbitStrokeColor": "rgba(255, 244, 201, 0.1)"
   },
-  "centerDot": {
-    "size": 18,
-    "color": "#fff4bc",
-    "glowColor": "rgba(255, 232, 142, 0.6)",
-    "shadowBlur": 28
-  },
   "scene": {
+    "showGround": false,
     "centerYRatio": 0.56,
+    "horizonYRatio": 0.34,
     "orbitTilt": 0.28,
     "backgroundMothOpacity": 0.42,
-    "foregroundMothOpacity": 1
+    "foregroundMothOpacity": 1,
+    "groundBackColor": "#212121",
+    "groundMidColor": "#bfbfbf",
+    "groundFrontColor": "#dbdbdb",
+    "lightPoolColor": "rgba(255, 239, 188, 0.58)",
+    "lightPoolRadius": 430
+  },
+  "light": {
+    "size": 15,
+    "color": "#fffdf4",
+    "glowColor": "rgba(255, 250, 226, 0.82)",
+    "haloColor": "rgba(255, 244, 201, 0.26)",
+    "glowRadius": 210,
+    "shadowBlur": 54,
+    "flickerStrength": 0.08,
+    "flickerSpeed": 0.002
   },
   "species": [
     {

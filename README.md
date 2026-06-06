@@ -22,11 +22,21 @@ Use this shape:
     "canvasBackground": "radial-gradient(circle at center, #252018 0%, #07080a 100%)",
     "orbitStrokeColor": "rgba(255, 244, 201, 0.1)"
   },
-  "centerDot": {
-    "size": 18,
-    "color": "#fff4bc",
-    "glowColor": "rgba(255, 232, 142, 0.6)",
-    "shadowBlur": 28
+  "scene": {
+    "showGround": false,
+    "centerYRatio": 0.56,
+    "horizonYRatio": 0.34,
+    "orbitTilt": 0.28,
+    "groundBackColor": "#212121",
+    "groundFrontColor": "#dbdbdb",
+    "lightPoolColor": "rgba(255, 239, 188, 0.58)"
+  },
+  "light": {
+    "size": 15,
+    "color": "#fffdf4",
+    "glowColor": "rgba(255, 250, 226, 0.82)",
+    "glowRadius": 210,
+    "flickerStrength": 0.08
   },
   "species": [
     {
@@ -50,7 +60,7 @@ Use this shape:
 }
 ```
 
-`animation` controls whole-file presentation. `centerDot` controls the light at the centre. `species` defines shared visual and sound defaults. `moths` defines individual moth observations.
+`animation` controls whole-file presentation. `scene` controls the optional ground plane and oblique projection. `light` controls the bright trap light. `species` defines shared visual and sound defaults. `moths` defines individual moth observations.
 
 Useful species-level fields:
 

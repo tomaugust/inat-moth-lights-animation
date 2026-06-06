@@ -68,7 +68,7 @@ function Read-AnimationConfig {
 
   $rawConfig = Get-Content -Raw -LiteralPath $resolvedPath | ConvertFrom-Json
   $animation = Get-ConfigValue $rawConfig "animation" ([pscustomobject]@{})
-  $centerDot = Get-ConfigValue $rawConfig "centerDot" ([pscustomobject]@{})
+  $light = Get-ConfigValue $rawConfig "light" (Get-ConfigValue $rawConfig "centerDot" ([pscustomobject]@{}))
   $scene = Get-ConfigValue $rawConfig "scene" ([pscustomobject]@{})
   $species = @(Get-ConfigValue $rawConfig "species" @())
   $moths = @(Get-ConfigValue $rawConfig "moths" @())
@@ -146,18 +146,29 @@ function Read-AnimationConfig {
       textColor = [string](Get-ConfigValue $animation "textColor" "#f5f5f5")
       title = [string](Get-ConfigValue $animation "title" "Orbit Animation")
     }
-    centerDot = @{
-      color = [string](Get-ConfigValue $centerDot "color" "#ffffff")
-      glowColor = [string](Get-ConfigValue $centerDot "glowColor" "rgba(255, 255, 255, 0)")
-      shadowBlur = ConvertTo-PositiveNumber (Get-ConfigValue $centerDot "shadowBlur" 0) 0 0
-      size = ConvertTo-PositiveNumber (Get-ConfigValue $centerDot "size" 16) 16 2
+    light = @{
+      color = [string](Get-ConfigValue $light "color" "#fffdf4")
+      flickerSpeed = ConvertTo-PositiveNumber (Get-ConfigValue $light "flickerSpeed" 0.0025) 0.0025 0
+      flickerStrength = ConvertTo-PositiveNumber (Get-ConfigValue $light "flickerStrength" 0.06) 0.06 0
+      glowColor = [string](Get-ConfigValue $light "glowColor" "rgba(255, 250, 226, 0.8)")
+      glowRadius = ConvertTo-PositiveNumber (Get-ConfigValue $light "glowRadius" 150) 150 20
+      haloColor = [string](Get-ConfigValue $light "haloColor" "rgba(255, 244, 201, 0.22)")
+      shadowBlur = ConvertTo-PositiveNumber (Get-ConfigValue $light "shadowBlur" 36) 36 0
+      size = ConvertTo-PositiveNumber (Get-ConfigValue $light "size" 15) 15 2
     }
     moths = $normalizedMoths
     scene = @{
       backgroundMothOpacity = ConvertTo-PositiveNumber (Get-ConfigValue $scene "backgroundMothOpacity" 0.45) 0.45 0
       centerYRatio = ConvertTo-PositiveNumber (Get-ConfigValue $scene "centerYRatio" 0.55) 0.55 0.1
       foregroundMothOpacity = ConvertTo-PositiveNumber (Get-ConfigValue $scene "foregroundMothOpacity" 1) 1 0
+      groundBackColor = [string](Get-ConfigValue $scene "groundBackColor" "#07080b")
+      groundFrontColor = [string](Get-ConfigValue $scene "groundFrontColor" "#211b14")
+      groundMidColor = [string](Get-ConfigValue $scene "groundMidColor" "#14120f")
+      horizonYRatio = ConvertTo-PositiveNumber (Get-ConfigValue $scene "horizonYRatio" 0.34) 0.34 0
+      lightPoolColor = [string](Get-ConfigValue $scene "lightPoolColor" "rgba(255, 244, 201, 0.3)")
+      lightPoolRadius = ConvertTo-PositiveNumber (Get-ConfigValue $scene "lightPoolRadius" 330) 330 40
       orbitTilt = ConvertTo-PositiveNumber (Get-ConfigValue $scene "orbitTilt" 0.3) 0.3 0.05
+      showGround = [bool](Get-ConfigValue $scene "showGround" $true)
     }
     species = $normalizedSpecies
   }
@@ -343,13 +354,82 @@ $html = @"
         context.restore();
       }
 
-      function drawLight(context, cx, cy) {
+      function drawGround(context, width, height, cx, cy) {
+        const horizonY = Math.max(0, Math.min(height, height * config.scene.horizonYRatio));
+
+        context.fillStyle = config.animation.backgroundColor;
+        context.fillRect(0, 0, width, height);
+
+        if (!config.scene.showGround) {
+          return;
+        }
+
+        const groundGradient = context.createLinearGradient(0, horizonY, 0, height);
+        groundGradient.addColorStop(0, config.scene.groundBackColor);
+        groundGradient.addColorStop(0.58, config.scene.groundMidColor);
+        groundGradient.addColorStop(1, config.scene.groundFrontColor);
+        context.fillStyle = groundGradient;
+        context.fillRect(0, horizonY, width, height - horizonY);
+
         context.save();
-        context.fillStyle = config.centerDot.color;
-        context.shadowColor = config.centerDot.glowColor;
-        context.shadowBlur = config.centerDot.shadowBlur;
+        context.strokeStyle = "rgba(255, 244, 201, 0.06)";
+        context.lineWidth = 1;
+        for (let index = 0; index < 9; index += 1) {
+          const y = cy + 28 + index * index * 5.2;
+          if (y >= height) {
+            break;
+          }
+          context.beginPath();
+          context.moveTo(0, y);
+          context.lineTo(width, y);
+          context.stroke();
+        }
+        context.restore();
+
+        context.save();
+        context.translate(cx, cy);
+        context.scale(1, config.scene.orbitTilt * 1.35);
+        const poolGradient = context.createRadialGradient(0, 0, 0, 0, 0, config.scene.lightPoolRadius);
+        poolGradient.addColorStop(0, config.scene.lightPoolColor);
+        poolGradient.addColorStop(0.45, "rgba(255, 244, 201, 0.12)");
+        poolGradient.addColorStop(1, "rgba(255, 244, 201, 0)");
+        context.fillStyle = poolGradient;
         context.beginPath();
-        context.arc(cx, cy, config.centerDot.size, 0, Math.PI * 2);
+        context.arc(0, 0, config.scene.lightPoolRadius, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+      }
+
+      function lightFlicker(elapsed) {
+        const wave = Math.sin(elapsed * config.light.flickerSpeed) * 0.5 + 0.5;
+        const shimmer = Math.sin(elapsed * config.light.flickerSpeed * 2.7 + 1.8) * 0.5 + 0.5;
+        return wave * 0.72 + shimmer * 0.28;
+      }
+
+      function drawLight(context, cx, cy, elapsed) {
+        const flicker = lightFlicker(elapsed);
+        const pulse = 1 - config.light.flickerStrength + flicker * config.light.flickerStrength * 2;
+        const glowRadius = config.light.glowRadius * (0.88 + flicker * 0.22);
+
+        context.save();
+        context.globalAlpha = Math.max(0.65, Math.min(1, pulse));
+        const halo = context.createRadialGradient(cx, cy, 0, cx, cy, glowRadius);
+        halo.addColorStop(0, config.light.glowColor);
+        halo.addColorStop(0.28, config.light.haloColor);
+        halo.addColorStop(1, "rgba(255, 255, 255, 0)");
+        context.fillStyle = halo;
+        context.beginPath();
+        context.arc(cx, cy, glowRadius, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+
+        context.save();
+        context.globalAlpha = Math.max(0.86, Math.min(1, pulse));
+        context.fillStyle = config.light.color;
+        context.shadowColor = config.light.glowColor;
+        context.shadowBlur = config.light.shadowBlur * (0.7 + flicker * 0.5);
+        context.beginPath();
+        context.arc(cx, cy, config.light.size * (0.92 + flicker * 0.12), 0, Math.PI * 2);
         context.fill();
         context.restore();
       }
@@ -363,9 +443,10 @@ $html = @"
           .map((moth) => projectMoth(moth, elapsed, cx, cy))
           .sort((a, b) => a.depth - b.depth);
 
+        drawGround(context, width, height, cx, cy);
         moths.forEach((moth) => drawOrbit(context, moth, cx, cy));
         projectedMoths.filter((moth) => moth.depth < 0).forEach((moth) => drawMoth(context, moth));
-        drawLight(context, cx, cy);
+        drawLight(context, cx, cy, elapsed);
         projectedMoths.filter((moth) => moth.depth >= 0).forEach((moth) => drawMoth(context, moth));
       }
 

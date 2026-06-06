@@ -8,8 +8,8 @@ Project context for moth-lights-animation:
 - Config source: `public/example-config.json` by default, or any JSON file passed to `scripts/build-standalone.ps1`.
 - Planned config shape: `animation`, `scene`, `light`, `species`, `moths`, and `audio`.
 - Current config implementation uses `animation`, `scene`, `light`, `species`, and `moths`; moth-level values override species defaults.
-- Current visual implementation uses elliptical oblique orbits, depth sorting, foreground/background opacity cues, broad central glow, and subtle light flicker. Canvas-drawn ground and an elliptical light pool are implemented but `scene.showGround` is currently false in the example, returning the visual to light in black space.
-- Next implementation task in `dev-plan.txt`: add moth lifecycle timing.
+- Current visual implementation uses elliptical oblique orbits, depth sorting, foreground/background opacity cues, broad central glow, subtle light flicker, moth entry/orbit/exit lifecycle states, and a looping animation timeline. Canvas-drawn ground and an elliptical light pool are implemented but `scene.showGround` is currently false in the example, returning the visual to light in black space.
+- Next implementation task in `dev-plan.txt`: add erratic movement and trails.
 - Current generated attachment is `index.html`.
 - GitHub Pages publishes `index.html` as the live example at `https://tomaugust.github.io/moth-lights-animation/` using `.github/workflows/pages.yml`.
 - Planning document: `dev-plan.txt` describes the next major target, including moth lifecycle timing, species metadata, trails, clock/scrub controls, and windchime audio.

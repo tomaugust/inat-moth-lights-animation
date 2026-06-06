@@ -8,15 +8,18 @@
     "panelBorderColor": "rgba(255, 255, 255, 0.12)",
     "canvasBackground": "radial-gradient(circle at center, #252018 0%, #111114 58%, #07080a 100%)",
     "canvasBorderColor": "rgba(255, 255, 255, 0.16)",
-    "orbitStrokeColor": "rgba(255, 244, 201, 0.1)"
+    "orbitStrokeColor": "rgba(255, 244, 201, 0.1)",
+    "duration": 80,
+    "autoplay": true,
+    "loop": true
   },
   "scene": {
     "showGround": false,
     "centerYRatio": 0.56,
     "horizonYRatio": 0.34,
     "orbitTilt": 0.28,
-    "backgroundMothOpacity": 0.42,
-    "foregroundMothOpacity": 1,
+    "backgroundMothOpacity": 1,
+    "foregroundMothOpacity": 0.4,
     "groundBackColor": "#212121",
     "groundMidColor": "#bfbfbf",
     "groundFrontColor": "#dbdbdb",
@@ -72,22 +75,30 @@
     {
       "id": "moth-001",
       "species": "large-yellow-underwing",
+      "entryTime": 4,
+      "exitTime": 62,
       "angle": 15,
       "radius": 230
     },
     {
       "id": "moth-002",
       "species": "silver-y",
+      "entryTime": 10,
+      "exitTime": 70,
       "angle": 95
     },
     {
       "id": "moth-003",
       "species": "brimstone-moth",
+      "entryTime": 18,
+      "exitTime": 74,
       "angle": 185
     },
     {
       "id": "moth-004",
       "species": "silver-y",
+      "entryTime": 25,
+      "exitTime": 58,
       "angle": 275,
       "size": 10,
       "speed": 1.1
@@ -95,6 +106,8 @@
     {
       "id": "moth-005",
       "species": "large-yellow-underwing",
+      "entryTime": 34,
+      "exitTime": 78,
       "angle": 330,
       "radius": 180,
       "erraticness": 0.28

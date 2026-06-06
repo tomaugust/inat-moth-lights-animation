@@ -16,7 +16,10 @@ Current State
 - The generated animation is canvas-based and self-contained.
 - The current visual model uses oblique elliptical orbits with depth sorting, so background moths pass behind the light and foreground moths pass in front.
 - The scene has a canvas-drawn ground gradient, elliptical pool of light, bright core, broad glow, and subtle flicker.
+- Moths now have entry and exit times, entering/orbiting/exiting lifecycle states, and a looping animation timeline.
+- Exiting moths now fade before reaching the right edge so their blurred glow is not clipped into a visible line.
 - The JSON structure separates whole-animation settings, scene settings, light settings, species defaults, and individual moth observations.
+- Next selected implementation step: add erratic movement and fading trails.
 
 
 Target Experience
@@ -245,34 +248,28 @@ Top-level sections:
 Implementation Phases
 ---------------------
 
-1. Add moth lifecycle timing.
-   - Entry path from left.
-   - Orbit phase.
-   - Exit path to right.
-   - Looping timeline.
-
-2. Add erratic movement and trails.
+1. Add erratic movement and trails. [NEXT]
    - Seeded per-moth noise.
    - Configurable erraticness.
    - Configurable trail length.
 
-3. Add clock and scrub bar.
+2. Add clock and scrub bar.
    - Canvas clock or HTML overlay.
    - Range input for scrub control.
    - Auto-play pause/resume while dragging.
 
-4. Add species labels.
+3. Add species labels.
    - Species name appears on entry.
    - Tag line connects label to moth.
    - Fade and collision handling.
 
-5. Add windchime audio.
+4. Add windchime audio.
    - Web Audio API synth.
    - Species-to-note mapping.
    - User gesture handling for audio unlock.
    - Low-volume, non-intrusive playback.
 
-6. Polish and test.
+5. Polish and test.
    - Check generated file opens directly.
    - Check no external dependencies.
    - Check mobile layout.

@@ -115,11 +115,16 @@ function Read-AnimationConfig {
     }
 
     $speciesDefaults = $speciesById[$speciesId]
+    $defaultEntryTime = [Math]::Min($index * 4, 20)
+    $entryTime = ConvertTo-PositiveNumber (Get-ConfigValue $moth "entryTime" $defaultEntryTime) $defaultEntryTime 0
+    $exitTime = ConvertTo-PositiveNumber (Get-ConfigValue $moth "exitTime" ($entryTime + 40)) ($entryTime + 40) $entryTime
     $normalizedMoths += @{
       angle = ConvertTo-PositiveNumber (Get-ConfigValue $moth "angle" (($index * 360) / $moths.Count)) (($index * 360) / $moths.Count) 0
       chimeNote = [string](Get-ConfigValue $moth "chimeNote" $speciesDefaults.chimeNote)
       color = [string](Get-ConfigValue $moth "color" $speciesDefaults.color)
+      entryTime = $entryTime
       erraticness = ConvertTo-PositiveNumber (Get-ConfigValue $moth "erraticness" $speciesDefaults.erraticness) $speciesDefaults.erraticness 0
+      exitTime = $exitTime
       id = [string](Get-ConfigValue $moth "id" "moth-$($index + 1)")
       label = [string](Get-ConfigValue $moth "label" $speciesDefaults.name)
       orbitStrokeColor = [string](Get-ConfigValue $moth "orbitStrokeColor" $speciesDefaults.orbitStrokeColor)
@@ -137,9 +142,12 @@ function Read-AnimationConfig {
   return @{
     animation = @{
       backgroundColor = [string](Get-ConfigValue $animation "backgroundColor" "#121212")
+      autoplay = [bool](Get-ConfigValue $animation "autoplay" $true)
       canvasBackground = [string](Get-ConfigValue $animation "canvasBackground" "radial-gradient(circle at center, #1b1b1b 0%, #090909 60%)")
       canvasBorderColor = [string](Get-ConfigValue $animation "canvasBorderColor" "rgba(255, 255, 255, 0.12)")
       description = [string](Get-ConfigValue $animation "description" "This standalone animation was generated from a JSON configuration and can be opened directly from the file.")
+      duration = ConvertTo-PositiveNumber (Get-ConfigValue $animation "duration" 80) 80 1
+      loop = [bool](Get-ConfigValue $animation "loop" $true)
       orbitStrokeColor = [string](Get-ConfigValue $animation "orbitStrokeColor" "rgba(255, 255, 255, 0.09)")
       panelBackground = [string](Get-ConfigValue $animation "panelBackground" "rgba(255, 255, 255, 0.06)")
       panelBorderColor = [string](Get-ConfigValue $animation "panelBorderColor" "rgba(255, 255, 255, 0.08)")
@@ -299,7 +307,9 @@ $html = @"
           angle: (moth.angle * Math.PI) / 180,
           chimeNote: moth.chimeNote,
           color: moth.color,
+          entryTime: moth.entryTime,
           erraticness: moth.erraticness,
+          exitTime: moth.exitTime,
           id: moth.id,
           label: moth.label,
           orbitStrokeColor: moth.orbitStrokeColor || config.animation.orbitStrokeColor,
@@ -314,19 +324,82 @@ $html = @"
         }));
       }
 
-      function projectMoth(moth, elapsed, cx, cy) {
-        const angle = moth.angle + elapsed * moth.speed * 0.001;
+      function easeInOut(value) {
+        const t = Math.max(0, Math.min(1, value));
+        return t * t * (3 - 2 * t);
+      }
+
+      function interpolatePoint(from, to, progress) {
+        return {
+          x: from.x + (to.x - from.x) * progress,
+          y: from.y + (to.y - from.y) * progress
+        };
+      }
+
+      function orbitPosition(moth, animationTime, cx, cy) {
+        const activeTime = Math.max(0, animationTime - moth.entryTime);
+        const angle = moth.angle + activeTime * moth.speed;
         const depth = Math.sin(angle);
-        const x = cx + Math.cos(angle) * moth.radius;
-        const y = cy + depth * moth.radius * config.scene.orbitTilt;
-        const depthRatio = (depth + 1) * 0.5;
-        const opacity = config.scene.backgroundMothOpacity +
+        return {
+          depth,
+          x: cx + Math.cos(angle) * moth.radius,
+          y: cy + depth * moth.radius * config.scene.orbitTilt
+        };
+      }
+
+      function projectMoth(moth, animationTime, width, height, cx, cy) {
+        if (animationTime < moth.entryTime || animationTime > moth.exitTime) {
+          return null;
+        }
+
+        const orbit = orbitPosition(moth, animationTime, cx, cy);
+        const entryDuration = Math.min(6, Math.max(2, (moth.exitTime - moth.entryTime) * 0.22));
+        const exitDuration = Math.min(6, Math.max(2, (moth.exitTime - moth.entryTime) * 0.22));
+        const exitStart = Math.max(moth.entryTime, moth.exitTime - exitDuration);
+        let x = orbit.x;
+        let y = orbit.y;
+        let phase = "orbiting";
+
+        if (animationTime < moth.entryTime + entryDuration) {
+          const progress = easeInOut((animationTime - moth.entryTime) / entryDuration);
+          const start = {
+            x: -moth.size * 4,
+            y: orbit.y - height * 0.16
+          };
+          const point = interpolatePoint(start, orbit, progress);
+          x = point.x;
+          y = point.y;
+          phase = "entering";
+        } else if (animationTime > exitStart) {
+          const progress = easeInOut((animationTime - exitStart) / exitDuration);
+          const end = {
+            x: width + moth.size * 4,
+            y: orbit.y - height * 0.12
+          };
+          const point = interpolatePoint(orbit, end, progress);
+          x = point.x;
+          y = point.y;
+          phase = "exiting";
+        }
+
+        const depthRatio = (orbit.depth + 1) * 0.5;
+        let opacity = config.scene.backgroundMothOpacity +
           (config.scene.foregroundMothOpacity - config.scene.backgroundMothOpacity) * depthRatio;
+
+        if (phase === "entering") {
+          opacity *= easeInOut((animationTime - moth.entryTime) / entryDuration);
+        } else if (phase === "exiting") {
+          opacity *= 1 - easeInOut((animationTime - exitStart) / exitDuration);
+          const edgeFadeDistance = Math.max(48, moth.size * 10);
+          const edgeInset = Math.max(moth.size * 2, moth.shadowBlur);
+          opacity *= Math.max(0, Math.min(1, (width - edgeInset - x) / edgeFadeDistance));
+        }
 
         return {
           ...moth,
-          depth,
+          depth: orbit.depth,
           opacity: Math.max(0, Math.min(1, opacity)),
+          phase,
           x,
           y
         };
@@ -343,6 +416,10 @@ $html = @"
       }
 
       function drawMoth(context, moth) {
+        if (moth.opacity <= 0.01) {
+          return;
+        }
+
         context.save();
         context.globalAlpha = moth.opacity;
         context.fillStyle = moth.color;
@@ -434,13 +511,14 @@ $html = @"
         context.restore();
       }
 
-      function drawScene(context, moths, width, height, elapsed) {
+      function drawScene(context, moths, width, height, elapsed, animationTime) {
         context.clearRect(0, 0, width, height);
 
         const cx = width / 2;
         const cy = height * config.scene.centerYRatio;
         const projectedMoths = moths
-          .map((moth) => projectMoth(moth, elapsed, cx, cy))
+          .map((moth) => projectMoth(moth, animationTime, width, height, cx, cy))
+          .filter(Boolean)
           .sort((a, b) => a.depth - b.depth);
 
         drawGround(context, width, height, cx, cy);
@@ -454,6 +532,7 @@ $html = @"
         const canvas = document.getElementById("orbit-canvas");
         const context = canvas.getContext("2d");
         let moths = [];
+        let startTimestamp = null;
 
         function resizeCanvas() {
           const rect = canvas.getBoundingClientRect();
@@ -465,13 +544,26 @@ $html = @"
         }
 
         function tick(timestamp) {
-          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, timestamp);
+          if (startTimestamp === null) {
+            startTimestamp = timestamp;
+          }
+
+          const elapsedSeconds = (timestamp - startTimestamp) / 1000;
+          const animationTime = config.animation.loop
+            ? elapsedSeconds % config.animation.duration
+            : Math.min(config.animation.duration, elapsedSeconds);
+
+          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, timestamp, animationTime);
           requestAnimationFrame(tick);
         }
 
         window.addEventListener("resize", resizeCanvas);
         resizeCanvas();
-        requestAnimationFrame(tick);
+        if (config.animation.autoplay) {
+          requestAnimationFrame(tick);
+        } else {
+          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, 0, 0);
+        }
       }
 
       setupOrbitAnimation();

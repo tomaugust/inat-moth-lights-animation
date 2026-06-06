@@ -20,7 +20,10 @@ Use this shape:
     "backgroundColor": "#101114",
     "textColor": "#f5f1e8",
     "canvasBackground": "radial-gradient(circle at center, #252018 0%, #07080a 100%)",
-    "orbitStrokeColor": "rgba(255, 244, 201, 0.1)"
+    "orbitStrokeColor": "rgba(255, 244, 201, 0.1)",
+    "duration": 80,
+    "autoplay": true,
+    "loop": true
   },
   "scene": {
     "showGround": false,
@@ -53,6 +56,8 @@ Use this shape:
     {
       "id": "moth-001",
       "species": "large-yellow-underwing",
+      "entryTime": 4,
+      "exitTime": 62,
       "angle": 15,
       "radius": 230
     }
@@ -61,6 +66,8 @@ Use this shape:
 ```
 
 `animation` controls whole-file presentation. `scene` controls the optional ground plane and oblique projection. `light` controls the bright trap light. `species` defines shared visual and sound defaults. `moths` defines individual moth observations.
+
+Animation timing fields are measured in seconds. `animation.duration` controls the loop length, and each moth's `entryTime` and `exitTime` control when it flies in, orbits, and flies out.
 
 Useful species-level fields:
 
@@ -76,6 +83,7 @@ Useful moth-level fields:
 
 - `id`: unique moth identifier.
 - `species`: id of the species this moth belongs to.
+- `entryTime` and `exitTime`: seconds on the animation timeline when the moth enters and leaves.
 - `angle`: starting angle in degrees. Optional.
 - `radius`: orbit radius in pixels. Optional; omitted moths are spaced automatically.
 - `size`, `speed`, `color`, `erraticness`, `shadowColor`, `shadowBlur`, and `orbitStrokeColor`: optional overrides for species defaults.

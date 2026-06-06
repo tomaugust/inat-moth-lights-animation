@@ -2,6 +2,10 @@
 
 Create a standalone HTML moth-trap animation from a JSON config file. The generated HTML has all CSS, JavaScript, and animation data embedded, so it can be emailed as an attachment and opened directly in a browser.
 
+View the current example on GitHub Pages:
+
+https://tomaugust.github.io/moth-lights-animation/
+
 ## JSON Format
 
 Use this shape:
@@ -88,6 +92,7 @@ You can then email the generated `.html` file as an attachment.
 - `public\example-config.json` is the example JSON input.
 - `index.html` is the current generated standalone animation.
 - `outputs\example-json-animation.html` is an example generated attachment.
+- `.github\workflows\pages.yml` publishes the example to GitHub Pages.
 - `README.md` and `context.txt` describe the project and workflow.
 
 ## Notes

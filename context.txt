@@ -10,5 +10,6 @@ Project context for moth-lights-animation:
 - Current config implementation uses `animation`, `centerDot`, `species`, and `moths`; moth-level values override species defaults.
 - Next implementation task in `dev-plan.txt`: build the oblique 3D-feel projection.
 - Current generated attachment is `index.html`.
+- GitHub Pages publishes `index.html` as the live example at `https://tomaugust.github.io/moth-lights-animation/` using `.github/workflows/pages.yml`.
 - Planning document: `dev-plan.txt` describes the next major target, including moth lifecycle timing, species metadata, trails, clock/scrub controls, and windchime audio.
 - User decisions from edited plan: final visualization should be full screen with trap/location info top right; animation time should represent real time; species colours are aesthetic; future moth counts/timings will come from real data; audio control should be subtle in the bottom right.

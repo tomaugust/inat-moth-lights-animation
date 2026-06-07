@@ -76,6 +76,8 @@ Animation timing fields are animation seconds. `animation.duration` controls the
 
 The generated animation includes a bottom timeline overlay. The clock updates as the animation plays, and the scrub bar lets viewers move backward and forward manually. Dragging the scrub bar pauses playback and releasing it resumes autoplay when autoplay was active.
 
+When a moth enters, its species name briefly appears on the left with a fine tag line to the moth. Labels fade out quickly to keep the animation uncluttered.
+
 The light is drawn as a hanging bulb: a fixed-size white core, a small dark fixture above it, and a cord fading upward into black. `light.flickerStrength` changes only the glow opacity and radius; it does not resize the bulb circle.
 
 Useful species-level fields:

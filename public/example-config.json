@@ -4,6 +4,13 @@
     "description": "A standalone animation generated from species and moth observations.",
     "backgroundColor": "#101114",
     "textColor": "#f5f1e8",
+    "titleColor": "#f5f1e8",
+    "titleSize": "clamp(1.25rem, 2.4vw, 2.35rem)",
+    "descriptionColor": "#f5f1e8",
+    "descriptionSize": "clamp(0.78rem, 1.1vw, 0.98rem)",
+    "speciesTagColor": "",
+    "speciesTagSize": 13,
+    "speciesTagDuration": 10,
     "panelBackground": "rgba(255, 255, 255, 0.07)",
     "panelBorderColor": "rgba(255, 255, 255, 0.12)",
     "canvasBackground": "radial-gradient(circle at center, #252018 0%, #111114 58%, #07080a 100%)",
@@ -117,6 +124,25 @@
       "radius": 180,
       "erraticness": 0.88,
       "trailLength": 24
+    },
+    {
+      "id": "moth-006",
+      "species": "brimstone-moth",
+      "entryTime": 5,
+      "exitTime": 68,
+      "angle": 60,
+      "size": 5,
+      "speed": 3.8,
+      "erraticness": 1.5
+    },
+    {
+      "id": "moth-007",
+      "species": "silver-y",
+      "entryTime": 8,
+      "exitTime": 80,
+      "angle": 150,
+      "radius": 280,
+      "trailLength": 28
     }
   ]
 }

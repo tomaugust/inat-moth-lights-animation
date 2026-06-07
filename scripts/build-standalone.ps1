@@ -144,13 +144,20 @@ function Read-AnimationConfig {
       canvasBackground = [string](Get-ConfigValue $animation "canvasBackground" "radial-gradient(circle at center, #1b1b1b 0%, #090909 60%)")
       canvasBorderColor = [string](Get-ConfigValue $animation "canvasBorderColor" "rgba(255, 255, 255, 0.12)")
       description = [string](Get-ConfigValue $animation "description" "This standalone animation was generated from a JSON configuration and can be opened directly from the file.")
+      descriptionColor = [string](Get-ConfigValue $animation "descriptionColor" (Get-ConfigValue $animation "textColor" "#f5f5f5"))
+      descriptionSize = [string](Get-ConfigValue $animation "descriptionSize" "clamp(0.78rem, 1.1vw, 0.98rem)")
       duration = ConvertTo-PositiveNumber (Get-ConfigValue $animation "duration" 80) 80 1
       loop = [bool](Get-ConfigValue $animation "loop" $true)
       playbackSpeed = ConvertTo-PositiveNumber (Get-ConfigValue $animation "playbackSpeed" 1) 1 0.01
       startClockTime = [string](Get-ConfigValue $animation "startClockTime" "22:00")
+      speciesTagColor = [string](Get-ConfigValue $animation "speciesTagColor" "")
+      speciesTagDuration = ConvertTo-PositiveNumber (Get-ConfigValue $animation "speciesTagDuration" 5.5) 5.5 0.1
+      speciesTagSize = ConvertTo-PositiveNumber (Get-ConfigValue $animation "speciesTagSize" 13) 13 1
       textColor = [string](Get-ConfigValue $animation "textColor" "#f5f5f5")
       timeLabel = [string](Get-ConfigValue $animation "timeLabel" "Time")
       title = [string](Get-ConfigValue $animation "title" "Orbit Animation")
+      titleColor = [string](Get-ConfigValue $animation "titleColor" (Get-ConfigValue $animation "textColor" "#f5f5f5"))
+      titleSize = [string](Get-ConfigValue $animation "titleSize" "clamp(1.25rem, 2.4vw, 2.35rem)")
     }
     light = @{
       color = [string](Get-ConfigValue $light "color" "#fffdf4")
@@ -188,6 +195,10 @@ $safeBackgroundColor = ConvertTo-HtmlText $config.animation.backgroundColor
 $safeTextColor = ConvertTo-HtmlText $config.animation.textColor
 $safeCanvasBackground = ConvertTo-HtmlText $config.animation.canvasBackground
 $safeCanvasBorderColor = ConvertTo-HtmlText $config.animation.canvasBorderColor
+$safeTitleColor = ConvertTo-HtmlText $config.animation.titleColor
+$safeTitleSize = ConvertTo-HtmlText $config.animation.titleSize
+$safeDescriptionColor = ConvertTo-HtmlText $config.animation.descriptionColor
+$safeDescriptionSize = ConvertTo-HtmlText $config.animation.descriptionSize
 
 $html = @"
 <!DOCTYPE html>
@@ -252,15 +263,16 @@ $html = @"
       }
 
       .animation-heading h1 {
-        font-size: clamp(1.25rem, 2.4vw, 2.35rem);
+        color: $safeTitleColor;
+        font-size: $safeTitleSize;
         font-weight: 650;
         line-height: 1.05;
         margin: 0 0 8px;
       }
 
       .animation-heading p {
-        color: $safeTextColor;
-        font-size: clamp(0.78rem, 1.1vw, 0.98rem);
+        color: $safeDescriptionColor;
+        font-size: $safeDescriptionSize;
         line-height: 1.35;
         margin: 0;
         opacity: 0.76;
@@ -561,6 +573,63 @@ $html = @"
         context.restore();
       }
 
+      function drawEntryLabels(context, moths, animationTime, width, height) {
+        const activeLabels = moths
+          .map((moth) => {
+            const labelDuration = config.animation.speciesTagDuration;
+            const age = animationTime - moth.entryTime;
+            if (age < 0 || age > labelDuration) {
+              return null;
+            }
+
+            const fadeInDuration = Math.min(0.8, labelDuration * 0.25);
+            const fadeOutDuration = Math.min(2.1, labelDuration * 0.38);
+            const fadeOutStart = Math.max(fadeInDuration, labelDuration - fadeOutDuration);
+            const fadeIn = easeInOut(Math.min(1, age / fadeInDuration));
+            const fadeOut = 1 - easeInOut(Math.max(0, (age - fadeOutStart) / fadeOutDuration));
+            return {
+              alpha: Math.max(0, Math.min(1, fadeIn * fadeOut)),
+              color: config.animation.speciesTagColor || moth.color,
+              entryTime: moth.entryTime,
+              id: moth.id,
+              label: moth.speciesName || moth.label
+            };
+          })
+          .filter((label) => label && label.alpha > 0.02)
+          .sort((a, b) => a.entryTime - b.entryTime);
+
+        if (activeLabels.length === 0) {
+          return;
+        }
+
+        context.save();
+        const tagSize = Math.max(1, config.animation.speciesTagSize);
+        context.font = "650 " + tagSize + "px Inter, system-ui, sans-serif";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+
+        const labelX = width * 0.5;
+        const rowHeight = Math.max(18, tagSize * 1.65);
+        const glowTopY = height * config.scene.centerYRatio - config.light.glowRadius - 18;
+        const topPadding = 84;
+        const bottomPadding = 74;
+        const minBottomY = topPadding + (activeLabels.length - 1) * rowHeight;
+        const maxBottomY = height - bottomPadding;
+        const bottomY = Math.max(minBottomY, Math.min(maxBottomY, glowTopY));
+        const firstY = bottomY - (activeLabels.length - 1) * rowHeight;
+
+        activeLabels.forEach((label, index) => {
+          const y = firstY + index * rowHeight;
+          const alpha = label.alpha * 0.9;
+
+          context.globalAlpha = alpha;
+          context.fillStyle = colorWithAlpha(label.color, 0.95);
+          context.fillText(label.label, labelX, y);
+        });
+
+        context.restore();
+      }
+
       function drawGround(context, width, height, cx, cy) {
         const horizonY = Math.max(0, Math.min(height, height * config.scene.horizonYRatio));
 
@@ -715,6 +784,7 @@ $html = @"
         drawLight(context, cx, cy, elapsed);
         projectedMoths.filter((moth) => moth.depth >= 0).forEach((moth) => drawTrail(context, moth));
         projectedMoths.filter((moth) => moth.depth >= 0).forEach((moth) => drawMoth(context, moth));
+        drawEntryLabels(context, projectedMoths, animationTime, width, height);
       }
 
       function parseClockTime(value) {

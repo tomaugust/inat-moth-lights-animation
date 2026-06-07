@@ -6,297 +6,63 @@ Mission
 
 Create a smooth, modern, professional, data-driven animation that is an abstract representation of a moth trap. The final output should remain a standalone HTML file that can be generated from a JSON config and emailed as an attachment.
 
-The animation should feel like a 3D scene rather than a flat top-down orbit. Moths move around a bright central light on a ground plane, entering and exiting over time, with species-driven styling, labels, trails, and sound.
-
 
 Current State
 -------------
 
-- The project currently generates standalone HTML from JSON using `scripts/build-standalone.ps1`.
-- The generated animation is canvas-based and self-contained.
-- The current visual model uses oblique elliptical orbits with depth sorting, so background moths pass behind the light and foreground moths pass in front.
-- The scene has a canvas-drawn ground gradient, elliptical pool of light, bright core, broad glow, and subtle flicker.
-- Moths now have entry and exit times, entering/orbiting/exiting lifecycle states, and a looping animation timeline.
-- Exiting moths now fade before reaching the right edge so their blurred glow is not clipped into a visible line.
-- Moths now use deterministic seeded erratic movement, driven by each moth's `erraticness` setting.
-- Moths now draw short fading trails, driven by each moth's `trailLength` setting.
-- The animation now has a bottom clock and scrub bar overlay, including manual timeline control and pause/resume while dragging.
-- Species names now appear briefly on entry, with fine tag lines connecting labels to moths.
-- The JSON structure separates whole-animation settings, scene settings, light settings, species defaults, and individual moth observations.
-- Next selected implementation step: add windchime audio.
+- The project generates standalone HTML from JSON using `scripts/build-standalone.ps1`.
+- The generated animation is canvas-based, self-contained, and published as `index.html`.
+- The JSON structure separates `animation`, `audio`, `scene`, `light`, `species`, and `moths`.
+- Moth records are observation events only: `id`, `species`, `entryTime`, and `exitTime`.
+- Species records define appearance, motion, trails, glow, and sound.
+- Moths orbit in a low oblique 2D projection with depth sorting, so background moths pass behind the light and foreground moths pass in front.
+- Orbit radius is generated from species speed: faster moths use smaller orbits and slower moths use larger orbits. The maximum orbit radius is reduced so moths stay closer to the light.
+- Moths enter from the left, orbit, exit to the right, and fade before the edge so blurred glows are not clipped.
+- Moth movement uses deterministic erratic motion plus slow species-level orbit drift.
+- Trails use recent projected positions and fade along the path in the moth colour.
+- The centre light is a fixed-size hanging bulb with a dark fixture, cord, broad glow, and glow-only flicker.
+- The ground plane and light pool are implemented, but the example currently uses `scene.showGround: false` for light in black space.
+- The layout is full-screen, with title and description as top-right overlay text.
+- Species entry labels appear near the light glow, stack vertically, fade out, and use the same font family and computed size as the description overlay.
+- The bottom timeline has a centred `HH:MM` clock above a scrub bar. Animation timing is seconds, while the displayed clock maps each animation second to one clock minute.
+- The scrub bar supports manual timeline control and pauses playback while dragging.
+- Web Audio windchime sound is implemented in the standalone HTML. The sound toggle is bottom-right, unlocks browser audio, and immediately mutes all sound when turned off.
+- Species chimes use `chimeNotes` with a warm bell-partial synth. A configurable low background drone can play under the chimes.
 
 
-Target Experience
------------------
+Next Step
+---------
 
-- Abstract moth trap scene viewed from a low, oblique angle, almost horizontal.
-- Bright pure-white light in the centre, sitting on a ground plane.
-- Ground plane is lighter in the foreground and darker in the background to suggest depth.
-- The central light has an extended glow, with subtle flicker like a candle, but brighter and cleaner.
-- Moths orbit in the same direction around the light.
-- Moths pass in front of the light in the foreground and behind the light in the background.
-- Moths leave short fading trails in their own colour.
-- Moths enter from the left at configured entry times, orbit, then exit to the right at configured exit times.
-- A ticking clock at the bottom shows animation time.
-- A scrub bar at the bottom lets the user move backward and forward manually.
-- The animation auto-plays from beginning to end and loops.
-- Species names appear briefly on the left as moths enter, with a line connecting the label to the moth.
-- Windchime-style background audio plays, with chime notes tied to moth species and triggered semi-randomly.
+1. Polish and test. [NEXT]
+   - Open `index.html` directly from disk and check visual playback.
+   - Check GitHub Pages rendering after push.
+   - Check mobile layout and scrub behaviour.
+   - Check sound toggle, immediate mute, drone level, and chime pacing in a browser.
+   - Check that the generated file has no external runtime dependencies.
 
-
-Visual Design Direction
------------------------
-
-- Keep the interface clean and quiet: no heavy controls, no decorative panels beyond what is needed.
-- Use a dark, restrained palette with warm light near the trap.
-- Use perspective, scale, blur, opacity, and draw order to create depth.
-- Larger, moths move slower, more smootly, and have lower pitch les frequent chimes; smaller moths move faster, more irratically, and have more frequent high pitched chimes.
-- Foreground trails should appear more visible than background trails.
-- The scene should read as artistic, abtract, desgin communication, not a cartoon or game.
+2. Consider hover interaction.
+   - Pause on hover.
+   - Highlight the focal moth.
+   - Fade non-focal moths.
+   - Show a small species/time popout.
 
 
-3D Illusion Model
------------------
-
-Use a 2D canvas projection rather than true 3D at first. This keeps the standalone file simple and email-friendly.
-
-Coordinate model:
-
-- Treat each moth orbit as an ellipse in screen space.
-- World orbit angle controls logical position around the light.
-- Horizontal position uses `cos(angle)`.
-- Depth position uses `sin(angle)`.
-- Projected vertical position is compressed to create an oblique view.
-- Foreground is when `sin(angle)` is positive.
-- Background is when `sin(angle)` is negative.
-
-Rendering rules:
-
-- Sort moths by depth each frame.
-- Draw background moths and their trails before the light.
-- Draw the ground glow and light.
-- Draw foreground moths and their trails after the light.
-- Don't scale moth according to depth
-- Adjust opacity by depth so background moths sit behind the glow.
-
-
-Light And Ground
+Future Data Work
 ----------------
 
-The centre light should become a visual anchor:
-
-- White core.
-- Broad radial glow that spills over the ground plane.
-- Subtle flicker driven by low-amplitude noise or a sine wave plus randomness.
-- Glow expands slightly during flicker, not just brightness.
-- The glow remains slightly warm white.
-
-The ground plane should be abstract:
-
-- Full canvas background, no framed card feeling inside the animation.
-- Foreground slightly lighter and warmer.
-- Background darker and cooler.
-- Optional elliptical pool of light around the centre.
-- Optional faint horizon darkness, but avoid making it look like a landscape illustration.
-
-
-Moth Behaviour
---------------
-
-Each moth should have:
-
-- `id`
-- `species`
-- `entryTime`
-- `exitTime`
-- `size`
-- `speed`
-- `color`
-- `erraticness`
-- Optional `orbitRadius`
-- Optional `orbitTilt`
-- Optional `startAngle`
-- Optional `trailLength`
-
-Lifecycle states:
-
-- `notStarted`: before `entryTime`.
-- `entering`: flies from the left into its orbit.
-- `orbiting`: moves around the light.
-- `exiting`: leaves orbit and flies to the right.
-- `finished`: after `exitTime`.
-
-Erraticness:
-
-- Adds small deviations to angle, radius, and vertical position.
-- Adds slow random-walk drift to orbit inclination and ascending-node longitude so each moth's orbit slowly changes over time.
-- Should feel organic but not chaotic.
-- Use deterministic seeded noise per moth if possible, so the same JSON generates the same animation.
-- Erraticness should be configurable from `0` for smooth orbit to higher values for irregular flight.
-
-Trails:
-
-- Store recent projected positions per moth.
-- Draw line behind the moth.
-- Trail colour matches moth colour.
-- Trail alpha fades toward older points.
-- Trail length is configurable globally and optionally per species.
-
-
-Species Model
--------------
-
-The JSON should define species separately from moth observations. This avoids repeating colour and sound settings for every moth.
-
-Suggested shape:
-
-```json
-{
-  "species": [
-    {
-      "id": "large-yellow-underwing",
-      "name": "Large Yellow Underwing",
-      "color": "#d7b46a",
-      "chimeNote": "E4",
-      "size": 8,
-      "speed": 1.1,
-      "erraticness": 0.35
-    }
-  ],
-  "moths": [
-    {
-      "id": "moth-001",
-      "species": "large-yellow-underwing",
-      "entryTime": 12,
-      "exitTime": 85,
-
-    }
-  ]
-}
-```
-
-Moth-level values should override species defaults when present.
-
-
-Labels
-------
-
-When a moth enters:
-
-- Show the species name on the left side.
-- Draw a thin tag line from the label to the moth.
-- Label fades in quickly, remains briefly, then fades out.
-- Avoid label collisions by stacking recent labels vertically.
-- Keep text small and crisp.
-
-The species label should not remain for the whole orbit, otherwise the animation will become cluttered.
-
-
-Clock And Scrub Bar
--------------------
-
-Hover interaction:
-
-- When the pointer rolls over a moth, pause the animation timeline immediately.
-- The hovered moth becomes the focal moth: increase its opacity and visual emphasis.
-- All non-focal moths become more transparent and recede visually.
-- Show a small popout panel near the moth that fades in with details such as species name, time active, and maybe a short note.
-- Hide the popout and resume normal playback when the pointer leaves.
-- Keep the hover effect subtle and avoid disrupting the overall scene.
-
-Clock:
-
-- Display at the bottom of the animation.
-- Shows the current animation time.
-- Format can be configured, but start with `HH:MM`
-- Tick should be visually subtle.
-
-Scrub bar:
-
-- Allows manual movement backward and forward.
-- Dragging pauses auto-play while the pointer is down.
-- Releasing resumes auto-play unless a future setting disables that.
-- The whole animation loops from `duration` back to zero.
-
-JSON animation-level timing fields:
-
-- `duration`
-- `timeLabel`
-- `startClockTime`
-- `loop`
-- `autoplay`
-
-
-Audio Plan
-----------
-
-Audio should be generated with the Web Audio API inside the standalone HTML rather than loading external sound files.
-
-Important browser constraint:
-
-- Most browsers block autoplaying audio until the user interacts with the page.
-- The animation can auto-play visually, but windchime audio may need a small unobtrusive sound toggle or "enable sound" button.
-
-Windchime behaviour:
-
-- Each species has one or more notes.
-- Notes are triggered semi-randomly while at least one moth of that species is active.
-- Use soft sine/triangle tones, long decay, and light reverb-like delay if feasible.
-- Keep volume low and tasteful.
-- Sound should never be essential to understanding the animation.
-
-
-Proposed JSON Shape
--------------------
-
-Top-level sections:
-
-- `animation`: title, duration, autoplay, loop, background, timing, scrub bar, clock.
-- `scene`: camera angle, perspective strength, ground colours, light pool.
-- `light`: size, colour, glow, flicker.
-- `species`: species metadata, colours, notes.
-- `moths`: individual moth events and motion settings.
-- `audio`: enabled by default, volume, chime probability, note decay.
-
-
-Implementation Phases
----------------------
-
-1. Add windchime audio. [NEXT]
-   - Web Audio API synth.
-   - Species-to-note mapping.
-   - User gesture handling for audio unlock.
-   - Low-volume, non-intrusive playback.
-
-2. Polish and test.
-   - Check generated file opens directly.
-   - Check no external dependencies.
-   - Check mobile layout.
-   - Check scrub behaviour.
-   - Check audio fallback when blocked.
-
-
-Open Questions
---------------
-
-- Should animation time represent real clock time from the moth trap, or just elapsed animation time?
-   - Real time
-- Should species colours be scientifically meaningful, aesthetically chosen, or both?
-   - aesthetically
-- Should moth counts and event timings come from real trap observation data later?
-   - This will come from real dat later
-- Should the final output include a visible title/description panel, or should the animation itself occupy the full first view?
-   - The end visualisation should be full screen. Data about trap location title, etc can be shown top right
-- Should audio be enabled by a visible control, or should the animation remain silent unless the user clicks a small sound icon?
-   - There should be a subtle audio control in teh bottom right
+- Future moth counts and timings should come from real trap observation data.
+- Animation time should represent real clock time from the trap.
+- Species colours are currently aesthetic.
+- Trap/location information can be shown in the top-right overlay.
 
 
 Success Criteria
 ----------------
 
 - A generated HTML file opens directly from disk and plays without a server.
-- The scene reads as a moth trap: bright light, ground plane, moths circling.
+- The scene reads as a moth trap: bright light, moths circling, and a clean abstract presentation.
 - The motion feels smooth, alive, and not mechanical.
-- The JSON can control global scene properties, species properties, and individual moth behaviour.
-- The animation remains professional and uncluttered even with multiple moths active.
+- The JSON controls global scene properties, species properties, audio settings, and individual moth timing.
+- The animation remains professional and uncluttered with multiple moths active.
 - Manual scrubbing works cleanly and the animation loops reliably.
+- Windchime audio can be enabled by the viewer, remains warm and subtle, and mutes immediately when disabled.

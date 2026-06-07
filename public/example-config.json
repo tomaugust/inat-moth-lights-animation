@@ -22,6 +22,16 @@
     "autoplay": true,
     "loop": true
   },
+  "audio": {
+    "enabled": true,
+    "volume": 0.12,
+    "chimeProbability": 0.26,
+    "noteDecay": 8,
+    "minInterval": 1.1,
+    "droneEnabled": true,
+    "droneNotes": ["C2", "G2", "C3"],
+    "droneVolume": 40
+  },
   "scene": {
     "showGround": false,
     "centerYRatio": 0.56,
@@ -50,11 +60,14 @@
       "id": "large-yellow-underwing",
       "name": "Large Yellow Underwing",
       "color": "#d7b46a",
-      "chimeNote": "E3",
+      "chimeNote": "C3",
+      "chimeNotes": ["C3", "G3", "E4"],
       "size": 7,
       "speed": 0.85,
       "erraticness": 3,
-      "trailLength": 18,
+      "inclinationDriftSpeed": 0.1,
+      "nodeDriftSpeed": 0.1,
+      "trailLength": 10,
       "shadowColor": "rgba(255, 224, 151, 0.24)",
       "shadowBlur": 16
     },
@@ -62,11 +75,14 @@
       "id": "silver-y",
       "name": "Silver Y",
       "color": "#b8c5d8",
-      "chimeNote": "A4",
+      "chimeNote": "E4",
+      "chimeNotes": ["D4", "E4", "G4"],
       "size": 6,
       "speed": 1.35,
       "erraticness": 2.5,
-      "trailLength": 20,
+      "inclinationDriftSpeed": 0.2,
+      "nodeDriftSpeed": 0.2,
+      "trailLength": 10,
       "shadowColor": "rgba(218, 235, 255, 0.2)",
       "shadowBlur": 12
     },
@@ -74,11 +90,14 @@
       "id": "brimstone-moth",
       "name": "Brimstone Moth",
       "color": "#e2d56f",
-      "chimeNote": "C5",
+      "chimeNote": "G4",
+      "chimeNotes": ["G4", "A4", "C5"],
       "size": 3,
-      "speed": 5,
+      "speed": 2,
       "erraticness": 2,
-      "trailLength": 22,
+      "inclinationDriftSpeed": 0.5,
+      "nodeDriftSpeed": 0.5,
+      "trailLength": 10,
       "shadowColor": "rgba(255, 244, 172, 0.2)",
       "shadowBlur": 9
     }
@@ -88,61 +107,43 @@
       "id": "moth-001",
       "species": "large-yellow-underwing",
       "entryTime": 4,
-      "exitTime": 62,
-      "angle": 15,
-      "radius": 230
+      "exitTime": 62
     },
     {
       "id": "moth-002",
       "species": "silver-y",
       "entryTime": 10,
-      "exitTime": 70,
-      "angle": 95
+      "exitTime": 70
     },
     {
       "id": "moth-003",
       "species": "brimstone-moth",
       "entryTime": 18,
-      "exitTime": 74,
-      "angle": 185
+      "exitTime": 74
     },
     {
       "id": "moth-004",
       "species": "silver-y",
       "entryTime": 25,
-      "exitTime": 58,
-      "angle": 275,
-      "size": 10,
-      "speed": 1.1
+      "exitTime": 58
     },
     {
       "id": "moth-005",
       "species": "large-yellow-underwing",
       "entryTime": 34,
-      "exitTime": 78,
-      "angle": 330,
-      "radius": 180,
-      "erraticness": 0.88,
-      "trailLength": 24
+      "exitTime": 78
     },
     {
       "id": "moth-006",
       "species": "brimstone-moth",
       "entryTime": 5,
-      "exitTime": 68,
-      "angle": 60,
-      "size": 5,
-      "speed": 3.8,
-      "erraticness": 1.5
+      "exitTime": 68
     },
     {
       "id": "moth-007",
       "species": "silver-y",
       "entryTime": 8,
-      "exitTime": 80,
-      "angle": 150,
-      "radius": 280,
-      "trailLength": 28
+      "exitTime": 80
     }
   ]
 }

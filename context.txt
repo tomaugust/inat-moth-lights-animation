@@ -6,12 +6,15 @@ Project context for moth-lights-animation:
 - Renderer: Canvas.
 - Target behavior: data-driven moths orbit a bright trap light in an oblique 3D-feel scene.
 - Config source: `public/example-config.json` by default, or any JSON file passed to `scripts/build-standalone.ps1`.
-- Planned config shape: `animation`, `scene`, `light`, `species`, `moths`, and `audio`.
-- Current config implementation uses `animation`, `scene`, `light`, `species`, and `moths`; moth-level values override species defaults.
-- Current visual implementation uses elliptical oblique orbits, depth sorting, foreground/background opacity cues, broad central glow, glow-only light flicker, a fixed-size white bulb core, a hanging cord/fixture, deterministic erratic moth movement, fading moth trails, brief species entry labels with tag lines, moth entry/orbit/exit lifecycle states, a bottom `HH:MM` clock/scrub overlay, and a looping animation timeline with configurable `animation.playbackSpeed`. Animation timing values drive playback as seconds, but the displayed clock represents each animation second as one clock minute. Canvas-drawn ground and an elliptical light pool are implemented but `scene.showGround` is currently false in the example, returning the visual to light in black space.
+- Current config implementation uses `animation`, `audio`, `scene`, `light`, `species`, and `moths`.
+- Species records define moth appearance, motion, trail, glow, and sound settings. Moth records are observation records only: `id`, `species`, `entryTime`, and `exitTime`.
+- Current visual implementation uses elliptical oblique orbits, depth sorting, foreground/background opacity cues, broad central glow, glow-only light flicker, a fixed-size white bulb core, a hanging cord/fixture, deterministic erratic moth movement, slow species-level orbit drift, fading moth trails, centred configurable species entry tags, moth entry/orbit/exit lifecycle states, a bottom `HH:MM` clock above a scrub bar, and a looping animation timeline with configurable `animation.playbackSpeed`. Animation timing values drive playback as seconds, but the displayed clock represents each animation second as one clock minute. Canvas-drawn ground and an elliptical light pool are implemented but `scene.showGround` is currently false in the example, returning the visual to light in black space.
+- Orbit radius is assigned automatically by the generator from species speed: faster moths get smaller orbits, slower moths get larger orbits. Maximum orbit radius is capped at 70% of the previous viewport-derived radius.
+- Species labels use the same font family and computed font size as the description overlay.
+- Web Audio windchime sound is implemented inside the standalone HTML. A subtle bottom-right button unlocks/toggles audio, species chimes trigger semi-randomly from `chimeNotes` while moths of that species are active, and a configurable low drone can play beneath them. Turning sound off immediately cuts chimes, delay tail, and drone.
 - Current generated layout is a full-screen animation with `animation.title` and `animation.description` shown as top-right overlay text.
-- Next implementation task in `dev-plan.txt`: add windchime audio.
+- Next implementation task in `dev-plan.txt`: polish and test the generated standalone animation.
 - Current generated attachment is `index.html`.
 - GitHub Pages publishes `index.html` as the live example at `https://tomaugust.github.io/moth-lights-animation/` using `.github/workflows/pages.yml`.
-- Planning document: `dev-plan.txt` describes the next major target, including moth lifecycle timing, species metadata, trails, clock/scrub controls, and windchime audio.
+- Planning document: `dev-plan.txt` now tracks polish/testing as the next step, with hover interaction as a possible future enhancement.
 - User decisions from edited plan: final visualization should be full screen with trap/location info top right; animation time should represent real time; species colours are aesthetic; future moth counts/timings will come from real data; audio control should be subtle in the bottom right.

@@ -70,6 +70,7 @@ function Read-AnimationConfig {
   $animation = Get-ConfigValue $rawConfig "animation" ([pscustomobject]@{})
   $light = Get-ConfigValue $rawConfig "light" (Get-ConfigValue $rawConfig "centerDot" ([pscustomobject]@{}))
   $scene = Get-ConfigValue $rawConfig "scene" ([pscustomobject]@{})
+  $audio = Get-ConfigValue $rawConfig "audio" ([pscustomobject]@{})
   $species = @(Get-ConfigValue $rawConfig "species" @())
   $moths = @(Get-ConfigValue $rawConfig "moths" @())
 
@@ -89,12 +90,22 @@ function Read-AnimationConfig {
       throw "Every species must have a non-empty id."
     }
 
+    $rawChimeNotes = @(Get-ConfigValue $speciesRecord "chimeNotes" @())
+    $chimeNotes = @($rawChimeNotes | ForEach-Object { [string]$_ } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    $fallbackChimeNote = [string](Get-ConfigValue $speciesRecord "chimeNote" "")
+    if ($chimeNotes.Count -lt 1 -and -not [string]::IsNullOrWhiteSpace($fallbackChimeNote)) {
+      $chimeNotes = @($fallbackChimeNote)
+    }
+
     $normalized = @{
-      chimeNote = [string](Get-ConfigValue $speciesRecord "chimeNote" "")
+      chimeNote = $fallbackChimeNote
+      chimeNotes = $chimeNotes
       color = [string](Get-ConfigValue $speciesRecord "color" "#000000")
       erraticness = ConvertTo-PositiveNumber (Get-ConfigValue $speciesRecord "erraticness" 0) 0 0
       id = $speciesId
+      inclinationDriftSpeed = ConvertTo-PositiveNumber (Get-ConfigValue $speciesRecord "inclinationDriftSpeed" 0) 0 0
       name = [string](Get-ConfigValue $speciesRecord "name" $speciesId)
+      nodeDriftSpeed = ConvertTo-PositiveNumber (Get-ConfigValue $speciesRecord "nodeDriftSpeed" 0) 0 0
       shadowBlur = ConvertTo-PositiveNumber (Get-ConfigValue $speciesRecord "shadowBlur" 12) 12 0
       shadowColor = [string](Get-ConfigValue $speciesRecord "shadowColor" "rgba(255, 255, 255, 0.12)")
       size = ConvertTo-PositiveNumber (Get-ConfigValue $speciesRecord "size" 10) 10 2
@@ -118,22 +129,25 @@ function Read-AnimationConfig {
     $entryTime = ConvertTo-PositiveNumber (Get-ConfigValue $moth "entryTime" $defaultEntryTime) $defaultEntryTime 0
     $exitTime = ConvertTo-PositiveNumber (Get-ConfigValue $moth "exitTime" ($entryTime + 40)) ($entryTime + 40) $entryTime
     $normalizedMoths += @{
-      angle = ConvertTo-PositiveNumber (Get-ConfigValue $moth "angle" (($index * 360) / $moths.Count)) (($index * 360) / $moths.Count) 0
-      chimeNote = [string](Get-ConfigValue $moth "chimeNote" $speciesDefaults.chimeNote)
-      color = [string](Get-ConfigValue $moth "color" $speciesDefaults.color)
+      angle = ($index * 360) / $moths.Count
+      chimeNote = $speciesDefaults.chimeNote
+      chimeNotes = $speciesDefaults.chimeNotes
+      color = $speciesDefaults.color
       entryTime = $entryTime
-      erraticness = ConvertTo-PositiveNumber (Get-ConfigValue $moth "erraticness" $speciesDefaults.erraticness) $speciesDefaults.erraticness 0
+      erraticness = $speciesDefaults.erraticness
       exitTime = $exitTime
       id = [string](Get-ConfigValue $moth "id" "moth-$($index + 1)")
-      label = [string](Get-ConfigValue $moth "label" $speciesDefaults.name)
-      radius = ConvertTo-PositiveNumber (Get-ConfigValue $moth "radius" 0) 0 0
-      shadowBlur = ConvertTo-PositiveNumber (Get-ConfigValue $moth "shadowBlur" $speciesDefaults.shadowBlur) $speciesDefaults.shadowBlur 0
-      shadowColor = [string](Get-ConfigValue $moth "shadowColor" $speciesDefaults.shadowColor)
-      size = ConvertTo-PositiveNumber (Get-ConfigValue $moth "size" $speciesDefaults.size) $speciesDefaults.size 2
+      inclinationDriftSpeed = $speciesDefaults.inclinationDriftSpeed
+      label = $speciesDefaults.name
+      nodeDriftSpeed = $speciesDefaults.nodeDriftSpeed
+      radius = 0
+      shadowBlur = $speciesDefaults.shadowBlur
+      shadowColor = $speciesDefaults.shadowColor
+      size = $speciesDefaults.size
       species = $speciesId
       speciesName = $speciesDefaults.name
-      speed = ConvertTo-PositiveNumber (Get-ConfigValue $moth "speed" $speciesDefaults.speed) $speciesDefaults.speed 0.01
-      trailLength = ConvertTo-PositiveNumber (Get-ConfigValue $moth "trailLength" $speciesDefaults.trailLength) $speciesDefaults.trailLength 1
+      speed = $speciesDefaults.speed
+      trailLength = $speciesDefaults.trailLength
     }
   }
 
@@ -168,6 +182,16 @@ function Read-AnimationConfig {
       haloColor = [string](Get-ConfigValue $light "haloColor" "rgba(255, 244, 201, 0.22)")
       shadowBlur = ConvertTo-PositiveNumber (Get-ConfigValue $light "shadowBlur" 36) 36 0
       size = ConvertTo-PositiveNumber (Get-ConfigValue $light "size" 15) 15 2
+    }
+    audio = @{
+      chimeProbability = ConvertTo-PositiveNumber (Get-ConfigValue $audio "chimeProbability" 0.3) 0.3 0
+      droneEnabled = [bool](Get-ConfigValue $audio "droneEnabled" $false)
+      droneNotes = @(Get-ConfigValue $audio "droneNotes" @("D2", "A2", "D3")) | ForEach-Object { [string]$_ }
+      droneVolume = ConvertTo-PositiveNumber (Get-ConfigValue $audio "droneVolume" 0.035) 0.035 0
+      enabled = [bool](Get-ConfigValue $audio "enabled" $true)
+      minInterval = ConvertTo-PositiveNumber (Get-ConfigValue $audio "minInterval" 0.85) 0.85 0.05
+      noteDecay = ConvertTo-PositiveNumber (Get-ConfigValue $audio "noteDecay" 2.8) 2.8 0.1
+      volume = ConvertTo-PositiveNumber (Get-ConfigValue $audio "volume" 0.12) 0.12 0
     }
     moths = $normalizedMoths
     scene = @{
@@ -279,11 +303,11 @@ $html = @"
       }
 
       .timeline-control {
-        align-items: center;
+        align-items: stretch;
         bottom: clamp(14px, 2.4vw, 28px);
         display: grid;
-        gap: 12px;
-        grid-template-columns: auto minmax(160px, 520px);
+        gap: 6px;
+        grid-template-columns: 1fr;
         left: 50%;
         max-width: calc(100vw - 32px);
         position: absolute;
@@ -293,12 +317,12 @@ $html = @"
       }
 
       .time-readout {
-        font-size: 0.82rem;
+        font-size: clamp(1rem, 1.7vw, 1.45rem);
         font-variant-numeric: tabular-nums;
+        font-weight: 600;
         letter-spacing: 0;
-        min-width: 4.8rem;
         opacity: 0.82;
-        text-align: right;
+        text-align: center;
         white-space: nowrap;
       }
 
@@ -309,6 +333,95 @@ $html = @"
         width: 100%;
       }
 
+      .sound-toggle {
+        align-items: center;
+        background: rgba(10, 10, 12, 0.36);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 999px;
+        bottom: clamp(16px, 2.4vw, 30px);
+        cursor: pointer;
+        display: flex;
+        height: 38px;
+        justify-content: center;
+        opacity: 0.78;
+        padding: 0;
+        position: absolute;
+        right: clamp(16px, 2.4vw, 30px);
+        transition: opacity 160ms ease, border-color 160ms ease, background 160ms ease;
+        width: 38px;
+        z-index: 3;
+      }
+
+      .sound-toggle span {
+        inset: 0;
+        position: absolute;
+      }
+
+      .sound-toggle:hover,
+      .sound-toggle:focus-visible {
+        background: rgba(18, 18, 22, 0.72);
+        border-color: rgba(255, 255, 255, 0.42);
+        opacity: 1;
+        outline: none;
+      }
+
+      .sound-toggle::before {
+        border-bottom: 7px solid transparent;
+        border-right: 11px solid rgba(245, 241, 232, 0.86);
+        border-top: 7px solid transparent;
+        content: "";
+        height: 0;
+        left: 9px;
+        margin-left: 0;
+        position: absolute;
+        top: 11px;
+        width: 0;
+      }
+
+      .sound-toggle::after {
+        border: 2px solid rgba(245, 241, 232, 0.86);
+        border-bottom-color: transparent;
+        border-left-color: transparent;
+        border-radius: 50%;
+        content: "";
+        height: 9px;
+        left: 17px;
+        margin-left: 0;
+        position: absolute;
+        top: 12px;
+        transform: rotate(45deg);
+        width: 9px;
+      }
+
+      .sound-toggle:not(.is-on)::after {
+        display: none;
+      }
+
+      .sound-toggle span::before,
+      .sound-toggle span::after {
+        background: rgba(245, 241, 232, 0.86);
+        border-radius: 999px;
+        content: "";
+        height: 2px;
+        opacity: 0;
+        position: absolute;
+        right: 8px;
+        top: 8px;
+        transform-origin: center;
+        transition: opacity 120ms ease;
+        width: 14px;
+      }
+
+      .sound-toggle:not(.is-on) span::before {
+        opacity: 1;
+        transform: rotate(45deg);
+      }
+
+      .sound-toggle:not(.is-on) span::after {
+        opacity: 1;
+        transform: rotate(-45deg);
+      }
+
       @media (max-width: 620px) {
         .animation-heading {
           max-width: calc(100vw - 32px);
@@ -317,12 +430,11 @@ $html = @"
         }
 
         .timeline-control {
-          grid-template-columns: 1fr;
           gap: 4px;
         }
 
         .time-readout {
-          text-align: left;
+          text-align: center;
         }
       }
     </style>
@@ -339,6 +451,7 @@ $html = @"
           <output class="time-readout" id="time-readout">00:00</output>
           <input id="timeline-scrubber" type="range" min="0" max="80" step="0.01" value="0" aria-label="Scrub animation time" />
         </div>
+        <button class="sound-toggle" id="sound-toggle" type="button" aria-label="Enable sound"><span aria-hidden="true"></span></button>
       </section>
     </main>
 
@@ -347,11 +460,21 @@ $html = @"
 
       function createMoths(config, width, height) {
         const maxMothSize = config.moths.reduce((largest, moth) => Math.max(largest, moth.size), 0);
-        const usableRadius = Math.max(32, Math.min(width, height) * 0.48 - maxMothSize - 18);
+        const usableRadius = Math.max(32, (Math.min(width, height) * 0.48 - maxMothSize - 18) * 0.7);
         const minRadius = Math.min(72, usableRadius);
-        const autoStep = config.moths.length > 1 ? Math.max(0, (usableRadius - minRadius) / (config.moths.length - 1)) : 0;
+        const speeds = config.moths.map((moth) => moth.speed);
+        const minSpeed = Math.min(...speeds);
+        const maxSpeed = Math.max(...speeds);
+        const speedRange = Math.max(0.001, maxSpeed - minSpeed);
+        const radiusRange = Math.max(0, usableRadius - minRadius);
 
-        return config.moths.map((moth, index) => ({
+        return config.moths.map((moth, index) => {
+          const speedRatio = (moth.speed - minSpeed) / speedRange;
+          const baseRadius = minRadius + (1 - speedRatio) * radiusRange;
+          const offset = (seededUnit(hashString(moth.id || moth.species || String(index)), 7) - 0.5) * radiusRange * 0.08;
+          const radius = Math.max(minRadius, Math.min(usableRadius, baseRadius + offset));
+
+          return {
           angle: (moth.angle * Math.PI) / 180,
           chimeNote: moth.chimeNote,
           color: moth.color,
@@ -359,9 +482,11 @@ $html = @"
           erraticness: moth.erraticness,
           exitTime: moth.exitTime,
           id: moth.id,
+          inclinationDriftSpeed: moth.inclinationDriftSpeed,
           label: moth.label,
+          nodeDriftSpeed: moth.nodeDriftSpeed,
           noiseSeed: hashString(moth.id || moth.species || String(index)),
-          radius: moth.radius > 0 ? Math.min(moth.radius, usableRadius) : Math.min(usableRadius, minRadius + index * autoStep),
+          radius,
           shadowBlur: moth.shadowBlur,
           shadowColor: moth.shadowColor,
           size: moth.size,
@@ -369,7 +494,8 @@ $html = @"
           speciesName: moth.speciesName,
           speed: moth.speed,
           trailLength: moth.trailLength
-        }));
+          };
+        });
       }
 
       function easeInOut(value) {
@@ -416,13 +542,24 @@ $html = @"
         const angleJitter = erraticWave(moth, activeTime, 3, 1.9) * erraticness * 0.22;
         const radiusJitter = erraticWave(moth, activeTime, 11, 1.35) * moth.radius * erraticness * 0.08;
         const verticalJitter = erraticWave(moth, activeTime, 23, 2.3) * moth.radius * erraticness * 0.065;
+        const inclinationDrift = moth.inclinationDriftSpeed > 0
+          ? erraticWave(moth, activeTime * moth.inclinationDriftSpeed, 41, 0.45) * erraticness * 0.08
+          : 0;
+        const nodeDrift = moth.nodeDriftSpeed > 0
+          ? erraticWave(moth, activeTime * moth.nodeDriftSpeed, 59, 0.34) * erraticness * 0.26
+          : 0;
         const angle = moth.angle + activeTime * moth.speed + angleJitter;
         const radius = Math.max(12, moth.radius + radiusJitter);
+        const orbitTilt = Math.max(0.08, Math.min(0.9, config.scene.orbitTilt + inclinationDrift));
         const depth = Math.sin(angle);
+        const localX = Math.cos(angle) * radius;
+        const localY = depth * radius * orbitTilt;
+        const nodeCos = Math.cos(nodeDrift);
+        const nodeSin = Math.sin(nodeDrift);
         return {
           depth,
-          x: cx + Math.cos(angle) * radius,
-          y: cy + depth * radius * config.scene.orbitTilt + verticalJitter
+          x: cx + localX * nodeCos - localY * nodeSin,
+          y: cy + localX * nodeSin + localY * nodeCos + verticalJitter
         };
       }
 
@@ -487,18 +624,33 @@ $html = @"
 
       function buildTrail(moth, animationTime, width, height, cx, cy) {
         const points = [];
-        const sampleCount = Math.max(2, Math.round(moth.trailLength || 2));
-        const sampleStep = 0.08;
+        const targetDistance = Math.max(moth.size * 5, (moth.trailLength || 2) * 18);
+        const sampleStep = 0.025;
+        const maxLookback = Math.max(0.5, (moth.trailLength || 2) * 0.22);
+        const maxSamples = Math.ceil(maxLookback / sampleStep);
+        let distance = 0;
+        let previousPoint = null;
 
-        for (let index = sampleCount - 1; index >= 0; index -= 1) {
+        for (let index = 0; index <= maxSamples; index += 1) {
           const sampleTime = animationTime - index * sampleStep;
           const point = projectMoth(moth, sampleTime, width, height, cx, cy, false);
+
           if (point && point.opacity > 0.01) {
             points.push(point);
+
+            if (previousPoint) {
+              distance += Math.hypot(previousPoint.x - point.x, previousPoint.y - point.y);
+            }
+
+            previousPoint = point;
+          }
+
+          if (points.length >= 2 && distance >= targetDistance) {
+            break;
           }
         }
 
-        return points;
+        return points.reverse();
       }
 
       function drawTrail(context, moth) {
@@ -506,30 +658,30 @@ $html = @"
           return;
         }
 
-        const first = moth.trail[0];
-        const last = moth.trail[moth.trail.length - 1];
-        const trailGradient = context.createLinearGradient(first.x, first.y, last.x, last.y);
-        trailGradient.addColorStop(0, "transparent");
-        trailGradient.addColorStop(0.28, colorWithAlpha(moth.color, 0.08));
-        trailGradient.addColorStop(1, colorWithAlpha(moth.color, Math.min(0.62, last.opacity * 0.62)));
-
         context.save();
-        context.globalAlpha = Math.max(0, Math.min(1, last.opacity));
         context.lineCap = "round";
         context.lineJoin = "round";
-        context.strokeStyle = trailGradient;
-        context.lineWidth = Math.max(1.2, moth.size * 0.42);
-        context.beginPath();
-        context.moveTo(first.x, first.y);
+        context.globalAlpha = 1;
 
-        for (let index = 1; index < moth.trail.length - 1; index += 1) {
+        const baseWidth = Math.max(1.2, moth.size * 0.42);
+        const segmentCount = moth.trail.length - 1;
+
+        for (let index = 1; index < moth.trail.length; index += 1) {
+          const previous = moth.trail[index - 1];
           const point = moth.trail[index];
-          const next = moth.trail[index + 1];
-          context.quadraticCurveTo(point.x, point.y, (point.x + next.x) * 0.5, (point.y + next.y) * 0.5);
+          const progress = index / segmentCount;
+          const fade = easeInOut(progress);
+          const opacity = Math.min(0.58, point.opacity * 0.58) * fade;
+          const width = baseWidth * (0.45 + fade * 0.55);
+
+          context.strokeStyle = colorWithAlpha(moth.color, opacity);
+          context.lineWidth = width;
+          context.beginPath();
+          context.moveTo(previous.x, previous.y);
+          context.lineTo(point.x, point.y);
+          context.stroke();
         }
 
-        context.lineTo(last.x, last.y);
-        context.stroke();
         context.restore();
       }
 
@@ -603,8 +755,10 @@ $html = @"
         }
 
         context.save();
-        const tagSize = Math.max(1, config.animation.speciesTagSize);
-        context.font = "650 " + tagSize + "px Inter, system-ui, sans-serif";
+        const descriptionElement = document.querySelector(".animation-heading p");
+        const descriptionStyle = descriptionElement ? window.getComputedStyle(descriptionElement) : null;
+        const tagSize = descriptionStyle ? parseFloat(descriptionStyle.fontSize) : Math.max(1, config.animation.speciesTagSize);
+        context.font = "400 " + tagSize + "px Inter, system-ui, sans-serif";
         context.textAlign = "center";
         context.textBaseline = "middle";
 
@@ -819,11 +973,302 @@ $html = @"
         return Math.max(0, Math.min(config.animation.duration, animationTime));
       }
 
+      function noteToFrequency(note) {
+        const match = /^([A-Ga-g])([#b]?)(-?\d+)$/.exec(String(note || ""));
+        if (!match) {
+          return 440;
+        }
+
+        const semitones = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+        const letter = match[1].toUpperCase();
+        const accidental = match[2] === "#" ? 1 : match[2] === "b" ? -1 : 0;
+        const octave = Number(match[3]);
+        const midi = (octave + 1) * 12 + semitones[letter] + accidental;
+        return 440 * Math.pow(2, (midi - 69) / 12);
+      }
+
+      function setupAudio(moths) {
+        const button = document.getElementById("sound-toggle");
+        const settings = config.audio || {};
+        const enabledByConfig = settings.enabled !== false;
+        let audioContext = null;
+        let masterGain = null;
+        let delay = null;
+        let delayGain = null;
+        let droneGain = null;
+        let droneStarted = false;
+        let isEnabled = false;
+        const nextChimeAt = new Map();
+
+        if (!button || !enabledByConfig) {
+          if (button) {
+            button.hidden = true;
+          }
+
+          return {
+            update: () => {}
+          };
+        }
+
+        function initialiseAudio() {
+          if (audioContext) {
+            return;
+          }
+
+          const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextConstructor) {
+            button.hidden = true;
+            return;
+          }
+
+          audioContext = new AudioContextConstructor();
+          masterGain = audioContext.createGain();
+          delay = audioContext.createDelay(4);
+          delayGain = audioContext.createGain();
+          droneGain = audioContext.createGain();
+
+          masterGain.gain.value = Math.max(0, Math.min(0.35, settings.volume ?? 0.12));
+          delay.delayTime.value = 0.34;
+          delayGain.gain.value = 0.16;
+          droneGain.gain.value = 0;
+
+          masterGain.connect(audioContext.destination);
+          masterGain.connect(delay);
+          delay.connect(delayGain);
+          delayGain.connect(audioContext.destination);
+          droneGain.connect(audioContext.destination);
+        }
+
+        function audioLevel(value, fallback, maximum) {
+          const numeric = Number(value ?? fallback);
+          const scaled = Number.isFinite(numeric) && numeric > 1 ? numeric / 100 : numeric;
+          return Math.max(0, Math.min(maximum, Number.isFinite(scaled) ? scaled : fallback));
+        }
+
+        function setChimesActive(active) {
+          if (!audioContext || !masterGain || !delayGain) {
+            return;
+          }
+
+          const now = audioContext.currentTime;
+          const target = active ? audioLevel(settings.volume, 0.12, 0.35) : 0;
+          masterGain.gain.cancelScheduledValues(now);
+          masterGain.gain.setValueAtTime(target, now);
+          delayGain.gain.cancelScheduledValues(now);
+          delayGain.gain.setValueAtTime(active ? 0.16 : 0, now);
+        }
+
+        function startDrone() {
+          if (!audioContext || !droneGain || droneStarted || settings.droneEnabled !== true) {
+            return;
+          }
+
+          const notes = Array.isArray(settings.droneNotes) && settings.droneNotes.length > 0
+            ? settings.droneNotes
+            : ["D2", "A2", "D3"];
+          const lowpass = audioContext.createBiquadFilter();
+          lowpass.type = "lowpass";
+          lowpass.frequency.value = 520;
+          lowpass.Q.value = 0.55;
+          lowpass.connect(droneGain);
+
+          notes.forEach((note, index) => {
+            const oscillator = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            const lfo = audioContext.createOscillator();
+            const lfoGain = audioContext.createGain();
+            const now = audioContext.currentTime;
+
+            oscillator.type = index === 0 ? "sine" : "triangle";
+            oscillator.frequency.setValueAtTime(noteToFrequency(note), now);
+            oscillator.detune.setValueAtTime((index - 1) * 4, now);
+
+            gain.gain.value = 0.32 / notes.length;
+            lfo.frequency.value = 0.055 + index * 0.026;
+            lfoGain.gain.value = 0.09 / notes.length;
+            lfo.connect(lfoGain);
+            lfoGain.connect(gain.gain);
+
+            oscillator.connect(gain);
+            gain.connect(lowpass);
+            oscillator.start(now);
+            lfo.start(now);
+          });
+
+          droneStarted = true;
+        }
+
+        function setDroneActive(active) {
+          if (!audioContext || !droneGain || settings.droneEnabled !== true) {
+            return;
+          }
+
+          startDrone();
+          const now = audioContext.currentTime;
+          const target = active ? audioLevel(settings.droneVolume, 0.035, 0.16) : 0;
+          droneGain.gain.cancelScheduledValues(now);
+          if (active) {
+            droneGain.gain.setTargetAtTime(target, now, 0.9);
+          } else {
+            droneGain.gain.setValueAtTime(0, now);
+          }
+        }
+
+        function setButtonState() {
+          button.classList.toggle("is-on", isEnabled);
+          button.setAttribute("aria-label", isEnabled ? "Disable sound" : "Enable sound");
+        }
+
+        function playChime(note, intensity) {
+          if (!audioContext || !masterGain || !isEnabled) {
+            return;
+          }
+
+          const now = audioContext.currentTime;
+          const decay = Math.max(0.45, settings.noteDecay ?? 2.8);
+          const frequency = noteToFrequency(note);
+          const partials = [
+            { ratio: 1, gain: 0.24, decay: 1 },
+            { ratio: 2.005, gain: 0.085, decay: 0.78 },
+            { ratio: 3.01, gain: 0.038, decay: 0.52 },
+            { ratio: 4.02, gain: 0.018, decay: 0.34 },
+            { ratio: 1.505, gain: 0.026, decay: 0.62 }
+          ];
+
+          partials.forEach((partial, index) => {
+            const oscillator = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+            const detune = (seededUnit(Math.round(frequency * 100), index + 91) - 0.5) * 6;
+            const partialDecay = Math.max(0.28, decay * partial.decay);
+
+            oscillator.type = "sine";
+            oscillator.frequency.setValueAtTime(frequency * partial.ratio, now);
+            oscillator.detune.setValueAtTime(detune, now);
+            oscillator.detune.linearRampToValueAtTime(detune * 0.25, now + partialDecay);
+            filter.type = "lowpass";
+            filter.frequency.setValueAtTime(Math.min(4200, frequency * 5.8), now);
+            filter.Q.value = 0.45;
+
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.linearRampToValueAtTime(partial.gain * intensity, now + 0.04 + index * 0.008);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + partialDecay);
+
+            oscillator.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+            oscillator.start(now);
+            oscillator.stop(now + partialDecay + 0.08);
+          });
+
+          const noiseDuration = 0.075;
+          const noiseBuffer = audioContext.createBuffer(1, Math.max(1, Math.floor(audioContext.sampleRate * noiseDuration)), audioContext.sampleRate);
+          const noiseData = noiseBuffer.getChannelData(0);
+          for (let index = 0; index < noiseData.length; index += 1) {
+            const fade = 1 - index / noiseData.length;
+            noiseData[index] = (Math.random() * 2 - 1) * fade;
+          }
+
+          const noise = audioContext.createBufferSource();
+          const noiseFilter = audioContext.createBiquadFilter();
+          const noiseGain = audioContext.createGain();
+          noise.buffer = noiseBuffer;
+          noiseFilter.type = "bandpass";
+          noiseFilter.frequency.setValueAtTime(Math.min(3200, frequency * 4.2), now);
+          noiseFilter.Q.value = 1.6;
+          noiseGain.gain.setValueAtTime(0.009 * intensity, now);
+          noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + noiseDuration);
+          noise.connect(noiseFilter);
+          noiseFilter.connect(noiseGain);
+          noiseGain.connect(masterGain);
+          noise.start(now);
+          noise.stop(now + noiseDuration);
+        }
+
+        function pickSpeciesNote(species) {
+          const notes = Array.isArray(species.chimeNotes) && species.chimeNotes.length > 0
+            ? species.chimeNotes
+            : species.chimeNote ? [species.chimeNote] : [];
+
+          if (notes.length < 1) {
+            return "";
+          }
+
+          return notes[Math.floor(Math.random() * notes.length)];
+        }
+
+        function activeSpeciesAt(animationTime) {
+          const activeSpecies = new Set();
+          moths.forEach((moth) => {
+            if (animationTime >= moth.entryTime && animationTime <= moth.exitTime) {
+              activeSpecies.add(moth.species);
+            }
+          });
+          return activeSpecies;
+        }
+
+        function update(animationTime, deltaSeconds) {
+          if (!isEnabled || !audioContext || audioContext.state !== "running") {
+            return;
+          }
+
+          const activeSpecies = activeSpeciesAt(animationTime);
+          const probability = Math.max(0, settings.chimeProbability ?? 0.3);
+          const minInterval = Math.max(0.05, settings.minInterval ?? 0.85);
+
+          config.species.forEach((species) => {
+            const note = pickSpeciesNote(species);
+            if (!activeSpecies.has(species.id) || !note) {
+              return;
+            }
+
+            const audioTime = audioContext.currentTime;
+            const earliest = nextChimeAt.get(species.id) || 0;
+            if (audioTime < earliest) {
+              return;
+            }
+
+            const chance = 1 - Math.exp(-probability * Math.max(0, deltaSeconds));
+            if (Math.random() < chance) {
+              const size = Math.max(1, species.size || 6);
+              const intensity = Math.max(0.35, Math.min(1, 8 / size));
+              playChime(note, intensity);
+              nextChimeAt.set(species.id, audioTime + minInterval + Math.random() * minInterval * 2.2);
+            }
+          });
+        }
+
+        button.addEventListener("click", async () => {
+          initialiseAudio();
+          if (!audioContext) {
+            return;
+          }
+
+          isEnabled = !isEnabled;
+
+          if (isEnabled && audioContext.state !== "running") {
+            await audioContext.resume();
+          }
+
+          setChimesActive(isEnabled);
+          setDroneActive(isEnabled);
+
+          setButtonState();
+        });
+
+        setButtonState();
+
+        return {
+          update
+        };
+      }
+
       function setupOrbitAnimation() {
         const canvas = document.getElementById("orbit-canvas");
         const context = canvas.getContext("2d");
         const scrubber = document.getElementById("timeline-scrubber");
         const timeReadout = document.getElementById("time-readout");
+        const audio = setupAudio(config.moths);
         let moths = [];
         let animationTime = 0;
         let lastTimestamp = null;
@@ -833,7 +1278,7 @@ $html = @"
         function updateTimelineControls() {
           scrubber.max = String(config.animation.duration);
           scrubber.value = String(animationTime);
-          timeReadout.textContent = config.animation.timeLabel + " " + formatClockTime(animationTime);
+          timeReadout.textContent = formatClockTime(animationTime);
         }
 
         function resizeCanvas() {
@@ -855,6 +1300,7 @@ $html = @"
 
           if (isPlaying) {
             animationTime = normalizeAnimationTime(animationTime + deltaSeconds);
+            audio.update(animationTime, deltaSeconds);
           }
 
           drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, timestamp, animationTime);

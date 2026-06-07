@@ -76,11 +76,11 @@
       }
 
       .timeline-control {
-        align-items: center;
+        align-items: stretch;
         bottom: clamp(14px, 2.4vw, 28px);
         display: grid;
-        gap: 12px;
-        grid-template-columns: auto minmax(160px, 520px);
+        gap: 6px;
+        grid-template-columns: 1fr;
         left: 50%;
         max-width: calc(100vw - 32px);
         position: absolute;
@@ -90,12 +90,12 @@
       }
 
       .time-readout {
-        font-size: 0.82rem;
+        font-size: clamp(1rem, 1.7vw, 1.45rem);
         font-variant-numeric: tabular-nums;
+        font-weight: 600;
         letter-spacing: 0;
-        min-width: 4.8rem;
         opacity: 0.82;
-        text-align: right;
+        text-align: center;
         white-space: nowrap;
       }
 
@@ -106,6 +106,95 @@
         width: 100%;
       }
 
+      .sound-toggle {
+        align-items: center;
+        background: rgba(10, 10, 12, 0.36);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 999px;
+        bottom: clamp(16px, 2.4vw, 30px);
+        cursor: pointer;
+        display: flex;
+        height: 38px;
+        justify-content: center;
+        opacity: 0.78;
+        padding: 0;
+        position: absolute;
+        right: clamp(16px, 2.4vw, 30px);
+        transition: opacity 160ms ease, border-color 160ms ease, background 160ms ease;
+        width: 38px;
+        z-index: 3;
+      }
+
+      .sound-toggle span {
+        inset: 0;
+        position: absolute;
+      }
+
+      .sound-toggle:hover,
+      .sound-toggle:focus-visible {
+        background: rgba(18, 18, 22, 0.72);
+        border-color: rgba(255, 255, 255, 0.42);
+        opacity: 1;
+        outline: none;
+      }
+
+      .sound-toggle::before {
+        border-bottom: 7px solid transparent;
+        border-right: 11px solid rgba(245, 241, 232, 0.86);
+        border-top: 7px solid transparent;
+        content: "";
+        height: 0;
+        left: 9px;
+        margin-left: 0;
+        position: absolute;
+        top: 11px;
+        width: 0;
+      }
+
+      .sound-toggle::after {
+        border: 2px solid rgba(245, 241, 232, 0.86);
+        border-bottom-color: transparent;
+        border-left-color: transparent;
+        border-radius: 50%;
+        content: "";
+        height: 9px;
+        left: 17px;
+        margin-left: 0;
+        position: absolute;
+        top: 12px;
+        transform: rotate(45deg);
+        width: 9px;
+      }
+
+      .sound-toggle:not(.is-on)::after {
+        display: none;
+      }
+
+      .sound-toggle span::before,
+      .sound-toggle span::after {
+        background: rgba(245, 241, 232, 0.86);
+        border-radius: 999px;
+        content: "";
+        height: 2px;
+        opacity: 0;
+        position: absolute;
+        right: 8px;
+        top: 8px;
+        transform-origin: center;
+        transition: opacity 120ms ease;
+        width: 14px;
+      }
+
+      .sound-toggle:not(.is-on) span::before {
+        opacity: 1;
+        transform: rotate(45deg);
+      }
+
+      .sound-toggle:not(.is-on) span::after {
+        opacity: 1;
+        transform: rotate(-45deg);
+      }
+
       @media (max-width: 620px) {
         .animation-heading {
           max-width: calc(100vw - 32px);
@@ -114,12 +203,11 @@
         }
 
         .timeline-control {
-          grid-template-columns: 1fr;
           gap: 4px;
         }
 
         .time-readout {
-          text-align: left;
+          text-align: center;
         }
       }
     </style>
@@ -136,19 +224,30 @@
           <output class="time-readout" id="time-readout">00:00</output>
           <input id="timeline-scrubber" type="range" min="0" max="80" step="0.01" value="0" aria-label="Scrub animation time" />
         </div>
+        <button class="sound-toggle" id="sound-toggle" type="button" aria-label="Enable sound"><span aria-hidden="true"></span></button>
       </section>
     </main>
 
     <script>
-      const config = {"moths":[{"size":7,"id":"moth-001","exitTime":62,"erraticness":3,"chimeNote":"E3","color":"#d7b46a","species":"large-yellow-underwing","speed":0.85,"label":"Large Yellow Underwing","trailLength":18,"angle":15,"entryTime":4,"shadowColor":"rgba(255, 224, 151, 0.24)","radius":230,"speciesName":"Large Yellow Underwing","shadowBlur":16},{"size":6,"id":"moth-002","exitTime":70,"erraticness":2.5,"chimeNote":"A4","color":"#b8c5d8","species":"silver-y","speed":1.35,"label":"Silver Y","trailLength":20,"angle":95,"entryTime":10,"shadowColor":"rgba(218, 235, 255, 0.2)","radius":0,"speciesName":"Silver Y","shadowBlur":12},{"size":3,"id":"moth-003","exitTime":74,"erraticness":2,"chimeNote":"C5","color":"#e2d56f","species":"brimstone-moth","speed":5,"label":"Brimstone Moth","trailLength":22,"angle":185,"entryTime":18,"shadowColor":"rgba(255, 244, 172, 0.2)","radius":0,"speciesName":"Brimstone Moth","shadowBlur":9},{"size":10,"id":"moth-004","exitTime":58,"erraticness":2.5,"chimeNote":"A4","color":"#b8c5d8","species":"silver-y","speed":1.1,"label":"Silver Y","trailLength":20,"angle":275,"entryTime":25,"shadowColor":"rgba(218, 235, 255, 0.2)","radius":0,"speciesName":"Silver Y","shadowBlur":12},{"size":7,"id":"moth-005","exitTime":78,"erraticness":0.88,"chimeNote":"E3","color":"#d7b46a","species":"large-yellow-underwing","speed":0.85,"label":"Large Yellow Underwing","trailLength":24,"angle":330,"entryTime":34,"shadowColor":"rgba(255, 224, 151, 0.24)","radius":180,"speciesName":"Large Yellow Underwing","shadowBlur":16},{"size":5,"id":"moth-006","exitTime":68,"erraticness":1.5,"chimeNote":"C5","color":"#e2d56f","species":"brimstone-moth","speed":3.8,"label":"Brimstone Moth","trailLength":22,"angle":60,"entryTime":5,"shadowColor":"rgba(255, 244, 172, 0.2)","radius":0,"speciesName":"Brimstone Moth","shadowBlur":9},{"size":6,"id":"moth-007","exitTime":80,"erraticness":2.5,"chimeNote":"A4","color":"#b8c5d8","species":"silver-y","speed":1.35,"label":"Silver Y","trailLength":28,"angle":150,"entryTime":8,"shadowColor":"rgba(218, 235, 255, 0.2)","radius":280,"speciesName":"Silver Y","shadowBlur":12}],"scene":{"backgroundMothOpacity":1,"horizonYRatio":0.34,"foregroundMothOpacity":0.6,"lightPoolColor":"rgba(255, 239, 188, 0.58)","orbitTilt":0.28,"groundMidColor":"#bfbfbf","lightPoolRadius":430,"groundFrontColor":"#dbdbdb","groundBackColor":"#212121","showGround":false,"centerYRatio":0.56},"species":[{"erraticness":3,"id":"large-yellow-underwing","chimeNote":"E3","size":7,"speed":0.85,"color":"#d7b46a","name":"Large Yellow Underwing","shadowBlur":16,"shadowColor":"rgba(255, 224, 151, 0.24)","trailLength":18},{"erraticness":2.5,"id":"silver-y","chimeNote":"A4","size":6,"speed":1.35,"color":"#b8c5d8","name":"Silver Y","shadowBlur":12,"shadowColor":"rgba(218, 235, 255, 0.2)","trailLength":20},{"erraticness":2,"id":"brimstone-moth","chimeNote":"C5","size":3,"speed":5,"color":"#e2d56f","name":"Brimstone Moth","shadowBlur":9,"shadowColor":"rgba(255, 244, 172, 0.2)","trailLength":22}],"light":{"size":15,"color":"#fffdf4","flickerStrength":0.05,"haloColor":"rgba(255, 244, 201, 0.26)","glowColor":"rgba(255, 250, 226, 0.82)","flickerSpeed":0.006,"glowRadius":200,"shadowBlur":20},"animation":{"titleSize":"clamp(1.25rem, 2.4vw, 2.35rem)","canvasBorderColor":"rgba(255, 255, 255, 0.16)","duration":80,"startClockTime":"22:00","loop":true,"description":"A standalone animation generated from species and moth observations.","speciesTagDuration":10,"descriptionSize":"clamp(0.78rem, 1.1vw, 0.98rem)","title":"Moth Light Animation","backgroundColor":"#101114","speciesTagSize":13,"canvasBackground":"radial-gradient(circle at center, #252018 0%, #111114 58%, #07080a 100%)","textColor":"#f5f1e8","autoplay":true,"timeLabel":"Time","descriptionColor":"#f5f1e8","titleColor":"#f5f1e8","playbackSpeed":2,"speciesTagColor":""}};
+      const config = {"species":[{"inclinationDriftSpeed":0.1,"chimeNotes":["C3","G3","E4"],"chimeNote":"C3","color":"#d7b46a","id":"large-yellow-underwing","name":"Large Yellow Underwing","speed":0.85,"erraticness":3,"nodeDriftSpeed":0.1,"shadowColor":"rgba(255, 224, 151, 0.24)","trailLength":10,"size":7,"shadowBlur":16},{"inclinationDriftSpeed":0.2,"chimeNotes":["D4","E4","G4"],"chimeNote":"E4","color":"#b8c5d8","id":"silver-y","name":"Silver Y","speed":1.35,"erraticness":2.5,"nodeDriftSpeed":0.2,"shadowColor":"rgba(218, 235, 255, 0.2)","trailLength":10,"size":6,"shadowBlur":12},{"inclinationDriftSpeed":0.5,"chimeNotes":["G4","A4","C5"],"chimeNote":"G4","color":"#e2d56f","id":"brimstone-moth","name":"Brimstone Moth","speed":2,"erraticness":2,"nodeDriftSpeed":0.5,"shadowColor":"rgba(255, 244, 172, 0.2)","trailLength":10,"size":3,"shadowBlur":9}],"moths":[{"id":"moth-001","shadowColor":"rgba(255, 224, 151, 0.24)","inclinationDriftSpeed":0.1,"label":"Large Yellow Underwing","exitTime":62,"erraticness":3,"speciesName":"Large Yellow Underwing","angle":0,"color":"#d7b46a","chimeNotes":["C3","G3","E4"],"shadowBlur":16,"entryTime":4,"size":7,"chimeNote":"C3","species":"large-yellow-underwing","speed":0.85,"trailLength":10,"nodeDriftSpeed":0.1,"radius":0},{"id":"moth-002","shadowColor":"rgba(218, 235, 255, 0.2)","inclinationDriftSpeed":0.2,"label":"Silver Y","exitTime":70,"erraticness":2.5,"speciesName":"Silver Y","angle":51.428571428571431,"color":"#b8c5d8","chimeNotes":["D4","E4","G4"],"shadowBlur":12,"entryTime":10,"size":6,"chimeNote":"E4","species":"silver-y","speed":1.35,"trailLength":10,"nodeDriftSpeed":0.2,"radius":0},{"id":"moth-003","shadowColor":"rgba(255, 244, 172, 0.2)","inclinationDriftSpeed":0.5,"label":"Brimstone Moth","exitTime":74,"erraticness":2,"speciesName":"Brimstone Moth","angle":102.85714285714286,"color":"#e2d56f","chimeNotes":["G4","A4","C5"],"shadowBlur":9,"entryTime":18,"size":3,"chimeNote":"G4","species":"brimstone-moth","speed":2,"trailLength":10,"nodeDriftSpeed":0.5,"radius":0},{"id":"moth-004","shadowColor":"rgba(218, 235, 255, 0.2)","inclinationDriftSpeed":0.2,"label":"Silver Y","exitTime":58,"erraticness":2.5,"speciesName":"Silver Y","angle":154.28571428571428,"color":"#b8c5d8","chimeNotes":["D4","E4","G4"],"shadowBlur":12,"entryTime":25,"size":6,"chimeNote":"E4","species":"silver-y","speed":1.35,"trailLength":10,"nodeDriftSpeed":0.2,"radius":0},{"id":"moth-005","shadowColor":"rgba(255, 224, 151, 0.24)","inclinationDriftSpeed":0.1,"label":"Large Yellow Underwing","exitTime":78,"erraticness":3,"speciesName":"Large Yellow Underwing","angle":205.71428571428572,"color":"#d7b46a","chimeNotes":["C3","G3","E4"],"shadowBlur":16,"entryTime":34,"size":7,"chimeNote":"C3","species":"large-yellow-underwing","speed":0.85,"trailLength":10,"nodeDriftSpeed":0.1,"radius":0},{"id":"moth-006","shadowColor":"rgba(255, 244, 172, 0.2)","inclinationDriftSpeed":0.5,"label":"Brimstone Moth","exitTime":68,"erraticness":2,"speciesName":"Brimstone Moth","angle":257.14285714285717,"color":"#e2d56f","chimeNotes":["G4","A4","C5"],"shadowBlur":9,"entryTime":5,"size":3,"chimeNote":"G4","species":"brimstone-moth","speed":2,"trailLength":10,"nodeDriftSpeed":0.5,"radius":0},{"id":"moth-007","shadowColor":"rgba(218, 235, 255, 0.2)","inclinationDriftSpeed":0.2,"label":"Silver Y","exitTime":80,"erraticness":2.5,"speciesName":"Silver Y","angle":308.57142857142856,"color":"#b8c5d8","chimeNotes":["D4","E4","G4"],"shadowBlur":12,"entryTime":8,"size":6,"chimeNote":"E4","species":"silver-y","speed":1.35,"trailLength":10,"nodeDriftSpeed":0.2,"radius":0}],"animation":{"titleSize":"clamp(1.25rem, 2.4vw, 2.35rem)","canvasBorderColor":"rgba(255, 255, 255, 0.16)","duration":80,"startClockTime":"22:00","loop":true,"description":"A standalone animation generated from species and moth observations.","speciesTagDuration":10,"descriptionSize":"clamp(0.78rem, 1.1vw, 0.98rem)","title":"Moth Light Animation","backgroundColor":"#101114","speciesTagSize":13,"canvasBackground":"radial-gradient(circle at center, #252018 0%, #111114 58%, #07080a 100%)","textColor":"#f5f1e8","autoplay":true,"timeLabel":"Time","descriptionColor":"#f5f1e8","titleColor":"#f5f1e8","playbackSpeed":2,"speciesTagColor":""},"light":{"size":15,"color":"#fffdf4","flickerStrength":0.05,"haloColor":"rgba(255, 244, 201, 0.26)","glowColor":"rgba(255, 250, 226, 0.82)","flickerSpeed":0.006,"glowRadius":200,"shadowBlur":20},"scene":{"backgroundMothOpacity":1,"horizonYRatio":0.34,"foregroundMothOpacity":0.6,"lightPoolColor":"rgba(255, 239, 188, 0.58)","orbitTilt":0.28,"groundMidColor":"#bfbfbf","lightPoolRadius":430,"groundFrontColor":"#dbdbdb","groundBackColor":"#212121","showGround":false,"centerYRatio":0.56},"audio":{"droneNotes":["C2","G2","C3"],"droneVolume":40,"volume":0.12,"noteDecay":8,"minInterval":1.1,"chimeProbability":0.26,"droneEnabled":true,"enabled":true}};
 
       function createMoths(config, width, height) {
         const maxMothSize = config.moths.reduce((largest, moth) => Math.max(largest, moth.size), 0);
-        const usableRadius = Math.max(32, Math.min(width, height) * 0.48 - maxMothSize - 18);
+        const usableRadius = Math.max(32, (Math.min(width, height) * 0.48 - maxMothSize - 18) * 0.7);
         const minRadius = Math.min(72, usableRadius);
-        const autoStep = config.moths.length > 1 ? Math.max(0, (usableRadius - minRadius) / (config.moths.length - 1)) : 0;
+        const speeds = config.moths.map((moth) => moth.speed);
+        const minSpeed = Math.min(...speeds);
+        const maxSpeed = Math.max(...speeds);
+        const speedRange = Math.max(0.001, maxSpeed - minSpeed);
+        const radiusRange = Math.max(0, usableRadius - minRadius);
 
-        return config.moths.map((moth, index) => ({
+        return config.moths.map((moth, index) => {
+          const speedRatio = (moth.speed - minSpeed) / speedRange;
+          const baseRadius = minRadius + (1 - speedRatio) * radiusRange;
+          const offset = (seededUnit(hashString(moth.id || moth.species || String(index)), 7) - 0.5) * radiusRange * 0.08;
+          const radius = Math.max(minRadius, Math.min(usableRadius, baseRadius + offset));
+
+          return {
           angle: (moth.angle * Math.PI) / 180,
           chimeNote: moth.chimeNote,
           color: moth.color,
@@ -156,9 +255,11 @@
           erraticness: moth.erraticness,
           exitTime: moth.exitTime,
           id: moth.id,
+          inclinationDriftSpeed: moth.inclinationDriftSpeed,
           label: moth.label,
+          nodeDriftSpeed: moth.nodeDriftSpeed,
           noiseSeed: hashString(moth.id || moth.species || String(index)),
-          radius: moth.radius > 0 ? Math.min(moth.radius, usableRadius) : Math.min(usableRadius, minRadius + index * autoStep),
+          radius,
           shadowBlur: moth.shadowBlur,
           shadowColor: moth.shadowColor,
           size: moth.size,
@@ -166,7 +267,8 @@
           speciesName: moth.speciesName,
           speed: moth.speed,
           trailLength: moth.trailLength
-        }));
+          };
+        });
       }
 
       function easeInOut(value) {
@@ -213,13 +315,24 @@
         const angleJitter = erraticWave(moth, activeTime, 3, 1.9) * erraticness * 0.22;
         const radiusJitter = erraticWave(moth, activeTime, 11, 1.35) * moth.radius * erraticness * 0.08;
         const verticalJitter = erraticWave(moth, activeTime, 23, 2.3) * moth.radius * erraticness * 0.065;
+        const inclinationDrift = moth.inclinationDriftSpeed > 0
+          ? erraticWave(moth, activeTime * moth.inclinationDriftSpeed, 41, 0.45) * erraticness * 0.08
+          : 0;
+        const nodeDrift = moth.nodeDriftSpeed > 0
+          ? erraticWave(moth, activeTime * moth.nodeDriftSpeed, 59, 0.34) * erraticness * 0.26
+          : 0;
         const angle = moth.angle + activeTime * moth.speed + angleJitter;
         const radius = Math.max(12, moth.radius + radiusJitter);
+        const orbitTilt = Math.max(0.08, Math.min(0.9, config.scene.orbitTilt + inclinationDrift));
         const depth = Math.sin(angle);
+        const localX = Math.cos(angle) * radius;
+        const localY = depth * radius * orbitTilt;
+        const nodeCos = Math.cos(nodeDrift);
+        const nodeSin = Math.sin(nodeDrift);
         return {
           depth,
-          x: cx + Math.cos(angle) * radius,
-          y: cy + depth * radius * config.scene.orbitTilt + verticalJitter
+          x: cx + localX * nodeCos - localY * nodeSin,
+          y: cy + localX * nodeSin + localY * nodeCos + verticalJitter
         };
       }
 
@@ -284,18 +397,33 @@
 
       function buildTrail(moth, animationTime, width, height, cx, cy) {
         const points = [];
-        const sampleCount = Math.max(2, Math.round(moth.trailLength || 2));
-        const sampleStep = 0.08;
+        const targetDistance = Math.max(moth.size * 5, (moth.trailLength || 2) * 18);
+        const sampleStep = 0.025;
+        const maxLookback = Math.max(0.5, (moth.trailLength || 2) * 0.22);
+        const maxSamples = Math.ceil(maxLookback / sampleStep);
+        let distance = 0;
+        let previousPoint = null;
 
-        for (let index = sampleCount - 1; index >= 0; index -= 1) {
+        for (let index = 0; index <= maxSamples; index += 1) {
           const sampleTime = animationTime - index * sampleStep;
           const point = projectMoth(moth, sampleTime, width, height, cx, cy, false);
+
           if (point && point.opacity > 0.01) {
             points.push(point);
+
+            if (previousPoint) {
+              distance += Math.hypot(previousPoint.x - point.x, previousPoint.y - point.y);
+            }
+
+            previousPoint = point;
+          }
+
+          if (points.length >= 2 && distance >= targetDistance) {
+            break;
           }
         }
 
-        return points;
+        return points.reverse();
       }
 
       function drawTrail(context, moth) {
@@ -303,30 +431,30 @@
           return;
         }
 
-        const first = moth.trail[0];
-        const last = moth.trail[moth.trail.length - 1];
-        const trailGradient = context.createLinearGradient(first.x, first.y, last.x, last.y);
-        trailGradient.addColorStop(0, "transparent");
-        trailGradient.addColorStop(0.28, colorWithAlpha(moth.color, 0.08));
-        trailGradient.addColorStop(1, colorWithAlpha(moth.color, Math.min(0.62, last.opacity * 0.62)));
-
         context.save();
-        context.globalAlpha = Math.max(0, Math.min(1, last.opacity));
         context.lineCap = "round";
         context.lineJoin = "round";
-        context.strokeStyle = trailGradient;
-        context.lineWidth = Math.max(1.2, moth.size * 0.42);
-        context.beginPath();
-        context.moveTo(first.x, first.y);
+        context.globalAlpha = 1;
 
-        for (let index = 1; index < moth.trail.length - 1; index += 1) {
+        const baseWidth = Math.max(1.2, moth.size * 0.42);
+        const segmentCount = moth.trail.length - 1;
+
+        for (let index = 1; index < moth.trail.length; index += 1) {
+          const previous = moth.trail[index - 1];
           const point = moth.trail[index];
-          const next = moth.trail[index + 1];
-          context.quadraticCurveTo(point.x, point.y, (point.x + next.x) * 0.5, (point.y + next.y) * 0.5);
+          const progress = index / segmentCount;
+          const fade = easeInOut(progress);
+          const opacity = Math.min(0.58, point.opacity * 0.58) * fade;
+          const width = baseWidth * (0.45 + fade * 0.55);
+
+          context.strokeStyle = colorWithAlpha(moth.color, opacity);
+          context.lineWidth = width;
+          context.beginPath();
+          context.moveTo(previous.x, previous.y);
+          context.lineTo(point.x, point.y);
+          context.stroke();
         }
 
-        context.lineTo(last.x, last.y);
-        context.stroke();
         context.restore();
       }
 
@@ -400,8 +528,10 @@
         }
 
         context.save();
-        const tagSize = Math.max(1, config.animation.speciesTagSize);
-        context.font = "650 " + tagSize + "px Inter, system-ui, sans-serif";
+        const descriptionElement = document.querySelector(".animation-heading p");
+        const descriptionStyle = descriptionElement ? window.getComputedStyle(descriptionElement) : null;
+        const tagSize = descriptionStyle ? parseFloat(descriptionStyle.fontSize) : Math.max(1, config.animation.speciesTagSize);
+        context.font = "400 " + tagSize + "px Inter, system-ui, sans-serif";
         context.textAlign = "center";
         context.textBaseline = "middle";
 
@@ -616,11 +746,302 @@
         return Math.max(0, Math.min(config.animation.duration, animationTime));
       }
 
+      function noteToFrequency(note) {
+        const match = /^([A-Ga-g])([#b]?)(-?\d+)$/.exec(String(note || ""));
+        if (!match) {
+          return 440;
+        }
+
+        const semitones = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+        const letter = match[1].toUpperCase();
+        const accidental = match[2] === "#" ? 1 : match[2] === "b" ? -1 : 0;
+        const octave = Number(match[3]);
+        const midi = (octave + 1) * 12 + semitones[letter] + accidental;
+        return 440 * Math.pow(2, (midi - 69) / 12);
+      }
+
+      function setupAudio(moths) {
+        const button = document.getElementById("sound-toggle");
+        const settings = config.audio || {};
+        const enabledByConfig = settings.enabled !== false;
+        let audioContext = null;
+        let masterGain = null;
+        let delay = null;
+        let delayGain = null;
+        let droneGain = null;
+        let droneStarted = false;
+        let isEnabled = false;
+        const nextChimeAt = new Map();
+
+        if (!button || !enabledByConfig) {
+          if (button) {
+            button.hidden = true;
+          }
+
+          return {
+            update: () => {}
+          };
+        }
+
+        function initialiseAudio() {
+          if (audioContext) {
+            return;
+          }
+
+          const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextConstructor) {
+            button.hidden = true;
+            return;
+          }
+
+          audioContext = new AudioContextConstructor();
+          masterGain = audioContext.createGain();
+          delay = audioContext.createDelay(4);
+          delayGain = audioContext.createGain();
+          droneGain = audioContext.createGain();
+
+          masterGain.gain.value = Math.max(0, Math.min(0.35, settings.volume ?? 0.12));
+          delay.delayTime.value = 0.34;
+          delayGain.gain.value = 0.16;
+          droneGain.gain.value = 0;
+
+          masterGain.connect(audioContext.destination);
+          masterGain.connect(delay);
+          delay.connect(delayGain);
+          delayGain.connect(audioContext.destination);
+          droneGain.connect(audioContext.destination);
+        }
+
+        function audioLevel(value, fallback, maximum) {
+          const numeric = Number(value ?? fallback);
+          const scaled = Number.isFinite(numeric) && numeric > 1 ? numeric / 100 : numeric;
+          return Math.max(0, Math.min(maximum, Number.isFinite(scaled) ? scaled : fallback));
+        }
+
+        function setChimesActive(active) {
+          if (!audioContext || !masterGain || !delayGain) {
+            return;
+          }
+
+          const now = audioContext.currentTime;
+          const target = active ? audioLevel(settings.volume, 0.12, 0.35) : 0;
+          masterGain.gain.cancelScheduledValues(now);
+          masterGain.gain.setValueAtTime(target, now);
+          delayGain.gain.cancelScheduledValues(now);
+          delayGain.gain.setValueAtTime(active ? 0.16 : 0, now);
+        }
+
+        function startDrone() {
+          if (!audioContext || !droneGain || droneStarted || settings.droneEnabled !== true) {
+            return;
+          }
+
+          const notes = Array.isArray(settings.droneNotes) && settings.droneNotes.length > 0
+            ? settings.droneNotes
+            : ["D2", "A2", "D3"];
+          const lowpass = audioContext.createBiquadFilter();
+          lowpass.type = "lowpass";
+          lowpass.frequency.value = 520;
+          lowpass.Q.value = 0.55;
+          lowpass.connect(droneGain);
+
+          notes.forEach((note, index) => {
+            const oscillator = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            const lfo = audioContext.createOscillator();
+            const lfoGain = audioContext.createGain();
+            const now = audioContext.currentTime;
+
+            oscillator.type = index === 0 ? "sine" : "triangle";
+            oscillator.frequency.setValueAtTime(noteToFrequency(note), now);
+            oscillator.detune.setValueAtTime((index - 1) * 4, now);
+
+            gain.gain.value = 0.32 / notes.length;
+            lfo.frequency.value = 0.055 + index * 0.026;
+            lfoGain.gain.value = 0.09 / notes.length;
+            lfo.connect(lfoGain);
+            lfoGain.connect(gain.gain);
+
+            oscillator.connect(gain);
+            gain.connect(lowpass);
+            oscillator.start(now);
+            lfo.start(now);
+          });
+
+          droneStarted = true;
+        }
+
+        function setDroneActive(active) {
+          if (!audioContext || !droneGain || settings.droneEnabled !== true) {
+            return;
+          }
+
+          startDrone();
+          const now = audioContext.currentTime;
+          const target = active ? audioLevel(settings.droneVolume, 0.035, 0.16) : 0;
+          droneGain.gain.cancelScheduledValues(now);
+          if (active) {
+            droneGain.gain.setTargetAtTime(target, now, 0.9);
+          } else {
+            droneGain.gain.setValueAtTime(0, now);
+          }
+        }
+
+        function setButtonState() {
+          button.classList.toggle("is-on", isEnabled);
+          button.setAttribute("aria-label", isEnabled ? "Disable sound" : "Enable sound");
+        }
+
+        function playChime(note, intensity) {
+          if (!audioContext || !masterGain || !isEnabled) {
+            return;
+          }
+
+          const now = audioContext.currentTime;
+          const decay = Math.max(0.45, settings.noteDecay ?? 2.8);
+          const frequency = noteToFrequency(note);
+          const partials = [
+            { ratio: 1, gain: 0.24, decay: 1 },
+            { ratio: 2.005, gain: 0.085, decay: 0.78 },
+            { ratio: 3.01, gain: 0.038, decay: 0.52 },
+            { ratio: 4.02, gain: 0.018, decay: 0.34 },
+            { ratio: 1.505, gain: 0.026, decay: 0.62 }
+          ];
+
+          partials.forEach((partial, index) => {
+            const oscillator = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+            const detune = (seededUnit(Math.round(frequency * 100), index + 91) - 0.5) * 6;
+            const partialDecay = Math.max(0.28, decay * partial.decay);
+
+            oscillator.type = "sine";
+            oscillator.frequency.setValueAtTime(frequency * partial.ratio, now);
+            oscillator.detune.setValueAtTime(detune, now);
+            oscillator.detune.linearRampToValueAtTime(detune * 0.25, now + partialDecay);
+            filter.type = "lowpass";
+            filter.frequency.setValueAtTime(Math.min(4200, frequency * 5.8), now);
+            filter.Q.value = 0.45;
+
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.linearRampToValueAtTime(partial.gain * intensity, now + 0.04 + index * 0.008);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + partialDecay);
+
+            oscillator.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+            oscillator.start(now);
+            oscillator.stop(now + partialDecay + 0.08);
+          });
+
+          const noiseDuration = 0.075;
+          const noiseBuffer = audioContext.createBuffer(1, Math.max(1, Math.floor(audioContext.sampleRate * noiseDuration)), audioContext.sampleRate);
+          const noiseData = noiseBuffer.getChannelData(0);
+          for (let index = 0; index < noiseData.length; index += 1) {
+            const fade = 1 - index / noiseData.length;
+            noiseData[index] = (Math.random() * 2 - 1) * fade;
+          }
+
+          const noise = audioContext.createBufferSource();
+          const noiseFilter = audioContext.createBiquadFilter();
+          const noiseGain = audioContext.createGain();
+          noise.buffer = noiseBuffer;
+          noiseFilter.type = "bandpass";
+          noiseFilter.frequency.setValueAtTime(Math.min(3200, frequency * 4.2), now);
+          noiseFilter.Q.value = 1.6;
+          noiseGain.gain.setValueAtTime(0.009 * intensity, now);
+          noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + noiseDuration);
+          noise.connect(noiseFilter);
+          noiseFilter.connect(noiseGain);
+          noiseGain.connect(masterGain);
+          noise.start(now);
+          noise.stop(now + noiseDuration);
+        }
+
+        function pickSpeciesNote(species) {
+          const notes = Array.isArray(species.chimeNotes) && species.chimeNotes.length > 0
+            ? species.chimeNotes
+            : species.chimeNote ? [species.chimeNote] : [];
+
+          if (notes.length < 1) {
+            return "";
+          }
+
+          return notes[Math.floor(Math.random() * notes.length)];
+        }
+
+        function activeSpeciesAt(animationTime) {
+          const activeSpecies = new Set();
+          moths.forEach((moth) => {
+            if (animationTime >= moth.entryTime && animationTime <= moth.exitTime) {
+              activeSpecies.add(moth.species);
+            }
+          });
+          return activeSpecies;
+        }
+
+        function update(animationTime, deltaSeconds) {
+          if (!isEnabled || !audioContext || audioContext.state !== "running") {
+            return;
+          }
+
+          const activeSpecies = activeSpeciesAt(animationTime);
+          const probability = Math.max(0, settings.chimeProbability ?? 0.3);
+          const minInterval = Math.max(0.05, settings.minInterval ?? 0.85);
+
+          config.species.forEach((species) => {
+            const note = pickSpeciesNote(species);
+            if (!activeSpecies.has(species.id) || !note) {
+              return;
+            }
+
+            const audioTime = audioContext.currentTime;
+            const earliest = nextChimeAt.get(species.id) || 0;
+            if (audioTime < earliest) {
+              return;
+            }
+
+            const chance = 1 - Math.exp(-probability * Math.max(0, deltaSeconds));
+            if (Math.random() < chance) {
+              const size = Math.max(1, species.size || 6);
+              const intensity = Math.max(0.35, Math.min(1, 8 / size));
+              playChime(note, intensity);
+              nextChimeAt.set(species.id, audioTime + minInterval + Math.random() * minInterval * 2.2);
+            }
+          });
+        }
+
+        button.addEventListener("click", async () => {
+          initialiseAudio();
+          if (!audioContext) {
+            return;
+          }
+
+          isEnabled = !isEnabled;
+
+          if (isEnabled && audioContext.state !== "running") {
+            await audioContext.resume();
+          }
+
+          setChimesActive(isEnabled);
+          setDroneActive(isEnabled);
+
+          setButtonState();
+        });
+
+        setButtonState();
+
+        return {
+          update
+        };
+      }
+
       function setupOrbitAnimation() {
         const canvas = document.getElementById("orbit-canvas");
         const context = canvas.getContext("2d");
         const scrubber = document.getElementById("timeline-scrubber");
         const timeReadout = document.getElementById("time-readout");
+        const audio = setupAudio(config.moths);
         let moths = [];
         let animationTime = 0;
         let lastTimestamp = null;
@@ -630,7 +1051,7 @@
         function updateTimelineControls() {
           scrubber.max = String(config.animation.duration);
           scrubber.value = String(animationTime);
-          timeReadout.textContent = config.animation.timeLabel + " " + formatClockTime(animationTime);
+          timeReadout.textContent = formatClockTime(animationTime);
         }
 
         function resizeCanvas() {
@@ -652,6 +1073,7 @@
 
           if (isPlaying) {
             animationTime = normalizeAnimationTime(animationTime + deltaSeconds);
+            audio.update(animationTime, deltaSeconds);
           }
 
           drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, timestamp, animationTime);

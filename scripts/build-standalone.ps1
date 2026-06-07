@@ -229,7 +229,7 @@ $html = @"
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>$safeTitle</title>
     <style>
       :root {
@@ -248,6 +248,7 @@ $html = @"
         margin: 0;
         height: 100%;
         min-height: 100%;
+        width: 100%;
       }
 
       body {
@@ -258,9 +259,18 @@ $html = @"
 
       .app-shell {
         height: 100vh;
+        height: 100svh;
         min-height: 100vh;
+        min-height: 100svh;
         position: relative;
         width: 100%;
+      }
+
+      @supports (height: 100dvh) {
+        .app-shell {
+          height: 100dvh;
+          min-height: 100dvh;
+        }
       }
 
       .canvas-shell {
@@ -274,6 +284,7 @@ $html = @"
         width: 100%;
         height: 100%;
         background: $safeCanvasBackground;
+        cursor: default;
       }
 
       .animation-heading {
@@ -304,16 +315,16 @@ $html = @"
 
       .timeline-control {
         align-items: stretch;
-        bottom: clamp(14px, 2.4vw, 28px);
+        bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(14px, 2.4vw, 28px));
         display: grid;
         gap: 6px;
         grid-template-columns: 1fr;
         left: 50%;
         max-width: calc(100vw - 32px);
-        position: absolute;
+        position: fixed;
         transform: translateX(-50%);
         width: min(620px, calc(100vw - 32px));
-        z-index: 2;
+        z-index: 10;
       }
 
       .time-readout {
@@ -338,18 +349,18 @@ $html = @"
         background: rgba(10, 10, 12, 0.36);
         border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 999px;
-        bottom: clamp(16px, 2.4vw, 30px);
+        bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(16px, 2.4vw, 30px));
         cursor: pointer;
         display: flex;
         height: 38px;
         justify-content: center;
         opacity: 0.78;
         padding: 0;
-        position: absolute;
+        position: fixed;
         right: clamp(16px, 2.4vw, 30px);
         transition: opacity 160ms ease, border-color 160ms ease, background 160ms ease;
         width: 38px;
-        z-index: 3;
+        z-index: 11;
       }
 
       .sound-toggle span {
@@ -405,11 +416,11 @@ $html = @"
         height: 2px;
         opacity: 0;
         position: absolute;
-        right: 8px;
-        top: 8px;
+        left: 19px;
+        top: 18px;
         transform-origin: center;
         transition: opacity 120ms ease;
-        width: 14px;
+        width: 11px;
       }
 
       .sound-toggle:not(.is-on) span::before {
@@ -653,7 +664,7 @@ $html = @"
         return points.reverse();
       }
 
-      function drawTrail(context, moth) {
+      function drawTrail(context, moth, dimFactor = 1) {
         if (!moth.trail || moth.trail.length < 2) {
           return;
         }
@@ -671,7 +682,7 @@ $html = @"
           const point = moth.trail[index];
           const progress = index / segmentCount;
           const fade = easeInOut(progress);
-          const opacity = Math.min(0.58, point.opacity * 0.58) * fade;
+          const opacity = Math.min(0.58, point.opacity * 0.58) * fade * dimFactor;
           const width = baseWidth * (0.45 + fade * 0.55);
 
           context.strokeStyle = colorWithAlpha(moth.color, opacity);
@@ -709,20 +720,34 @@ $html = @"
         return color;
       }
 
-      function drawMoth(context, moth) {
+      function drawMoth(context, moth, state = "normal") {
         if (moth.opacity <= 0.01) {
           return;
         }
 
+        const dimFactor = state === "dimmed" ? 0.24 : 1;
+        const focusFactor = state === "focused" ? 1.18 : 1;
+
         context.save();
-        context.globalAlpha = moth.opacity;
+        context.globalAlpha = moth.opacity * dimFactor;
         context.fillStyle = moth.color;
         context.shadowColor = moth.shadowColor;
-        context.shadowBlur = moth.shadowBlur;
+        context.shadowBlur = moth.shadowBlur * focusFactor;
         context.beginPath();
-        context.arc(moth.x, moth.y, moth.size, 0, Math.PI * 2);
+        context.arc(moth.x, moth.y, moth.size * focusFactor, 0, Math.PI * 2);
         context.fill();
         context.restore();
+
+        if (state === "focused") {
+          context.save();
+          context.globalAlpha = Math.min(0.55, moth.opacity * 0.5);
+          context.strokeStyle = colorWithAlpha(moth.color, 0.55);
+          context.lineWidth = 1.2;
+          context.beginPath();
+          context.arc(moth.x, moth.y, moth.size * 2.2, 0, Math.PI * 2);
+          context.stroke();
+          context.restore();
+        }
       }
 
       function drawEntryLabels(context, moths, animationTime, width, height) {
@@ -922,7 +947,77 @@ $html = @"
         context.restore();
       }
 
-      function drawScene(context, moths, width, height, elapsed, animationTime) {
+      function drawHoverPopout(context, moth, width, height, animationTime) {
+        if (!moth) {
+          return;
+        }
+
+        const descriptionElement = document.querySelector(".animation-heading p");
+        const descriptionStyle = descriptionElement ? window.getComputedStyle(descriptionElement) : null;
+        const fontSize = descriptionStyle ? parseFloat(descriptionStyle.fontSize) : 15;
+        const speciesName = moth.speciesName || moth.label || moth.species || moth.id;
+        const activeRange = formatClockTime(moth.entryTime) + " - " + formatClockTime(moth.exitTime);
+        const paddingX = 12;
+        const paddingY = 9;
+        const gap = 5;
+        const titleFont = "600 " + Math.max(12, fontSize) + "px Inter, system-ui, sans-serif";
+        const detailFont = "400 " + Math.max(11, fontSize * 0.82) + "px Inter, system-ui, sans-serif";
+
+        context.save();
+        context.font = titleFont;
+        const titleWidth = context.measureText(speciesName).width;
+        context.font = detailFont;
+        const detailWidth = context.measureText(activeRange).width;
+
+        const boxWidth = Math.ceil(Math.max(titleWidth, detailWidth) + paddingX * 2);
+        const boxHeight = Math.ceil(fontSize + fontSize * 0.82 + gap + paddingY * 2);
+        const offset = Math.max(20, moth.size * 3.2);
+        let x = moth.x + offset;
+        let y = moth.y - boxHeight - offset * 0.42;
+
+        if (x + boxWidth > width - 12) {
+          x = moth.x - boxWidth - offset;
+        }
+
+        x = Math.max(12, Math.min(width - boxWidth - 12, x));
+        y = Math.max(12, Math.min(height - boxHeight - 68, y));
+
+        context.fillStyle = "rgba(8, 8, 10, 0.72)";
+        context.strokeStyle = colorWithAlpha(moth.color, 0.42);
+        context.lineWidth = 1;
+        drawRoundedRect(context, x, y, boxWidth, boxHeight, 8);
+        context.fill();
+        context.stroke();
+
+        context.textAlign = "left";
+        context.textBaseline = "top";
+        context.font = titleFont;
+        context.fillStyle = colorWithAlpha(moth.color, 0.96);
+        context.fillText(speciesName, x + paddingX, y + paddingY);
+        context.font = detailFont;
+        context.fillStyle = "rgba(255, 255, 255, 0.72)";
+        context.fillText(activeRange, x + paddingX, y + paddingY + fontSize + gap);
+        context.restore();
+      }
+
+      function getMothDrawState(moth, hoverState) {
+        if (!hoverState || !hoverState.hoveredMothId) {
+          return "normal";
+        }
+
+        return moth.id === hoverState.hoveredMothId ? "focused" : "dimmed";
+      }
+
+      function drawProjectedMothLayer(context, moths, hoverState) {
+        moths.forEach((moth) => {
+          const state = getMothDrawState(moth, hoverState);
+          drawTrail(context, moth, state === "dimmed" ? 0.18 : 1);
+        });
+
+        moths.forEach((moth) => drawMoth(context, moth, getMothDrawState(moth, hoverState)));
+      }
+
+      function drawScene(context, moths, width, height, elapsed, animationTime, hoverState = null) {
         context.clearRect(0, 0, width, height);
 
         const cx = width / 2;
@@ -931,14 +1026,16 @@ $html = @"
           .map((moth) => projectMoth(moth, animationTime, width, height, cx, cy))
           .filter(Boolean)
           .sort((a, b) => a.depth - b.depth);
+        const hoveredMoth = hoverState && hoverState.hoveredMothId
+          ? projectedMoths.find((moth) => moth.id === hoverState.hoveredMothId)
+          : null;
 
         drawGround(context, width, height, cx, cy);
-        projectedMoths.filter((moth) => moth.depth < 0).forEach((moth) => drawTrail(context, moth));
-        projectedMoths.filter((moth) => moth.depth < 0).forEach((moth) => drawMoth(context, moth));
+        drawProjectedMothLayer(context, projectedMoths.filter((moth) => moth.depth < 0), hoverState);
         drawLight(context, cx, cy, elapsed);
-        projectedMoths.filter((moth) => moth.depth >= 0).forEach((moth) => drawTrail(context, moth));
-        projectedMoths.filter((moth) => moth.depth >= 0).forEach((moth) => drawMoth(context, moth));
+        drawProjectedMothLayer(context, projectedMoths.filter((moth) => moth.depth >= 0), hoverState);
         drawEntryLabels(context, projectedMoths, animationTime, width, height);
+        drawHoverPopout(context, hoveredMoth, width, height, animationTime);
       }
 
       function parseClockTime(value) {
@@ -1274,6 +1371,12 @@ $html = @"
         let lastTimestamp = null;
         let isPlaying = config.animation.autoplay;
         let wasPlayingBeforeScrub = false;
+        let wasPlayingBeforeHover = false;
+        let isScrubbing = false;
+        let isHoverPaused = false;
+        const hoverState = {
+          hoveredMothId: null
+        };
 
         function updateTimelineControls() {
           scrubber.max = String(config.animation.duration);
@@ -1303,33 +1406,116 @@ $html = @"
             audio.update(animationTime, deltaSeconds);
           }
 
-          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, timestamp, animationTime);
+          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, timestamp, animationTime, hoverState);
           updateTimelineControls();
           requestAnimationFrame(tick);
         }
 
+        function findHoveredMoth(pointerX, pointerY) {
+          const width = canvas.clientWidth;
+          const height = canvas.clientHeight;
+          const cx = width / 2;
+          const cy = height * config.scene.centerYRatio;
+
+          return moths
+            .map((moth) => projectMoth(moth, animationTime, width, height, cx, cy, false))
+            .filter((moth) => moth && moth.opacity > 0.05)
+            .map((moth) => {
+              const distance = Math.hypot(pointerX - moth.x, pointerY - moth.y);
+              const hitRadius = Math.max(14, moth.size * 2.4 + moth.shadowBlur * 0.12);
+              return {
+                distance,
+                hitRadius,
+                moth
+              };
+            })
+            .filter((candidate) => candidate.distance <= candidate.hitRadius)
+            .sort((a, b) => {
+              if (Math.abs(a.distance - b.distance) > 0.1) {
+                return a.distance - b.distance;
+              }
+
+              return b.moth.depth - a.moth.depth;
+            })[0]?.moth || null;
+        }
+
+        function clearHover() {
+          hoverState.hoveredMothId = null;
+          canvas.style.cursor = "default";
+
+          if (isHoverPaused && !isScrubbing) {
+            isPlaying = wasPlayingBeforeHover;
+            lastTimestamp = null;
+          }
+
+          isHoverPaused = false;
+        }
+
+        function updateHover(event) {
+          const rect = canvas.getBoundingClientRect();
+          const pointerX = event.clientX - rect.left;
+          const pointerY = event.clientY - rect.top;
+          const hoveredMoth = findHoveredMoth(pointerX, pointerY);
+
+          hoverState.hoveredMothId = hoveredMoth ? hoveredMoth.id : null;
+          canvas.style.cursor = hoveredMoth ? "pointer" : "default";
+
+          if (!hoveredMoth) {
+            clearHover();
+            return;
+          }
+
+          if (!isHoverPaused && !isScrubbing) {
+            wasPlayingBeforeHover = isPlaying;
+            isPlaying = false;
+            isHoverPaused = true;
+            lastTimestamp = null;
+          }
+        }
+
         scrubber.addEventListener("pointerdown", () => {
-          wasPlayingBeforeScrub = isPlaying;
+          isScrubbing = true;
+          wasPlayingBeforeScrub = isHoverPaused ? wasPlayingBeforeHover : isPlaying;
           isPlaying = false;
         });
 
         scrubber.addEventListener("input", () => {
           animationTime = clampAnimationTime(Number(scrubber.value));
-          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime);
+          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState);
           updateTimelineControls();
         });
 
         scrubber.addEventListener("pointerup", () => {
-          isPlaying = wasPlayingBeforeScrub;
+          isScrubbing = false;
+          if (hoverState.hoveredMothId) {
+            wasPlayingBeforeHover = wasPlayingBeforeScrub;
+            isPlaying = false;
+            isHoverPaused = true;
+          } else {
+            isPlaying = wasPlayingBeforeScrub;
+            isHoverPaused = false;
+          }
+
           lastTimestamp = null;
         });
 
         scrubber.addEventListener("change", () => {
           animationTime = clampAnimationTime(Number(scrubber.value));
-          isPlaying = wasPlayingBeforeScrub;
+          isScrubbing = false;
+          if (hoverState.hoveredMothId) {
+            wasPlayingBeforeHover = wasPlayingBeforeScrub;
+            isPlaying = false;
+            isHoverPaused = true;
+          } else {
+            isPlaying = wasPlayingBeforeScrub;
+            isHoverPaused = false;
+          }
+
           lastTimestamp = null;
         });
 
+        canvas.addEventListener("pointermove", updateHover);
+        canvas.addEventListener("pointerleave", clearHover);
         window.addEventListener("resize", resizeCanvas);
         resizeCanvas();
         updateTimelineControls();

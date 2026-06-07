@@ -285,6 +285,7 @@ $html = @"
         height: 100%;
         background: $safeCanvasBackground;
         cursor: default;
+        touch-action: manipulation;
       }
 
       .animation-heading {
@@ -1374,6 +1375,9 @@ $html = @"
         let wasPlayingBeforeHover = false;
         let isScrubbing = false;
         let isHoverPaused = false;
+        const canHover = window.matchMedia
+          ? window.matchMedia("(hover: hover) and (pointer: fine)").matches
+          : true;
         const hoverState = {
           hoveredMothId: null
         };
@@ -1452,6 +1456,10 @@ $html = @"
         }
 
         function updateHover(event) {
+          if (!canHover) {
+            return;
+          }
+
           const rect = canvas.getBoundingClientRect();
           const pointerX = event.clientX - rect.left;
           const pointerY = event.clientY - rect.top;
@@ -1471,6 +1479,40 @@ $html = @"
             isHoverPaused = true;
             lastTimestamp = null;
           }
+        }
+
+        function handleTapFocus(event) {
+          if (canHover && event.pointerType === "mouse") {
+            return;
+          }
+
+          const rect = canvas.getBoundingClientRect();
+          const pointerX = event.clientX - rect.left;
+          const pointerY = event.clientY - rect.top;
+          const tappedMoth = findHoveredMoth(pointerX, pointerY);
+
+          event.preventDefault();
+
+          if (!tappedMoth || tappedMoth.id === hoverState.hoveredMothId) {
+            clearHover();
+            drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState);
+            return;
+          }
+
+          hoverState.hoveredMothId = tappedMoth.id;
+          canvas.style.cursor = "pointer";
+
+          if (!isHoverPaused && !isScrubbing) {
+            wasPlayingBeforeHover = isPlaying;
+          }
+
+          if (!isScrubbing) {
+            isPlaying = false;
+            isHoverPaused = true;
+            lastTimestamp = null;
+          }
+
+          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState);
         }
 
         scrubber.addEventListener("pointerdown", () => {
@@ -1514,8 +1556,12 @@ $html = @"
           lastTimestamp = null;
         });
 
-        canvas.addEventListener("pointermove", updateHover);
-        canvas.addEventListener("pointerleave", clearHover);
+        if (canHover) {
+          canvas.addEventListener("pointermove", updateHover);
+          canvas.addEventListener("pointerleave", clearHover);
+        }
+
+        canvas.addEventListener("pointerdown", handleTapFocus);
         window.addEventListener("resize", resizeCanvas);
         resizeCanvas();
         updateTimelineControls();

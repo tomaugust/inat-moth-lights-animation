@@ -128,6 +128,7 @@ Lifecycle states:
 Erraticness:
 
 - Adds small deviations to angle, radius, and vertical position.
+- Adds slow random-walk drift to orbit inclination and ascending-node longitude so each moth's orbit slowly changes over time.
 - Should feel organic but not chaotic.
 - Use deterministic seeded noise per moth if possible, so the same JSON generates the same animation.
 - Erraticness should be configurable from `0` for smooth orbit to higher values for irregular flight.
@@ -192,6 +193,15 @@ The species label should not remain for the whole orbit, otherwise the animation
 
 Clock And Scrub Bar
 -------------------
+
+Hover interaction:
+
+- When the pointer rolls over a moth, pause the animation timeline immediately.
+- The hovered moth becomes the focal moth: increase its opacity and visual emphasis.
+- All non-focal moths become more transparent and recede visually.
+- Show a small popout panel near the moth that fades in with details such as species name, time active, and maybe a short note.
+- Hide the popout and resume normal playback when the pointer leaves.
+- Keep the hover effect subtle and avoid disrupting the overall scene.
 
 Clock:
 

@@ -103,6 +103,7 @@ function Read-AnimationConfig {
       color = [string](Get-ConfigValue $speciesRecord "color" "#000000")
       erraticness = ConvertTo-PositiveNumber (Get-ConfigValue $speciesRecord "erraticness" 0) 0 0
       id = $speciesId
+      imageURL = [string](Get-ConfigValue $speciesRecord "imageURL" "")
       inclinationDriftSpeed = ConvertTo-PositiveNumber (Get-ConfigValue $speciesRecord "inclinationDriftSpeed" 0) 0 0
       name = [string](Get-ConfigValue $speciesRecord "name" $speciesId)
       nodeDriftSpeed = ConvertTo-PositiveNumber (Get-ConfigValue $speciesRecord "nodeDriftSpeed" 0) 0 0
@@ -110,6 +111,7 @@ function Read-AnimationConfig {
       shadowColor = [string](Get-ConfigValue $speciesRecord "shadowColor" "rgba(255, 255, 255, 0.12)")
       size = ConvertTo-PositiveNumber (Get-ConfigValue $speciesRecord "size" 10) 10 2
       speed = ConvertTo-PositiveNumber (Get-ConfigValue $speciesRecord "speed" 1) 1 0.01
+      speciesDescription = [string](Get-ConfigValue $speciesRecord "speciesDescription" "")
       trailLength = ConvertTo-PositiveNumber (Get-ConfigValue $speciesRecord "trailLength" 18) 18 1
     }
     $speciesById[$speciesId] = $normalized
@@ -138,6 +140,7 @@ function Read-AnimationConfig {
       exitTime = $exitTime
       id = [string](Get-ConfigValue $moth "id" "moth-$($index + 1)")
       inclinationDriftSpeed = $speciesDefaults.inclinationDriftSpeed
+      imageURL = $speciesDefaults.imageURL
       label = $speciesDefaults.name
       nodeDriftSpeed = $speciesDefaults.nodeDriftSpeed
       radius = 0
@@ -146,6 +149,7 @@ function Read-AnimationConfig {
       size = $speciesDefaults.size
       species = $speciesId
       speciesName = $speciesDefaults.name
+      speciesDescription = $speciesDefaults.speciesDescription
       speed = $speciesDefaults.speed
       trailLength = $speciesDefaults.trailLength
     }
@@ -185,8 +189,10 @@ function Read-AnimationConfig {
     }
     audio = @{
       chimeProbability = ConvertTo-PositiveNumber (Get-ConfigValue $audio "chimeProbability" 0.3) 0.3 0
+      droneBrightness = ConvertTo-PositiveNumber (Get-ConfigValue $audio "droneBrightness" 0.45) 0.45 0
       droneEnabled = [bool](Get-ConfigValue $audio "droneEnabled" $false)
       droneNotes = @(Get-ConfigValue $audio "droneNotes" @("D2", "A2", "D3")) | ForEach-Object { [string]$_ }
+      droneVariation = ConvertTo-PositiveNumber (Get-ConfigValue $audio "droneVariation" 0.65) 0.65 0
       droneVolume = ConvertTo-PositiveNumber (Get-ConfigValue $audio "droneVolume" 0.035) 0.035 0
       enabled = [bool](Get-ConfigValue $audio "enabled" $true)
       minInterval = ConvertTo-PositiveNumber (Get-ConfigValue $audio "minInterval" 0.85) 0.85 0.05
@@ -201,10 +207,13 @@ function Read-AnimationConfig {
       groundBackColor = [string](Get-ConfigValue $scene "groundBackColor" "#07080b")
       groundFrontColor = [string](Get-ConfigValue $scene "groundFrontColor" "#211b14")
       groundMidColor = [string](Get-ConfigValue $scene "groundMidColor" "#14120f")
+      horizontalEdgeMothOpacity = ConvertTo-PositiveNumber (Get-ConfigValue $scene "horizontalEdgeMothOpacity" 0.28) 0.28 0
+      horizontalFadeEnabled = [bool](Get-ConfigValue $scene "horizontalFadeEnabled" $true)
       horizonYRatio = ConvertTo-PositiveNumber (Get-ConfigValue $scene "horizonYRatio" 0.34) 0.34 0
       lightPoolColor = [string](Get-ConfigValue $scene "lightPoolColor" "rgba(255, 244, 201, 0.3)")
       lightPoolRadius = ConvertTo-PositiveNumber (Get-ConfigValue $scene "lightPoolRadius" 330) 330 40
       orbitTilt = ConvertTo-PositiveNumber (Get-ConfigValue $scene "orbitTilt" 0.3) 0.3 0.05
+      orbitRadiusScale = ConvertTo-PositiveNumber (Get-ConfigValue $scene "orbitRadiusScale" 0.92) 0.92 0.1
       showGround = [bool](Get-ConfigValue $scene "showGround" $true)
     }
     species = $normalizedSpecies
@@ -472,7 +481,8 @@ $html = @"
 
       function createMoths(config, width, height) {
         const maxMothSize = config.moths.reduce((largest, moth) => Math.max(largest, moth.size), 0);
-        const usableRadius = Math.max(32, (Math.min(width, height) * 0.48 - maxMothSize - 18) * 0.7);
+        const orbitRadiusScale = Math.max(0.1, Math.min(1.15, config.scene.orbitRadiusScale || 0.92));
+        const usableRadius = Math.max(32, (Math.min(width, height) * 0.48 - maxMothSize - 18) * orbitRadiusScale);
         const minRadius = Math.min(72, usableRadius);
         const speeds = config.moths.map((moth) => moth.speed);
         const minSpeed = Math.min(...speeds);
@@ -483,7 +493,8 @@ $html = @"
         return config.moths.map((moth, index) => {
           const speedRatio = (moth.speed - minSpeed) / speedRange;
           const baseRadius = minRadius + (1 - speedRatio) * radiusRange;
-          const offset = (seededUnit(hashString(moth.id || moth.species || String(index)), 7) - 0.5) * radiusRange * 0.08;
+          const noiseSeed = hashString(moth.id || moth.species || String(index));
+          const offset = (seededUnit(noiseSeed, 7) - 0.5) * radiusRange * 0.08;
           const radius = Math.max(minRadius, Math.min(usableRadius, baseRadius + offset));
 
           return {
@@ -497,12 +508,15 @@ $html = @"
           inclinationDriftSpeed: moth.inclinationDriftSpeed,
           label: moth.label,
           nodeDriftSpeed: moth.nodeDriftSpeed,
-          noiseSeed: hashString(moth.id || moth.species || String(index)),
+          noiseSeed,
+          orbitDirection: seededUnit(noiseSeed, 131) < 0.5 ? -1 : 1,
           radius,
           shadowBlur: moth.shadowBlur,
           shadowColor: moth.shadowColor,
           size: moth.size,
           species: moth.species,
+          speciesDescription: moth.speciesDescription,
+          imageURL: moth.imageURL,
           speciesName: moth.speciesName,
           speed: moth.speed,
           trailLength: moth.trailLength
@@ -560,7 +574,8 @@ $html = @"
         const nodeDrift = moth.nodeDriftSpeed > 0
           ? erraticWave(moth, activeTime * moth.nodeDriftSpeed, 59, 0.34) * erraticness * 0.26
           : 0;
-        const angle = moth.angle + activeTime * moth.speed + angleJitter;
+        const orbitDirection = moth.orbitDirection || 1;
+        const angle = moth.angle + activeTime * moth.speed * orbitDirection + angleJitter;
         const radius = Math.max(12, moth.radius + radiusJitter);
         const orbitTilt = Math.max(0.08, Math.min(0.9, config.scene.orbitTilt + inclinationDrift));
         const depth = Math.sin(angle);
@@ -613,6 +628,13 @@ $html = @"
         const depthRatio = (orbit.depth + 1) * 0.5;
         let opacity = config.scene.backgroundMothOpacity +
           (config.scene.foregroundMothOpacity - config.scene.backgroundMothOpacity) * depthRatio;
+        if (config.scene.horizontalFadeEnabled !== false) {
+          const edgeOpacity = Math.max(0, Math.min(1, config.scene.horizontalEdgeMothOpacity));
+          const fadeDistance = Math.max(1, config.light.glowRadius * 1.5);
+          const horizontalDistanceRatio = Math.min(1, Math.abs(x - cx) / fadeDistance);
+          const horizontalFade = edgeOpacity + (1 - easeInOut(horizontalDistanceRatio)) * (1 - edgeOpacity);
+          opacity *= horizontalFade;
+        }
 
         if (phase === "entering") {
           opacity *= easeInOut((animationTime - moth.entryTime) / entryDuration);
@@ -754,6 +776,10 @@ $html = @"
       function drawEntryLabels(context, moths, animationTime, width, height) {
         const activeLabels = moths
           .map((moth) => {
+            if (moth.species === "unknown") {
+              return null;
+            }
+
             const labelDuration = config.animation.speciesTagDuration;
             const age = animationTime - moth.entryTime;
             if (age < 0 || age > labelDuration) {
@@ -948,7 +974,48 @@ $html = @"
         context.restore();
       }
 
-      function drawHoverPopout(context, moth, width, height, animationTime) {
+      function wrapTextLines(context, text, maxWidth) {
+        const words = String(text || "").split(/\s+/).filter(Boolean);
+        const lines = [];
+        let line = "";
+
+        words.forEach((word) => {
+          const testLine = line ? line + " " + word : word;
+          if (line && context.measureText(testLine).width > maxWidth) {
+            lines.push(line);
+            line = word;
+          } else {
+            line = testLine;
+          }
+        });
+
+        if (line) {
+          lines.push(line);
+        }
+
+        return lines;
+      }
+
+      function drawCoverImage(context, image, x, y, width, height) {
+        const imageRatio = image.naturalWidth / image.naturalHeight;
+        const targetRatio = width / height;
+        let sourceX = 0;
+        let sourceY = 0;
+        let sourceWidth = image.naturalWidth;
+        let sourceHeight = image.naturalHeight;
+
+        if (imageRatio > targetRatio) {
+          sourceWidth = image.naturalHeight * targetRatio;
+          sourceX = (image.naturalWidth - sourceWidth) * 0.5;
+        } else {
+          sourceHeight = image.naturalWidth / targetRatio;
+          sourceY = (image.naturalHeight - sourceHeight) * 0.5;
+        }
+
+        context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+      }
+
+      function drawHoverPopout(context, moth, width, height, animationTime, imageCache) {
         if (!moth) {
           return;
         }
@@ -960,18 +1027,31 @@ $html = @"
         const activeRange = formatClockTime(moth.entryTime) + " - " + formatClockTime(moth.exitTime);
         const paddingX = 12;
         const paddingY = 9;
-        const gap = 5;
+        const gap = 7;
         const titleFont = "600 " + Math.max(12, fontSize) + "px Inter, system-ui, sans-serif";
         const detailFont = "400 " + Math.max(11, fontSize * 0.82) + "px Inter, system-ui, sans-serif";
+        const descriptionFont = "400 " + Math.max(10.5, fontSize * 0.78) + "px Inter, system-ui, sans-serif";
+        const imageRecord = imageCache && moth.imageURL ? imageCache.get(moth.imageURL) : null;
+        const hasImage = imageRecord && imageRecord.loaded && imageRecord.image;
+        const imageWidth = hasImage ? 92 : 0;
+        const imageHeight = hasImage ? 72 : 0;
+        const textWidth = 188;
+        const description = moth.speciesDescription || "";
 
         context.save();
         context.font = titleFont;
         const titleWidth = context.measureText(speciesName).width;
         context.font = detailFont;
         const detailWidth = context.measureText(activeRange).width;
+        context.font = descriptionFont;
+        const descriptionLines = wrapTextLines(context, description, textWidth);
 
-        const boxWidth = Math.ceil(Math.max(titleWidth, detailWidth) + paddingX * 2);
-        const boxHeight = Math.ceil(fontSize + fontSize * 0.82 + gap + paddingY * 2);
+        const contentGap = hasImage ? 10 : 0;
+        const bodyWidth = imageWidth + contentGap + textWidth;
+        const textBlockHeight = fontSize + gap + fontSize * 0.82 + (descriptionLines.length > 0 ? gap + descriptionLines.length * fontSize * 1.05 : 0);
+        const bodyHeight = Math.max(imageHeight, textBlockHeight);
+        const boxWidth = Math.ceil(Math.max(titleWidth, detailWidth, bodyWidth) + paddingX * 2);
+        const boxHeight = Math.ceil(bodyHeight + paddingY * 2);
         const offset = Math.max(20, moth.size * 3.2);
         let x = moth.x + offset;
         let y = moth.y - boxHeight - offset * 0.42;
@@ -992,12 +1072,38 @@ $html = @"
 
         context.textAlign = "left";
         context.textBaseline = "top";
+
+        const contentX = x + paddingX;
+        const contentY = y + paddingY;
+        const textX = contentX + imageWidth + contentGap;
+
+        if (hasImage) {
+          context.save();
+          drawRoundedRect(context, contentX, contentY, imageWidth, imageHeight, 6);
+          context.clip();
+          drawCoverImage(context, imageRecord.image, contentX, contentY, imageWidth, imageHeight);
+          context.restore();
+          context.strokeStyle = "rgba(255, 255, 255, 0.16)";
+          context.lineWidth = 1;
+          drawRoundedRect(context, contentX, contentY, imageWidth, imageHeight, 6);
+          context.stroke();
+        }
+
         context.font = titleFont;
         context.fillStyle = colorWithAlpha(moth.color, 0.96);
-        context.fillText(speciesName, x + paddingX, y + paddingY);
+        context.fillText(speciesName, textX, contentY);
         context.font = detailFont;
         context.fillStyle = "rgba(255, 255, 255, 0.72)";
-        context.fillText(activeRange, x + paddingX, y + paddingY + fontSize + gap);
+        context.fillText(activeRange, textX, contentY + fontSize + gap);
+
+        if (descriptionLines.length > 0) {
+          context.font = descriptionFont;
+          context.fillStyle = "rgba(255, 255, 255, 0.68)";
+          descriptionLines.forEach((line, index) => {
+            context.fillText(line, textX, contentY + fontSize + gap + fontSize * 0.82 + gap + index * fontSize * 1.05);
+          });
+        }
+
         context.restore();
       }
 
@@ -1036,7 +1142,7 @@ $html = @"
         drawLight(context, cx, cy, elapsed);
         drawProjectedMothLayer(context, projectedMoths.filter((moth) => moth.depth >= 0), hoverState);
         drawEntryLabels(context, projectedMoths, animationTime, width, height);
-        drawHoverPopout(context, hoveredMoth, width, height, animationTime);
+        drawHoverPopout(context, hoveredMoth, width, height, animationTime, hoverState ? hoverState.imageCache : null);
       }
 
       function parseClockTime(value) {
@@ -1143,6 +1249,12 @@ $html = @"
           return Math.max(0, Math.min(maximum, Number.isFinite(scaled) ? scaled : fallback));
         }
 
+        function levelMultiplier(value, fallback, baseLevel, maximumMultiplier = 8) {
+          const numeric = Number(value ?? fallback);
+          const multiplier = Number.isFinite(numeric) ? numeric : fallback;
+          return Math.max(0, Math.min(maximumMultiplier, multiplier)) * baseLevel;
+        }
+
         function setChimesActive(active) {
           if (!audioContext || !masterGain || !delayGain) {
             return;
@@ -1164,33 +1276,58 @@ $html = @"
           const notes = Array.isArray(settings.droneNotes) && settings.droneNotes.length > 0
             ? settings.droneNotes
             : ["D2", "A2", "D3"];
-          const lowpass = audioContext.createBiquadFilter();
-          lowpass.type = "lowpass";
-          lowpass.frequency.value = 520;
-          lowpass.Q.value = 0.55;
-          lowpass.connect(droneGain);
+          const variation = Math.max(0, Math.min(1, settings.droneVariation ?? 0.65));
+          const brightness = Math.max(0, Math.min(1, settings.droneBrightness ?? 0.45));
+          const baseFilterFrequency = 260 + brightness * 980;
 
           notes.forEach((note, index) => {
-            const oscillator = audioContext.createOscillator();
-            const gain = audioContext.createGain();
-            const lfo = audioContext.createOscillator();
-            const lfoGain = audioContext.createGain();
+            const frequency = noteToFrequency(note);
             const now = audioContext.currentTime;
+            const voiceBus = audioContext.createGain();
+            const lowpass = audioContext.createBiquadFilter();
+            const filterLfo = audioContext.createOscillator();
+            const filterLfoGain = audioContext.createGain();
+            const layers = [
+              { ratio: 1, type: "sine", gain: 0.42, drift: 0, driftAmount: 0 },
+              { ratio: 2, type: "sine", gain: 0.04, drift: 0, driftAmount: 0.16 },
+              { ratio: 4, type: "sine", gain: 0.008, drift: 0, driftAmount: 0.08 }
+            ];
 
-            oscillator.type = index === 0 ? "sine" : "triangle";
-            oscillator.frequency.setValueAtTime(noteToFrequency(note), now);
-            oscillator.detune.setValueAtTime((index - 1) * 4, now);
+            voiceBus.gain.setValueAtTime(0.0001, now);
+            voiceBus.gain.linearRampToValueAtTime(1, now + 1.8);
+            lowpass.type = "lowpass";
+            lowpass.frequency.setValueAtTime(baseFilterFrequency + index * 90, now);
+            lowpass.Q.value = 0.5 + brightness * 0.35;
+            filterLfo.frequency.value = 0.018 + index * 0.006;
+            filterLfoGain.gain.value = baseFilterFrequency * 0.045 * variation;
+            filterLfo.connect(filterLfoGain);
+            filterLfoGain.connect(lowpass.frequency);
+            voiceBus.connect(lowpass);
+            lowpass.connect(droneGain);
+            filterLfo.start(now);
 
-            gain.gain.value = 0.32 / notes.length;
-            lfo.frequency.value = 0.055 + index * 0.026;
-            lfoGain.gain.value = 0.09 / notes.length;
-            lfo.connect(lfoGain);
-            lfoGain.connect(gain.gain);
+            layers.forEach((layer, layerIndex) => {
+              const oscillator = audioContext.createOscillator();
+              const gain = audioContext.createGain();
+              const detuneLfo = audioContext.createOscillator();
+              const detuneLfoGain = audioContext.createGain();
+              const layerGain = layer.gain / Math.max(1, notes.length);
 
-            oscillator.connect(gain);
-            gain.connect(lowpass);
-            oscillator.start(now);
-            lfo.start(now);
+              oscillator.type = layer.type;
+              oscillator.frequency.setValueAtTime(frequency * layer.ratio, now);
+              oscillator.detune.setValueAtTime(layer.drift, now);
+
+              gain.gain.value = layerGain * (1 - variation * 0.16);
+              detuneLfo.frequency.value = 0.012 + index * 0.004 + layerIndex * 0.003;
+              detuneLfoGain.gain.value = layer.driftAmount * variation;
+              detuneLfo.connect(detuneLfoGain);
+              detuneLfoGain.connect(oscillator.detune);
+
+              oscillator.connect(gain);
+              gain.connect(voiceBus);
+              oscillator.start(now);
+              detuneLfo.start(now);
+            });
           });
 
           droneStarted = true;
@@ -1203,7 +1340,7 @@ $html = @"
 
           startDrone();
           const now = audioContext.currentTime;
-          const target = active ? audioLevel(settings.droneVolume, 0.035, 0.16) : 0;
+          const target = active ? levelMultiplier(settings.droneVolume, 1, 0.38) : 0;
           droneGain.gain.cancelScheduledValues(now);
           if (active) {
             droneGain.gain.setTargetAtTime(target, now, 0.9);
@@ -1295,14 +1432,14 @@ $html = @"
           return notes[Math.floor(Math.random() * notes.length)];
         }
 
-        function activeSpeciesAt(animationTime) {
-          const activeSpecies = new Set();
+        function activeSpeciesCountsAt(animationTime) {
+          const activeSpeciesCounts = new Map();
           moths.forEach((moth) => {
             if (animationTime >= moth.entryTime && animationTime <= moth.exitTime) {
-              activeSpecies.add(moth.species);
+              activeSpeciesCounts.set(moth.species, (activeSpeciesCounts.get(moth.species) || 0) + 1);
             }
           });
-          return activeSpecies;
+          return activeSpeciesCounts;
         }
 
         function update(animationTime, deltaSeconds) {
@@ -1310,13 +1447,14 @@ $html = @"
             return;
           }
 
-          const activeSpecies = activeSpeciesAt(animationTime);
+          const activeSpeciesCounts = activeSpeciesCountsAt(animationTime);
           const probability = Math.max(0, settings.chimeProbability ?? 0.3);
           const minInterval = Math.max(0.05, settings.minInterval ?? 0.85);
 
           config.species.forEach((species) => {
             const note = pickSpeciesNote(species);
-            if (!activeSpecies.has(species.id) || !note) {
+            const activeCount = activeSpeciesCounts.get(species.id) || 0;
+            if (activeCount < 1 || !note) {
               return;
             }
 
@@ -1326,7 +1464,8 @@ $html = @"
               return;
             }
 
-            const chance = 1 - Math.exp(-probability * Math.max(0, deltaSeconds));
+            const countMultiplier = Math.min(12, activeCount);
+            const chance = 1 - Math.exp(-probability * countMultiplier * Math.max(0, deltaSeconds));
             if (Math.random() < chance) {
               const size = Math.max(1, species.size || 6);
               const intensity = Math.max(0.35, Math.min(1, 8 / size));
@@ -1379,7 +1518,8 @@ $html = @"
           ? window.matchMedia("(hover: hover) and (pointer: fine)").matches
           : true;
         const hoverState = {
-          hoveredMothId: null
+          hoveredMothId: null,
+          imageCache: new Map()
         };
 
         function updateTimelineControls() {
@@ -1395,6 +1535,33 @@ $html = @"
           canvas.height = Math.max(1, Math.floor(rect.height * scale));
           context.setTransform(scale, 0, 0, scale, 0, 0);
           moths = createMoths(config, rect.width, rect.height);
+        }
+
+        function preloadSpeciesImages() {
+          config.species.forEach((species) => {
+            const imageURL = species.imageURL;
+            if (!imageURL || hoverState.imageCache.has(imageURL)) {
+              return;
+            }
+
+            const image = new Image();
+            const record = {
+              image,
+              loaded: false,
+              failed: false
+            };
+
+            hoverState.imageCache.set(imageURL, record);
+            image.crossOrigin = "anonymous";
+            image.addEventListener("load", () => {
+              record.loaded = true;
+              drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState);
+            });
+            image.addEventListener("error", () => {
+              record.failed = true;
+            });
+            image.src = imageURL;
+          });
         }
 
         function tick(timestamp) {
@@ -1423,7 +1590,7 @@ $html = @"
 
           return moths
             .map((moth) => projectMoth(moth, animationTime, width, height, cx, cy, false))
-            .filter((moth) => moth && moth.opacity > 0.05)
+            .filter((moth) => moth && moth.species !== "unknown" && moth.opacity > 0.05)
             .map((moth) => {
               const distance = Math.hypot(pointerX - moth.x, pointerY - moth.y);
               const hitRadius = Math.max(14, moth.size * 2.4 + moth.shadowBlur * 0.12);
@@ -1564,6 +1731,7 @@ $html = @"
         canvas.addEventListener("pointerdown", handleTapFocus);
         window.addEventListener("resize", resizeCanvas);
         resizeCanvas();
+        preloadSpeciesImages();
         updateTimelineControls();
         requestAnimationFrame(tick);
       }

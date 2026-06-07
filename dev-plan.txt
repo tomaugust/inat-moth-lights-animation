@@ -16,40 +16,45 @@ Current State
 - Moth records are observation events only: `id`, `species`, `entryTime`, and `exitTime`.
 - Species records define appearance, motion, trails, glow, and sound.
 - Moths orbit in a low oblique 2D projection with depth sorting, so background moths pass behind the light and foreground moths pass in front.
+- Each moth is assigned a deterministic 50:50 clockwise or counter-clockwise orbit direction.
 - Orbit radius is generated from species speed: faster moths use smaller orbits and slower moths use larger orbits. The maximum orbit radius is reduced so moths stay closer to the light.
 - Moths enter from the left, orbit, exit to the right, and fade before the edge so blurred glows are not clipped.
 - Moth movement uses deterministic erratic motion plus slow species-level orbit drift.
 - Trails use recent projected positions and fade along the path in the moth colour.
+- Known species use a very light natural moth palette of off-white, subtle cream, beige, and pale brown tones; unknown moths remain grey.
 - The centre light is a fixed-size hanging bulb with a dark fixture, cord, broad glow, and glow-only flicker.
 - The ground plane and light pool are implemented, but the example currently uses `scene.showGround: false` for light in black space.
 - The layout is full-screen, with title and description as top-right overlay text.
 - Species entry labels appear near the light glow, stack vertically, fade out, and use the same font family and computed size as the description overlay.
+- Known moths support desktop hover and mobile tap focus, including playback pause, focal highlighting, non-focal fading, and a popout with species name, active time, image, and description.
+- The special `unknown` species is excluded from entry labels and hover/tap popouts.
 - The bottom timeline has a centred `HH:MM` clock above a scrub bar. Animation timing is seconds, while the displayed clock maps each animation second to one clock minute.
 - The scrub bar supports manual timeline control and pauses playback while dragging.
 - Web Audio windchime sound is implemented in the standalone HTML. The sound toggle is bottom-right, unlocks browser audio, and immediately mutes all sound when turned off.
-- Species chimes use `chimeNotes` with a warm bell-partial synth. A configurable low background drone can play under the chimes.
+- Species chimes use `chimeNotes` with a warm bell-partial synth. Chime probability is proportional to active moth count for each species.
+- A configurable low background drone can play under the chimes. Drone volume is a multiplier, and the drone has brightness and variation controls. The example avoids very low drone notes because small speakers can reproduce them as flutter or distortion.
 
 
 Next Step
 ---------
 
-1. Polish and test. [NEXT]
+1. Document config metrics. [NEXT]
+   - Document every JSON config metric with its minimum, maximum, default value, and a detailed description of how it affects the animation or audio.
+   - Cover `animation`, `audio`, `scene`, `light`, `species`, and `moths`.
+   - Decide whether this belongs in `README.md`, a separate config reference, or both.
+
+2. Polish and test.
    - Open `index.html` directly from disk and check visual playback.
    - Check GitHub Pages rendering after push.
    - Check mobile layout and scrub behaviour.
    - Check sound toggle, immediate mute, drone level, and chime pacing in a browser.
-   - Check that the generated file has no external runtime dependencies.
-
-2. Consider hover interaction.
-   - Pause on hover.
-   - Highlight the focal moth.
-   - Fade non-focal moths.
-   - Show a small species/time popout.
+   - Check external runtime dependencies: known species popout images currently use remote URLs, so the file is standalone for code/data but not fully offline for those images.
 
 
 Future Data Work
 ----------------
 
+- Consider optional build-time embedding of species images so emailed HTML attachments can show popout images without internet access.
 - Future moth counts and timings should come from real trap observation data.
 - Animation time should represent real clock time from the trap.
 - Species colours are currently aesthetic.

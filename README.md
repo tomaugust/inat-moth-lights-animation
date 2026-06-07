@@ -27,7 +27,7 @@ Use this shape:
     "speciesTagSize": 13,
     "speciesTagDuration": 10,
     "canvasBackground": "radial-gradient(circle at center, #252018 0%, #07080a 100%)",
-    "duration": 80,
+    "duration": 360,
     "timeLabel": "Time",
     "startClockTime": "22:00",
     "playbackSpeed": 1,
@@ -41,24 +41,31 @@ Use this shape:
     "noteDecay": 8,
     "minInterval": 1.1,
     "droneEnabled": true,
-    "droneNotes": ["C2", "G2", "C3"],
-    "droneVolume": 40
+    "droneNotes": ["C3", "G3", "C4"],
+    "droneVariation": 0.3,
+    "droneBrightness": 0.3,
+    "droneVolume": 1
   },
   "scene": {
     "showGround": false,
     "centerYRatio": 0.56,
     "horizonYRatio": 0.34,
     "orbitTilt": 0.28,
+    "orbitRadiusScale": 0.92,
+    "backgroundMothOpacity": 1,
+    "foregroundMothOpacity": 0.6,
+    "horizontalFadeEnabled": true,
+    "horizontalEdgeMothOpacity": 0.1,
     "groundBackColor": "#212121",
     "groundFrontColor": "#dbdbdb",
     "lightPoolColor": "rgba(255, 239, 188, 0.58)"
   },
   "light": {
-    "size": 15,
+    "size": 18,
     "color": "#fffdf4",
     "glowColor": "rgba(255, 250, 226, 0.82)",
-    "glowRadius": 200,
-    "shadowBlur": 20,
+    "glowRadius": 260,
+    "shadowBlur": 26,
     "flickerStrength": 0.01,
     "flickerSpeed": 0.006
   },
@@ -66,7 +73,9 @@ Use this shape:
     {
       "id": "large-yellow-underwing",
       "name": "Large Yellow Underwing",
-      "color": "#d7b46a",
+      "imageURL": "https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg",
+      "speciesDescription": "A very common and widespread large moth, often abundant at light traps in peak season.",
+      "color": "#f3e7cf",
       "chimeNote": "C3",
       "chimeNotes": ["C3", "G3", "E4"],
       "size": 7,
@@ -75,7 +84,7 @@ Use this shape:
       "inclinationDriftSpeed": 0.1,
       "nodeDriftSpeed": 0.1,
       "trailLength": 10,
-      "shadowColor": "rgba(255, 224, 151, 0.24)",
+      "shadowColor": "rgba(243, 231, 207, 0.24)",
       "shadowBlur": 16
     }
   ],
@@ -96,9 +105,11 @@ Animation timing fields are animation seconds. `animation.duration` controls the
 
 The generated animation includes a bottom timeline overlay. The `HH:MM` clock is centred above the scrub bar, and the scrub bar lets viewers move backward and forward manually. Dragging the scrub bar pauses playback and releasing it resumes autoplay when autoplay was active.
 
-Audio is generated inside the standalone HTML with the Web Audio API. The animation shows a subtle bottom-right sound button because browsers normally block autoplaying audio until the viewer interacts with the page. Chimes use warm, layered bell partials, select from each species' `chimeNotes`, and only trigger while at least one moth of that species is active. A soft configurable background drone can play under the chimes. Toggling sound off immediately mutes the chimes, delay tail, and drone.
+Audio is generated inside the standalone HTML with the Web Audio API. The animation shows a subtle bottom-right sound button because browsers normally block autoplaying audio until the viewer interacts with the page. Chimes use warm, layered bell partials, select from each species' `chimeNotes`, and only trigger while at least one moth of that species is active. A soft configurable background drone can play under the chimes. `audio.droneVolume` is a multiplier: `1` is the intended level, `2` is twice that level, and `0` is silent. `audio.droneVariation` and `audio.droneBrightness` are `0` to `1` controls. The example avoids very low drone notes because small speakers can reproduce them as flutter or distortion. Toggling sound off immediately mutes the chimes, delay tail, and drone.
 
 When a moth enters, its species name briefly appears as a centred tag near the light glow. Tags stack vertically, with new names appended at the bottom and older names moving upward. Species labels use the same font family and computed size as the description overlay. `animation.speciesTagDuration` and `animation.speciesTagColor` control their presentation; when `speciesTagColor` is empty, tags use each species colour.
+
+Known species can include `imageURL` and `speciesDescription`. Desktop hover and mobile tap focus a moth, pause playback, highlight the focal moth, fade the others, and show a popout containing the species name, active time window, image, and description. The special `unknown` species is excluded from entry labels and hover/tap popouts. Remote `imageURL` values keep the generated file small but require an internet connection for images to appear; fully offline image embedding is a future option.
 
 The light is drawn as a hanging bulb: a fixed-size white core, a small dark fixture above it, and a cord fading upward into black. `light.flickerStrength` changes only the glow opacity and radius; it does not resize the bulb circle.
 
@@ -114,6 +125,8 @@ Useful species-level fields:
 - `chimeNote`: fallback windchime note for the species.
 - `chimeNotes`: optional note set for richer species chime variation.
 - `shadowColor` and `shadowBlur`: glow around the moth.
+- `imageURL`: optional species image shown in the hover/tap popout.
+- `speciesDescription`: optional short species description shown in the hover/tap popout.
 
 Useful moth-level fields:
 
@@ -121,7 +134,7 @@ Useful moth-level fields:
 - `species`: id of the species this moth belongs to.
 - `entryTime` and `exitTime`: seconds on the animation timeline when the moth enters and leaves.
 
-Moth records do not override species attributes. Orbit angle is assigned automatically from moth order, and orbit radius is assigned by the generator from species speed: faster moths get smaller orbits, slower moths get larger orbits. The generated maximum orbit radius is capped below the full viewport radius so moths stay closer to the light.
+Moth records do not override species attributes. Orbit angle is assigned automatically from moth order, orbit direction is assigned automatically with a deterministic 50:50 clockwise/counter-clockwise split, and orbit radius is assigned by the generator from species speed: faster moths get smaller orbits, slower moths get larger orbits. The generated maximum orbit radius is capped below the full viewport radius so moths stay closer to the light.
 
 ## Build A Standalone HTML File
 

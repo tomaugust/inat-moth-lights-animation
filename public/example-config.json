@@ -15,7 +15,7 @@
     "panelBorderColor": "rgba(255, 255, 255, 0.12)",
     "canvasBackground": "radial-gradient(circle at center, #252018 0%, #111114 58%, #07080a 100%)",
     "canvasBorderColor": "rgba(255, 255, 255, 0.16)",
-    "duration": 80,
+    "duration": 360,
     "timeLabel": "Time",
     "startClockTime": "22:00",
     "playbackSpeed": 2,
@@ -29,16 +29,21 @@
     "noteDecay": 8,
     "minInterval": 1.1,
     "droneEnabled": true,
-    "droneNotes": ["C2", "G2", "C3"],
-    "droneVolume": 40
+    "droneNotes": ["C3", "G3", "C4"],
+    "droneVariation": 0.3,
+    "droneBrightness": 0.3,
+    "droneVolume": 0.5
   },
   "scene": {
     "showGround": false,
     "centerYRatio": 0.56,
     "horizonYRatio": 0.34,
     "orbitTilt": 0.28,
+    "orbitRadiusScale": 0.92,
     "backgroundMothOpacity": 1,
     "foregroundMothOpacity": 0.6,
+    "horizontalFadeEnabled": true,
+    "horizontalEdgeMothOpacity": 0.1,
     "groundBackColor": "#212121",
     "groundMidColor": "#bfbfbf",
     "groundFrontColor": "#dbdbdb",
@@ -46,12 +51,12 @@
     "lightPoolRadius": 430
   },
   "light": {
-    "size": 15,
+    "size": 18,
     "color": "#fffdf4",
     "glowColor": "rgba(255, 250, 226, 0.82)",
     "haloColor": "rgba(255, 244, 201, 0.26)",
-    "glowRadius": 200,
-    "shadowBlur": 20,
+    "glowRadius": 260,
+    "shadowBlur": 26,
     "flickerStrength": 0.05,
     "flickerSpeed": 0.006
   },
@@ -59,7 +64,9 @@
     {
       "id": "large-yellow-underwing",
       "name": "Large Yellow Underwing",
-      "color": "#d7b46a",
+      "imageURL": "https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg",
+      "speciesDescription": "A very common and widespread large moth, often abundant at light traps in peak season. It occupies many habitats, including grassland, farmland, woodland, wetlands, towns and gardens.",
+      "color": "#eddcb9",
       "chimeNote": "C3",
       "chimeNotes": ["C3", "G3", "E4"],
       "size": 7,
@@ -68,13 +75,15 @@
       "inclinationDriftSpeed": 0.1,
       "nodeDriftSpeed": 0.1,
       "trailLength": 10,
-      "shadowColor": "rgba(255, 224, 151, 0.24)",
+      "shadowColor": "rgba(243, 231, 207, 0.24)",
       "shadowBlur": 16
     },
     {
       "id": "silver-y",
       "name": "Silver Y",
-      "color": "#b8c5d8",
+      "imageURL": "https://commons.wikimedia.org/wiki/Special:FilePath/-2441-%20Silver%20Y%20%28Autographa%20gamma%29%20%2827543699747%29.jpg",
+      "speciesDescription": "A migrant moth that can be very common in the UK, especially in late summer and in years with strong arrivals. It is often seen in flowery grasslands, sand dunes, farmland and gardens, feeding by day as well as flying at night.",
+      "color": "#edd0bb",
       "chimeNote": "E4",
       "chimeNotes": ["D4", "E4", "G4"],
       "size": 6,
@@ -83,13 +92,15 @@
       "inclinationDriftSpeed": 0.2,
       "nodeDriftSpeed": 0.2,
       "trailLength": 10,
-      "shadowColor": "rgba(218, 235, 255, 0.2)",
+      "shadowColor": "rgba(238, 228, 212, 0.2)",
       "shadowBlur": 12
     },
     {
       "id": "brimstone-moth",
       "name": "Brimstone Moth",
-      "color": "#e2d56f",
+      "imageURL": "https://commons.wikimedia.org/wiki/Special:FilePath/Brimstone%20moth%20-%20opisthograptis%20luteolata%20%2841360608534%29.png",
+      "speciesDescription": "A common, widespread moth that frequently visits garden lights. It favours woodland, scrub, grassland and gardens, with caterpillars feeding on shrubs such as hawthorn, blackthorn and rowan.",
+      "color": "#f7f5c6",
       "chimeNote": "G4",
       "chimeNotes": ["G4", "A4", "C5"],
       "size": 3,
@@ -98,52 +109,445 @@
       "inclinationDriftSpeed": 0.5,
       "nodeDriftSpeed": 0.5,
       "trailLength": 10,
-      "shadowColor": "rgba(255, 244, 172, 0.2)",
+      "shadowColor": "rgba(247, 239, 217, 0.22)",
       "shadowBlur": 9
+    },
+    {
+      "id": "unknown",
+      "name": "Unknown",
+      "color": "#919191",
+      "chimeNote": "E5",
+      "chimeNotes": ["E5", "G5", "A5", "C6"],
+      "size": 2.5,
+      "speed": 1.75,
+      "erraticness": 3.2,
+      "inclinationDriftSpeed": 0.35,
+      "nodeDriftSpeed": 0.35,
+      "trailLength": 5,
+      "shadowColor": "rgba(120, 124, 130, 0.18)",
+      "shadowBlur": 7
     }
   ],
   "moths": [
     {
-      "id": "moth-001",
+      "id": "known-001",
       "species": "large-yellow-underwing",
-      "entryTime": 4,
-      "exitTime": 62
+      "entryTime": 3,
+      "exitTime": 145
     },
     {
-      "id": "moth-002",
+      "id": "known-002",
       "species": "silver-y",
-      "entryTime": 10,
-      "exitTime": 70
+      "entryTime": 8,
+      "exitTime": 156
     },
     {
-      "id": "moth-003",
+      "id": "known-003",
       "species": "brimstone-moth",
-      "entryTime": 18,
+      "entryTime": 14,
+      "exitTime": 126
+    },
+    {
+      "id": "known-004",
+      "species": "large-yellow-underwing",
+      "entryTime": 28,
+      "exitTime": 210
+    },
+    {
+      "id": "known-005",
+      "species": "silver-y",
+      "entryTime": 34,
+      "exitTime": 184
+    },
+    {
+      "id": "known-006",
+      "species": "brimstone-moth",
+      "entryTime": 42,
+      "exitTime": 198
+    },
+    {
+      "id": "known-007",
+      "species": "large-yellow-underwing",
+      "entryTime": 56,
+      "exitTime": 260
+    },
+    {
+      "id": "known-008",
+      "species": "silver-y",
+      "entryTime": 63,
+      "exitTime": 220
+    },
+    {
+      "id": "known-009",
+      "species": "brimstone-moth",
+      "entryTime": 76,
+      "exitTime": 245
+    },
+    {
+      "id": "known-010",
+      "species": "large-yellow-underwing",
+      "entryTime": 92,
+      "exitTime": 310
+    },
+    {
+      "id": "known-011",
+      "species": "silver-y",
+      "entryTime": 108,
+      "exitTime": 280
+    },
+    {
+      "id": "known-012",
+      "species": "brimstone-moth",
+      "entryTime": 118,
+      "exitTime": 300
+    },
+    {
+      "id": "known-013",
+      "species": "large-yellow-underwing",
+      "entryTime": 136,
+      "exitTime": 335
+    },
+    {
+      "id": "known-014",
+      "species": "silver-y",
+      "entryTime": 150,
+      "exitTime": 330
+    },
+    {
+      "id": "known-015",
+      "species": "brimstone-moth",
+      "entryTime": 168,
+      "exitTime": 346
+    },
+    {
+      "id": "known-016",
+      "species": "large-yellow-underwing",
+      "entryTime": 190,
+      "exitTime": 358
+    },
+    {
+      "id": "known-017",
+      "species": "silver-y",
+      "entryTime": 205,
+      "exitTime": 350
+    },
+    {
+      "id": "known-018",
+      "species": "brimstone-moth",
+      "entryTime": 226,
+      "exitTime": 356
+    },
+    {
+      "id": "known-019",
+      "species": "large-yellow-underwing",
+      "entryTime": 252,
+      "exitTime": 360
+    },
+    {
+      "id": "known-020",
+      "species": "silver-y",
+      "entryTime": 276,
+      "exitTime": 360
+    },
+    {
+      "id": "unknown-001",
+      "species": "unknown",
+      "entryTime": 1,
+      "exitTime": 48
+    },
+    {
+      "id": "unknown-002",
+      "species": "unknown",
+      "entryTime": 6,
       "exitTime": 74
     },
     {
-      "id": "moth-004",
-      "species": "silver-y",
-      "entryTime": 25,
-      "exitTime": 58
+      "id": "unknown-003",
+      "species": "unknown",
+      "entryTime": 12,
+      "exitTime": 90
     },
     {
-      "id": "moth-005",
-      "species": "large-yellow-underwing",
-      "entryTime": 34,
-      "exitTime": 78
+      "id": "unknown-004",
+      "species": "unknown",
+      "entryTime": 18,
+      "exitTime": 112
     },
     {
-      "id": "moth-006",
-      "species": "brimstone-moth",
-      "entryTime": 5,
-      "exitTime": 68
+      "id": "unknown-005",
+      "species": "unknown",
+      "entryTime": 24,
+      "exitTime": 95
     },
     {
-      "id": "moth-007",
-      "species": "silver-y",
-      "entryTime": 8,
-      "exitTime": 80
+      "id": "unknown-006",
+      "species": "unknown",
+      "entryTime": 31,
+      "exitTime": 138
+    },
+    {
+      "id": "unknown-007",
+      "species": "unknown",
+      "entryTime": 37,
+      "exitTime": 120
+    },
+    {
+      "id": "unknown-008",
+      "species": "unknown",
+      "entryTime": 43,
+      "exitTime": 154
+    },
+    {
+      "id": "unknown-009",
+      "species": "unknown",
+      "entryTime": 49,
+      "exitTime": 135
+    },
+    {
+      "id": "unknown-010",
+      "species": "unknown",
+      "entryTime": 55,
+      "exitTime": 180
+    },
+    {
+      "id": "unknown-011",
+      "species": "unknown",
+      "entryTime": 61,
+      "exitTime": 150
+    },
+    {
+      "id": "unknown-012",
+      "species": "unknown",
+      "entryTime": 68,
+      "exitTime": 190
+    },
+    {
+      "id": "unknown-013",
+      "species": "unknown",
+      "entryTime": 74,
+      "exitTime": 170
+    },
+    {
+      "id": "unknown-014",
+      "species": "unknown",
+      "entryTime": 82,
+      "exitTime": 210
+    },
+    {
+      "id": "unknown-015",
+      "species": "unknown",
+      "entryTime": 88,
+      "exitTime": 198
+    },
+    {
+      "id": "unknown-016",
+      "species": "unknown",
+      "entryTime": 96,
+      "exitTime": 232
+    },
+    {
+      "id": "unknown-017",
+      "species": "unknown",
+      "entryTime": 103,
+      "exitTime": 215
+    },
+    {
+      "id": "unknown-018",
+      "species": "unknown",
+      "entryTime": 111,
+      "exitTime": 245
+    },
+    {
+      "id": "unknown-019",
+      "species": "unknown",
+      "entryTime": 119,
+      "exitTime": 230
+    },
+    {
+      "id": "unknown-020",
+      "species": "unknown",
+      "entryTime": 126,
+      "exitTime": 260
+    },
+    {
+      "id": "unknown-021",
+      "species": "unknown",
+      "entryTime": 134,
+      "exitTime": 248
+    },
+    {
+      "id": "unknown-022",
+      "species": "unknown",
+      "entryTime": 142,
+      "exitTime": 282
+    },
+    {
+      "id": "unknown-023",
+      "species": "unknown",
+      "entryTime": 149,
+      "exitTime": 268
+    },
+    {
+      "id": "unknown-024",
+      "species": "unknown",
+      "entryTime": 156,
+      "exitTime": 298
+    },
+    {
+      "id": "unknown-025",
+      "species": "unknown",
+      "entryTime": 164,
+      "exitTime": 286
+    },
+    {
+      "id": "unknown-026",
+      "species": "unknown",
+      "entryTime": 171,
+      "exitTime": 315
+    },
+    {
+      "id": "unknown-027",
+      "species": "unknown",
+      "entryTime": 179,
+      "exitTime": 300
+    },
+    {
+      "id": "unknown-028",
+      "species": "unknown",
+      "entryTime": 186,
+      "exitTime": 328
+    },
+    {
+      "id": "unknown-029",
+      "species": "unknown",
+      "entryTime": 194,
+      "exitTime": 318
+    },
+    {
+      "id": "unknown-030",
+      "species": "unknown",
+      "entryTime": 201,
+      "exitTime": 340
+    },
+    {
+      "id": "unknown-031",
+      "species": "unknown",
+      "entryTime": 208,
+      "exitTime": 330
+    },
+    {
+      "id": "unknown-032",
+      "species": "unknown",
+      "entryTime": 215,
+      "exitTime": 348
+    },
+    {
+      "id": "unknown-033",
+      "species": "unknown",
+      "entryTime": 222,
+      "exitTime": 338
+    },
+    {
+      "id": "unknown-034",
+      "species": "unknown",
+      "entryTime": 229,
+      "exitTime": 354
+    },
+    {
+      "id": "unknown-035",
+      "species": "unknown",
+      "entryTime": 236,
+      "exitTime": 346
+    },
+    {
+      "id": "unknown-036",
+      "species": "unknown",
+      "entryTime": 243,
+      "exitTime": 358
+    },
+    {
+      "id": "unknown-037",
+      "species": "unknown",
+      "entryTime": 250,
+      "exitTime": 352
+    },
+    {
+      "id": "unknown-038",
+      "species": "unknown",
+      "entryTime": 257,
+      "exitTime": 360
+    },
+    {
+      "id": "unknown-039",
+      "species": "unknown",
+      "entryTime": 264,
+      "exitTime": 356
+    },
+    {
+      "id": "unknown-040",
+      "species": "unknown",
+      "entryTime": 271,
+      "exitTime": 360
+    },
+    {
+      "id": "unknown-041",
+      "species": "unknown",
+      "entryTime": 278,
+      "exitTime": 360
+    },
+    {
+      "id": "unknown-042",
+      "species": "unknown",
+      "entryTime": 285,
+      "exitTime": 360
+    },
+    {
+      "id": "unknown-043",
+      "species": "unknown",
+      "entryTime": 292,
+      "exitTime": 360
+    },
+    {
+      "id": "unknown-044",
+      "species": "unknown",
+      "entryTime": 299,
+      "exitTime": 360
+    },
+    {
+      "id": "unknown-045",
+      "species": "unknown",
+      "entryTime": 306,
+      "exitTime": 360
+    },
+    {
+      "id": "unknown-046",
+      "species": "unknown",
+      "entryTime": 313,
+      "exitTime": 360
+    },
+    {
+      "id": "unknown-047",
+      "species": "unknown",
+      "entryTime": 320,
+      "exitTime": 360
+    },
+    {
+      "id": "unknown-048",
+      "species": "unknown",
+      "entryTime": 327,
+      "exitTime": 360
+    },
+    {
+      "id": "unknown-049",
+      "species": "unknown",
+      "entryTime": 334,
+      "exitTime": 360
+    },
+    {
+      "id": "unknown-050",
+      "species": "unknown",
+      "entryTime": 341,
+      "exitTime": 360
     }
   ]
 }

@@ -25,6 +25,7 @@ Current State
 - The centre light is a fixed-size hanging bulb with a dark fixture, cord, broad glow, and glow-only flicker.
 - The ground plane and light pool are implemented, but the example currently uses `scene.showGround: false` for light in black space.
 - The layout is full-screen, with title and description as top-right overlay text.
+- Add an optional launch screen: start with an all-black screen and a centered light switch. Clicking the switch moves it to the ON position and fades away to reveal the main animation. This launch screen is enabled or disabled with a boolean in the config.
 - Species entry labels appear near the light glow, stack vertically, fade out, and use the same font family and computed size as the description overlay.
 - Known moths support desktop hover and mobile tap focus, including playback pause, focal highlighting, non-focal fading, and a popout with species name, active time, image, and description.
 - The special `unknown` species is excluded from entry labels and hover/tap popouts.
@@ -54,6 +55,10 @@ Next Step
 Future Data Work
 ----------------
 
+- Define a lightweight raw data ingestion workflow for converting CSV-based trap observations into the JSON format that drives the animation.
+- Prefer a one-line command using only standard-library tooling, for example a small Python or Node script shipped with the project: `python scripts/convert-csv.py raw-data.csv output.json` or `node scripts/convert-csv.mjs raw-data.csv output.json`.
+- The conversion should handle common cleanup tasks such as trimming whitespace, normalizing species names, parsing timestamps to `entryTime`/`exitTime`, and filling defaults for missing fields.
+- Keep the workflow simple to run with limited installation requirements, avoiding non-standard libraries where possible.
 - Consider optional build-time embedding of species images so emailed HTML attachments can show popout images without internet access.
 - Future moth counts and timings should come from real trap observation data.
 - Animation time should represent real clock time from the trap.

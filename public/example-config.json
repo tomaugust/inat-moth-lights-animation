@@ -18,9 +18,10 @@
     "duration": 360,
     "timeLabel": "Time",
     "startClockTime": "22:00",
-    "playbackSpeed": 2,
+    "playbackSpeed": 1.5,
     "autoplay": true,
-    "loop": true
+    "loop": true,
+    "launchScreenEnabled": false
   },
   "audio": {
     "enabled": true,
@@ -48,12 +49,16 @@
     "groundMidColor": "#bfbfbf",
     "groundFrontColor": "#dbdbdb",
     "lightPoolColor": "rgba(255, 239, 188, 0.58)",
-    "lightPoolRadius": 430
+    "lightPoolRadius": 430,
+    "mothShadowsEnabled": true,
+    "mothShadowOpacity": 0.05,
+    "mothShadowLength": 130,
+    "mothShadowBlur": 5
   },
   "light": {
     "size": 18,
     "color": "#fffdf4",
-    "glowColor": "rgba(255, 250, 226, 0.82)",
+    "glowColor": "rgba(255, 250, 226, 0.52)",
     "haloColor": "rgba(255, 244, 201, 0.26)",
     "glowRadius": 260,
     "shadowBlur": 26,

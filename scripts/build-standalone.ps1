@@ -166,6 +166,7 @@ function Read-AnimationConfig {
       descriptionSize = [string](Get-ConfigValue $animation "descriptionSize" "clamp(0.78rem, 1.1vw, 0.98rem)")
       duration = ConvertTo-PositiveNumber (Get-ConfigValue $animation "duration" 80) 80 1
       loop = [bool](Get-ConfigValue $animation "loop" $true)
+      launchScreenEnabled = [bool](Get-ConfigValue $animation "launchScreenEnabled" $false)
       playbackSpeed = ConvertTo-PositiveNumber (Get-ConfigValue $animation "playbackSpeed" 1) 1 0.01
       startClockTime = [string](Get-ConfigValue $animation "startClockTime" "22:00")
       speciesTagColor = [string](Get-ConfigValue $animation "speciesTagColor" "")
@@ -212,6 +213,10 @@ function Read-AnimationConfig {
       horizonYRatio = ConvertTo-PositiveNumber (Get-ConfigValue $scene "horizonYRatio" 0.34) 0.34 0
       lightPoolColor = [string](Get-ConfigValue $scene "lightPoolColor" "rgba(255, 244, 201, 0.3)")
       lightPoolRadius = ConvertTo-PositiveNumber (Get-ConfigValue $scene "lightPoolRadius" 330) 330 40
+      mothShadowsEnabled = [bool](Get-ConfigValue $scene "mothShadowsEnabled" $false)
+      mothShadowBlur = ConvertTo-PositiveNumber (Get-ConfigValue $scene "mothShadowBlur" 12) 12 0
+      mothShadowLength = ConvertTo-PositiveNumber (Get-ConfigValue $scene "mothShadowLength" 110) 110 1
+      mothShadowOpacity = ConvertTo-PositiveNumber (Get-ConfigValue $scene "mothShadowOpacity" 0.22) 0.22 0
       orbitTilt = ConvertTo-PositiveNumber (Get-ConfigValue $scene "orbitTilt" 0.3) 0.3 0.05
       orbitRadiusScale = ConvertTo-PositiveNumber (Get-ConfigValue $scene "orbitRadiusScale" 0.92) 0.92 0.1
       showGround = [bool](Get-ConfigValue $scene "showGround" $true)
@@ -289,6 +294,8 @@ $html = @"
       }
 
       canvas {
+        opacity: 1;
+        transition: opacity 760ms ease;
         display: block;
         width: 100%;
         height: 100%;
@@ -304,6 +311,7 @@ $html = @"
         right: clamp(18px, 4vw, 48px);
         text-align: right;
         top: clamp(18px, 4vw, 42px);
+        transition: opacity 620ms ease;
         z-index: 2;
       }
 
@@ -333,6 +341,7 @@ $html = @"
         max-width: calc(100vw - 32px);
         position: fixed;
         transform: translateX(-50%);
+        transition: opacity 620ms ease;
         width: min(620px, calc(100vw - 32px));
         z-index: 10;
       }
@@ -371,6 +380,21 @@ $html = @"
         transition: opacity 160ms ease, border-color 160ms ease, background 160ms ease;
         width: 38px;
         z-index: 11;
+      }
+
+      body.launch-screen-active canvas {
+        opacity: 0;
+      }
+
+      body.launch-screen-active.launch-light-visible canvas {
+        opacity: 1;
+      }
+
+      body.launch-screen-active:not(.launch-controls-visible) .animation-heading,
+      body.launch-screen-active:not(.launch-controls-visible) .timeline-control,
+      body.launch-screen-active:not(.launch-controls-visible) .sound-toggle {
+        opacity: 0;
+        pointer-events: none;
       }
 
       .sound-toggle span {
@@ -443,6 +467,87 @@ $html = @"
         transform: rotate(-45deg);
       }
 
+      .launch-screen {
+        align-items: center;
+        background: $safeCanvasBackground;
+        bottom: 0;
+        color: #f5f1e8;
+        display: flex;
+        inset: 0;
+        justify-content: center;
+        left: 0;
+        position: fixed;
+        right: 0;
+        top: 0;
+        transition: opacity 280ms ease;
+        width: 100%;
+        z-index: 20;
+      }
+
+      .launch-screen.launch-screen--hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .launch-screen__panel {
+        text-align: center;
+        transition: opacity 300ms ease;
+      }
+
+      .launch-screen.launch-screen--switch-hidden .launch-screen__panel {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .launch-screen__switch {
+        align-items: center;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: 999px;
+        cursor: pointer;
+        display: inline-flex;
+        height: 52px;
+        justify-content: flex-start;
+        padding: 8px;
+        position: relative;
+        transition: background 180ms ease, border-color 180ms ease;
+        width: 112px;
+      }
+
+      .launch-screen__switch:hover,
+      .launch-screen__switch:focus-visible {
+        border-color: rgba(255, 255, 255, 0.48);
+        outline: none;
+      }
+
+      .launch-screen__switch::after {
+        background: #f5f1e8;
+        border-radius: 999px;
+        content: "";
+        display: block;
+        height: 36px;
+        left: 8px;
+        position: absolute;
+        top: 8px;
+        transition: left 240ms ease;
+        width: 36px;
+      }
+
+      .launch-screen__switch.is-on {
+        background: rgba(255, 255, 255, 0.18);
+        justify-content: flex-end;
+      }
+
+      .launch-screen__switch.is-on::after {
+        left: calc(100% - 44px);
+      }
+
+      .launch-screen__text {
+        color: rgba(245, 241, 232, 0.88);
+        font-size: 1rem;
+        margin-top: 18px;
+      }
+
       @media (max-width: 620px) {
         .animation-heading {
           max-width: calc(100vw - 32px);
@@ -461,6 +566,12 @@ $html = @"
     </style>
   </head>
   <body>
+    <div class="launch-screen" id="launch-screen" aria-label="Launch screen" role="dialog" aria-modal="true">
+      <div class="launch-screen__panel">
+        <button class="launch-screen__switch" id="launch-switch" type="button" aria-label="Turn on the moth animation"></button>
+        <div class="launch-screen__text" id="launch-text">Turn on the light</div>
+      </div>
+    </div>
     <main class="app-shell">
       <section class="canvas-shell" aria-label="Orbit animation">
         <canvas id="orbit-canvas"></canvas>
@@ -741,6 +852,71 @@ $html = @"
         }
 
         return color;
+      }
+
+      function drawMothShadow(context, moth, lightX, lightY, width, height, dimFactor = 1) {
+        const scene = config.scene || {};
+        if (scene.mothShadowsEnabled !== true || moth.opacity <= 0.01) {
+          return;
+        }
+
+        const dx = moth.x - lightX;
+        const dy = moth.y - lightY;
+        const distance = Math.hypot(dx, dy);
+        if (distance < 1) {
+          return;
+        }
+
+        const centerDirectionX = dx / distance;
+        const centerDirectionY = dy / distance;
+        const perpendicularX = -centerDirectionY;
+        const perpendicularY = centerDirectionX;
+        const glowRadius = Math.max(1, config.light.glowRadius || 160);
+        const proximity = 1 - Math.min(1, distance / (glowRadius * 1.65));
+        const depthRatio = Math.max(0, Math.min(1, (moth.depth + 1) * 0.5));
+        const baseLength = Math.max(1, scene.mothShadowLength || 110);
+        const shadowLength = baseLength * (0.45 + proximity * 0.95) * (0.7 + depthRatio * 0.35);
+        const mothRadius = Math.max(1, moth.size);
+        const sideAX = moth.x + perpendicularX * mothRadius;
+        const sideAY = moth.y + perpendicularY * mothRadius;
+        const sideBX = moth.x - perpendicularX * mothRadius;
+        const sideBY = moth.y - perpendicularY * mothRadius;
+        const rayADistance = Math.max(1, Math.hypot(sideAX - lightX, sideAY - lightY));
+        const rayBDistance = Math.max(1, Math.hypot(sideBX - lightX, sideBY - lightY));
+        const rayAX = (sideAX - lightX) / rayADistance;
+        const rayAY = (sideAY - lightY) / rayADistance;
+        const rayBX = (sideBX - lightX) / rayBDistance;
+        const rayBY = (sideBY - lightY) / rayBDistance;
+        const endAX = sideAX + rayAX * shadowLength;
+        const endAY = sideAY + rayAY * shadowLength;
+        const endBX = sideBX + rayBX * shadowLength;
+        const endBY = sideBY + rayBY * shadowLength;
+        const gradientStartX = moth.x + centerDirectionX * mothRadius;
+        const gradientStartY = moth.y + centerDirectionY * mothRadius;
+        const gradientEndX = moth.x + centerDirectionX * shadowLength;
+        const gradientEndY = moth.y + centerDirectionY * shadowLength;
+        const opacity = Math.min(0.65, Math.max(0, scene.mothShadowOpacity || 0.22) * moth.opacity * (0.45 + proximity * 0.9) * dimFactor);
+
+        if (opacity <= 0.004 || gradientEndX < -shadowLength || gradientEndX > width + shadowLength || gradientEndY < -shadowLength || gradientEndY > height + shadowLength) {
+          return;
+        }
+
+        const gradient = context.createLinearGradient(gradientStartX, gradientStartY, gradientEndX, gradientEndY);
+        gradient.addColorStop(0, "rgba(0, 0, 0, " + opacity.toFixed(3) + ")");
+        gradient.addColorStop(0.45, "rgba(0, 0, 0, " + (opacity * 0.34).toFixed(3) + ")");
+        gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+
+        context.save();
+        context.filter = "blur(" + Math.max(0, scene.mothShadowBlur || 12) + "px)";
+        context.fillStyle = gradient;
+        context.beginPath();
+        context.moveTo(sideAX, sideAY);
+        context.lineTo(sideBX, sideBY);
+        context.lineTo(endBX, endBY);
+        context.lineTo(endAX, endAY);
+        context.closePath();
+        context.fill();
+        context.restore();
       }
 
       function drawMoth(context, moth, state = "normal") {
@@ -1115,7 +1291,12 @@ $html = @"
         return moth.id === hoverState.hoveredMothId ? "focused" : "dimmed";
       }
 
-      function drawProjectedMothLayer(context, moths, hoverState) {
+      function drawProjectedMothLayer(context, moths, hoverState, lightX, lightY, width, height) {
+        moths.forEach((moth) => {
+          const state = getMothDrawState(moth, hoverState);
+          drawMothShadow(context, moth, lightX, lightY, width, height, state === "dimmed" ? 0.22 : 1);
+        });
+
         moths.forEach((moth) => {
           const state = getMothDrawState(moth, hoverState);
           drawTrail(context, moth, state === "dimmed" ? 0.18 : 1);
@@ -1124,23 +1305,29 @@ $html = @"
         moths.forEach((moth) => drawMoth(context, moth, getMothDrawState(moth, hoverState)));
       }
 
-      function drawScene(context, moths, width, height, elapsed, animationTime, hoverState = null) {
+      function drawScene(context, moths, width, height, elapsed, animationTime, hoverState = null, presentationMode = "normal") {
         context.clearRect(0, 0, width, height);
 
         const cx = width / 2;
         const cy = height * config.scene.centerYRatio;
+        const isLightOnly = presentationMode === "light-only";
         const projectedMoths = moths
           .map((moth) => projectMoth(moth, animationTime, width, height, cx, cy))
           .filter(Boolean)
           .sort((a, b) => a.depth - b.depth);
-        const hoveredMoth = hoverState && hoverState.hoveredMothId
+        const hoveredMoth = !isLightOnly && hoverState && hoverState.hoveredMothId
           ? projectedMoths.find((moth) => moth.id === hoverState.hoveredMothId)
           : null;
 
         drawGround(context, width, height, cx, cy);
-        drawProjectedMothLayer(context, projectedMoths.filter((moth) => moth.depth < 0), hoverState);
+        if (isLightOnly) {
+          drawLight(context, cx, cy, elapsed);
+          return;
+        }
+
+        drawProjectedMothLayer(context, projectedMoths.filter((moth) => moth.depth < 0), hoverState, cx, cy, width, height);
         drawLight(context, cx, cy, elapsed);
-        drawProjectedMothLayer(context, projectedMoths.filter((moth) => moth.depth >= 0), hoverState);
+        drawProjectedMothLayer(context, projectedMoths.filter((moth) => moth.depth >= 0), hoverState, cx, cy, width, height);
         drawEntryLabels(context, projectedMoths, animationTime, width, height);
         drawHoverPopout(context, hoveredMoth, width, height, animationTime, hoverState ? hoverState.imageCache : null);
       }
@@ -1500,7 +1687,7 @@ $html = @"
         };
       }
 
-      function setupOrbitAnimation() {
+      function setupOrbitAnimation(initialPresentationMode = "normal") {
         const canvas = document.getElementById("orbit-canvas");
         const context = canvas.getContext("2d");
         const scrubber = document.getElementById("timeline-scrubber");
@@ -1509,11 +1696,12 @@ $html = @"
         let moths = [];
         let animationTime = 0;
         let lastTimestamp = null;
-        let isPlaying = config.animation.autoplay;
+        let isPlaying = config.animation.autoplay && initialPresentationMode !== "light-only";
         let wasPlayingBeforeScrub = false;
         let wasPlayingBeforeHover = false;
         let isScrubbing = false;
         let isHoverPaused = false;
+        let presentationMode = initialPresentationMode;
         const canHover = window.matchMedia
           ? window.matchMedia("(hover: hover) and (pointer: fine)").matches
           : true;
@@ -1555,7 +1743,7 @@ $html = @"
             image.crossOrigin = "anonymous";
             image.addEventListener("load", () => {
               record.loaded = true;
-              drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState);
+              drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState, presentationMode);
             });
             image.addEventListener("error", () => {
               record.failed = true;
@@ -1577,7 +1765,7 @@ $html = @"
             audio.update(animationTime, deltaSeconds);
           }
 
-          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, timestamp, animationTime, hoverState);
+          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, timestamp, animationTime, hoverState, presentationMode);
           updateTimelineControls();
           requestAnimationFrame(tick);
         }
@@ -1662,7 +1850,7 @@ $html = @"
 
           if (!tappedMoth || tappedMoth.id === hoverState.hoveredMothId) {
             clearHover();
-            drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState);
+            drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState, presentationMode);
             return;
           }
 
@@ -1679,7 +1867,7 @@ $html = @"
             lastTimestamp = null;
           }
 
-          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState);
+          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState, presentationMode);
         }
 
         scrubber.addEventListener("pointerdown", () => {
@@ -1690,7 +1878,7 @@ $html = @"
 
         scrubber.addEventListener("input", () => {
           animationTime = clampAnimationTime(Number(scrubber.value));
-          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState);
+          drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState, presentationMode);
           updateTimelineControls();
         });
 
@@ -1734,9 +1922,105 @@ $html = @"
         preloadSpeciesImages();
         updateTimelineControls();
         requestAnimationFrame(tick);
+
+        return {
+          setPresentationMode(mode) {
+            presentationMode = mode;
+            if (mode !== "light-only" && !isScrubbing && !isHoverPaused) {
+              isPlaying = config.animation.autoplay;
+              lastTimestamp = null;
+            }
+          }
+        };
       }
 
-      setupOrbitAnimation();
+      function setupLaunchScreen() {
+        const launchScreen = document.getElementById("launch-screen");
+        const launchSwitch = document.getElementById("launch-switch");
+        const launchText = document.getElementById("launch-text");
+        const launchScreenEnabled = config.animation.launchScreenEnabled === true || config.animation.launchScreenEnabled === "true";
+        let orbitStarted = false;
+        let orbitController = null;
+
+        function startAnimation(initialPresentationMode = "normal") {
+          if (orbitStarted) {
+            return orbitController;
+          }
+          orbitController = setupOrbitAnimation(initialPresentationMode);
+          orbitStarted = true;
+          return orbitController;
+        }
+
+        function removeLaunchScreenWhenHidden() {
+          if (!launchScreen) {
+            return;
+          }
+
+          launchScreen.classList.add("launch-screen--hidden");
+          launchScreen.addEventListener("transitionend", function onTransitionEnd(event) {
+            if (event.propertyName !== "opacity") {
+              return;
+            }
+            launchScreen.removeEventListener("transitionend", onTransitionEnd);
+            launchScreen.remove();
+          });
+        }
+
+        function revealMainAnimation() {
+          const controller = startAnimation("light-only");
+          document.body.classList.add("launch-light-visible");
+          removeLaunchScreenWhenHidden();
+
+          window.setTimeout(() => {
+            if (controller) {
+              controller.setPresentationMode("normal");
+            }
+            document.body.classList.add("launch-controls-visible");
+
+            window.setTimeout(() => {
+              document.body.classList.remove("launch-screen-active", "launch-light-visible", "launch-controls-visible");
+            }, 700);
+          }, 1000);
+        }
+
+        function activateLaunchScreen() {
+          if (!launchScreen || !launchSwitch || launchSwitch.classList.contains("is-on")) {
+            return;
+          }
+          launchSwitch.classList.add("is-on");
+          launchScreen.classList.add("launch-screen--switch-hidden");
+          if (launchText) {
+            launchText.textContent = "Turning on...";
+          }
+          setTimeout(revealMainAnimation, 320);
+        }
+
+        if (!launchScreenEnabled) {
+          if (launchScreen) {
+            launchScreen.remove();
+          }
+          setupOrbitAnimation();
+          return;
+        }
+
+        if (launchScreen && launchSwitch) {
+          document.body.classList.add("launch-screen-active");
+          launchSwitch.addEventListener("click", (event) => {
+            event.stopPropagation();
+            activateLaunchScreen();
+          });
+          launchSwitch.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              activateLaunchScreen();
+            }
+          });
+        } else {
+          setupOrbitAnimation();
+        }
+      }
+
+      setupLaunchScreen();
     </script>
   </body>
 </html>

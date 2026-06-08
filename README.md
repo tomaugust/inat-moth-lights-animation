@@ -27,6 +27,24 @@ https://tomaugust.github.io/moth-lights-animation/
 - Web Audio windchime sound and a configurable drone are generated inside the standalone HTML.
 - The example currently uses `scene.showGround: false`, returning the visual to a light in black space.
 
+## Recent Changes
+
+- Removed separate light glow/halo opacity multiplier controls; glow opacity is now controlled only through the alpha channel of `light.glowColor` and `light.haloColor`.
+- Consolidated docs and added moth shadow controls in the scene config.
+- Added optional launch-screen support via `animation.launchScreenEnabled`.
+- Added a subtle right-side expansion button and an active moth side panel.
+- Active moth cards now fade in from below, fade and slide out to the right on exit, and remain fixed width while vertical overflow is handled by a scrollbar.
+- Interacting with a panel card produces the same focal behavior as hovering over the corresponding moth in the main animation.
+- Slowed card exit and reorder transitions for smoother motion.
+
+## Future Plans
+
+- Document all JSON config metrics, defaults, and valid ranges.
+- Add a lightweight CSV-to-JSON conversion workflow that runs with minimal dependencies.
+- Improve hover hit radius so small fast-moving moths are easier to select.
+- Continue polishing the side-panel card animation and hover/popout interaction.
+- Consider optional build-time embedding of species images so generated HTML can be fully offline.
+
 ## Build A Standalone HTML File
 
 From this folder, run:
@@ -149,7 +167,7 @@ Animation timing fields are animation seconds. `animation.duration` controls the
 
 `scene` controls the optional ground plane, oblique projection, moth opacity cues, generated orbit radius scale, and moth shadows. `horizontalEdgeMothOpacity` is the moth opacity at `light.glowRadius * 1.5` from the light. Moth shadows are blurred ray-cast polygons: each starts at the sides of the moth and extends away from the light along lines from the light through those sides. `mothShadowOpacity`, `mothShadowLength`, and `mothShadowBlur` control their strength, reach, and softness.
 
-`light` controls the bright trap light, glow, flicker, and hanging bulb fixture. `glowColor` and `haloColor` set the radial gradient colours and opacity through their RGBA alpha channels. `flickerStrength` changes only the glow opacity and radius; it does not resize the bulb circle.
+`light` controls the bright trap light, glow, flicker, and hanging bulb fixture. `glowColor` and `haloColor` set the radial gradient colours and opacity through their RGBA alpha channels; there are no separate glow or halo opacity controls. `flickerStrength` changes only the glow opacity and radius; it does not resize the bulb circle.
 
 `species` defines shared visual, motion, trail, glow, hover, and sound settings. Useful species-level fields:
 
@@ -214,7 +232,6 @@ Create a smooth, modern, professional, data-driven animation that is an abstract
 - New cards should be added from the bottom.
 - If there are more cards than fit on screen, a subtle scroll bar should appear.
 - Hovering over a side-panel card should produce the same focal effect as hovering over that moth in the main animation window.
-- Tune moth shadow parameters so they add depth without muddying trails or the glow.
 
 ### Future Data Work
 

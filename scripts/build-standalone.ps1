@@ -392,9 +392,199 @@ $html = @"
 
       body.launch-screen-active:not(.launch-controls-visible) .animation-heading,
       body.launch-screen-active:not(.launch-controls-visible) .timeline-control,
-      body.launch-screen-active:not(.launch-controls-visible) .sound-toggle {
+      body.launch-screen-active:not(.launch-controls-visible) .sound-toggle,
+      body.launch-screen-active:not(.launch-controls-visible) .active-moths-toggle,
+      body.launch-screen-active:not(.launch-controls-visible) .active-moths-panel {
         opacity: 0;
         pointer-events: none;
+      }
+
+      .active-moths-toggle {
+        align-items: center;
+        background: rgba(10, 10, 12, 0.32);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 999px;
+        color: rgba(245, 241, 232, 0.86);
+        cursor: pointer;
+        display: flex;
+        height: 34px;
+        justify-content: center;
+        padding: 0;
+        position: fixed;
+        right: clamp(14px, 2.1vw, 26px);
+        top: 50%;
+        transform: translateY(-50%);
+        transition: background 260ms ease, border-color 260ms ease, opacity 820ms ease, transform 520ms ease;
+        width: 34px;
+        z-index: 12;
+      }
+
+      .active-moths-toggle:hover,
+      .active-moths-toggle:focus-visible {
+        background: rgba(18, 18, 22, 0.72);
+        border-color: rgba(255, 255, 255, 0.42);
+        outline: none;
+      }
+
+      .active-moths-toggle::before,
+      .active-moths-toggle::after {
+        background: currentColor;
+        border-radius: 999px;
+        content: "";
+        height: 2px;
+        position: absolute;
+        transition: transform 260ms ease;
+        width: 13px;
+      }
+
+      .active-moths-toggle::before {
+        transform: translateY(-4px) rotate(-45deg);
+      }
+
+      .active-moths-toggle::after {
+        transform: translateY(4px) rotate(45deg);
+      }
+
+      .active-moths-toggle.is-open {
+        transform: translateY(-50%) translateX(-286px);
+      }
+
+      .active-moths-toggle.is-open::before {
+        transform: translateY(-4px) rotate(45deg);
+      }
+
+      .active-moths-toggle.is-open::after {
+        transform: translateY(4px) rotate(-45deg);
+      }
+
+      .active-moths-panel {
+        background: #08080a;
+        border-left: 1px solid rgba(255, 255, 255, 0.12);
+        bottom: 0;
+        box-shadow: -18px 0 34px rgba(0, 0, 0, 0.22);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        opacity: 0;
+        padding: calc(env(safe-area-inset-top, 0px) + 18px) 14px calc(env(safe-area-inset-bottom, 0px) + 18px);
+        pointer-events: none;
+        position: fixed;
+        right: 0;
+        top: 0;
+        transform: translateX(100%);
+        transition: opacity 520ms ease, transform 520ms ease;
+        width: 286px;
+        z-index: 11;
+      }
+
+      .active-moths-panel.is-open {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateX(0);
+      }
+
+      .active-moths-panel__title {
+        color: rgba(245, 241, 232, 0.82);
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0;
+        margin: 0;
+        text-align: right;
+      }
+
+      .active-moths-list {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 8px;
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        padding: 2px 2px 2px 0;
+        scrollbar-color: rgba(245, 241, 232, 0.28) transparent;
+        scrollbar-width: thin;
+      }
+
+      .active-moths-card {
+        background: rgba(255, 255, 255, 0.065);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        color: rgba(245, 241, 232, 0.9);
+        cursor: pointer;
+        display: grid;
+        gap: 3px;
+        grid-template-columns: auto 1fr;
+        min-height: 58px;
+        opacity: 1;
+        padding: 9px 10px;
+        position: relative;
+        text-align: left;
+        transform: translateX(0);
+        overflow: hidden;
+        max-height: 220px;
+        transition: background 220ms ease, border-color 220ms ease, opacity 820ms ease, transform 820ms ease, max-height 820ms ease, min-height 820ms ease, padding 820ms ease;
+        width: 258px;
+        will-change: transform, opacity;
+        border-color: rgba(255, 255, 255, 0.32);
+      }
+
+      .active-moths-card.is-entering,
+      .active-moths-card.is-leaving {
+        opacity: 0;
+        transform: translateX(14px);
+      }
+
+      .active-moths-card.is-entering {
+        opacity: 0.08;
+      }
+
+      .active-moths-card.is-leaving {
+        min-height: 0;
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+
+      .active-moths-card.is-focused {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.42);
+      }
+
+      .active-moths-card:hover,
+      .active-moths-card:focus-visible {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.28);
+        outline: none;
+      }
+
+      .active-moths-card__swatch {
+        border-radius: 999px;
+        box-shadow: 0 0 10px currentColor;
+        height: 9px;
+        margin-top: 5px;
+        width: 9px;
+      }
+
+      .active-moths-card__name {
+        font-size: 0.82rem;
+        font-weight: 600;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+      }
+
+      .active-moths-card__time {
+        color: rgba(245, 241, 232, 0.58);
+        font-size: 0.72rem;
+        font-variant-numeric: tabular-nums;
+        grid-column: 2;
+        line-height: 1.2;
+      }
+
+      .active-moths-card__meta {
+        color: rgba(245, 241, 232, 0.48);
+        font-size: 0.68rem;
+        grid-column: 2;
+        line-height: 1.2;
       }
 
       .sound-toggle span {
@@ -583,6 +773,11 @@ $html = @"
           <output class="time-readout" id="time-readout">00:00</output>
           <input id="timeline-scrubber" type="range" min="0" max="80" step="0.01" value="0" aria-label="Scrub animation time" />
         </div>
+        <button class="active-moths-toggle" id="active-moths-toggle" type="button" aria-label="Show active moths" aria-expanded="false" aria-controls="active-moths-panel"></button>
+        <aside class="active-moths-panel" id="active-moths-panel" aria-label="Active known moths">
+          <h2 class="active-moths-panel__title">Active moths</h2>
+          <div class="active-moths-list" id="active-moths-list"></div>
+        </aside>
         <button class="sound-toggle" id="sound-toggle" type="button" aria-label="Enable sound"><span aria-hidden="true"></span></button>
       </section>
     </main>
@@ -798,7 +993,7 @@ $html = @"
         return points.reverse();
       }
 
-      function drawTrail(context, moth, dimFactor = 1) {
+      function drawTrail(context, moth, dimFactor = 1, isFocused = false) {
         if (!moth.trail || moth.trail.length < 2) {
           return;
         }
@@ -816,7 +1011,9 @@ $html = @"
           const point = moth.trail[index];
           const progress = index / segmentCount;
           const fade = easeInOut(progress);
-          const opacity = Math.min(0.58, point.opacity * 0.58) * fade * dimFactor;
+          const opacity = isFocused
+            ? 1
+            : Math.min(0.58, point.opacity * 0.58) * fade * dimFactor;
           const width = baseWidth * (0.45 + fade * 0.55);
 
           context.strokeStyle = colorWithAlpha(moth.color, opacity);
@@ -926,9 +1123,10 @@ $html = @"
 
         const dimFactor = state === "dimmed" ? 0.24 : 1;
         const focusFactor = state === "focused" ? 1.18 : 1;
+        const opacityFactor = state === "focused" ? 1 : moth.opacity;
 
         context.save();
-        context.globalAlpha = moth.opacity * dimFactor;
+        context.globalAlpha = opacityFactor * dimFactor;
         context.fillStyle = moth.color;
         context.shadowColor = moth.shadowColor;
         context.shadowBlur = moth.shadowBlur * focusFactor;
@@ -1246,6 +1444,33 @@ $html = @"
         context.fill();
         context.stroke();
 
+        const boxCenterX = x + boxWidth * 0.5;
+        const boxCenterY = y + boxHeight * 0.5;
+        const deltaX = moth.x - boxCenterX;
+        const deltaY = moth.y - boxCenterY;
+        let lineX = boxCenterX;
+        let lineY = boxCenterY;
+
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          lineX = deltaX > 0 ? x + boxWidth : x;
+          lineY = boxCenterY + (boxWidth * 0.5) * (deltaY / Math.abs(deltaX));
+        } else {
+          lineY = deltaY > 0 ? y + boxHeight : y;
+          lineX = boxCenterX + (boxHeight * 0.5) * (deltaX / Math.abs(deltaY || 1));
+        }
+
+        lineX = Math.max(x, Math.min(x + boxWidth, lineX));
+        lineY = Math.max(y, Math.min(y + boxHeight, lineY));
+
+        context.strokeStyle = colorWithAlpha(moth.color, 0.72);
+        context.lineWidth = 1.5;
+        context.setLineDash([4, 3]);
+        context.beginPath();
+        context.moveTo(moth.x, moth.y);
+        context.lineTo(lineX, lineY);
+        context.stroke();
+        context.setLineDash([]);
+
         context.textAlign = "left";
         context.textBaseline = "top";
 
@@ -1299,7 +1524,7 @@ $html = @"
 
         moths.forEach((moth) => {
           const state = getMothDrawState(moth, hoverState);
-          drawTrail(context, moth, state === "dimmed" ? 0.18 : 1);
+          drawTrail(context, moth, state === "dimmed" ? 0.18 : 1, state === "focused");
         });
 
         moths.forEach((moth) => drawMoth(context, moth, getMothDrawState(moth, hoverState)));
@@ -1692,6 +1917,9 @@ $html = @"
         const context = canvas.getContext("2d");
         const scrubber = document.getElementById("timeline-scrubber");
         const timeReadout = document.getElementById("time-readout");
+        const activeMothsToggle = document.getElementById("active-moths-toggle");
+        const activeMothsPanel = document.getElementById("active-moths-panel");
+        const activeMothsList = document.getElementById("active-moths-list");
         const audio = setupAudio(config.moths);
         let moths = [];
         let animationTime = 0;
@@ -1709,11 +1937,190 @@ $html = @"
           hoveredMothId: null,
           imageCache: new Map()
         };
+        const activeCardRecords = new Map();
+        const cardExitDelay = 1600;
 
         function updateTimelineControls() {
           scrubber.max = String(config.animation.duration);
           scrubber.value = String(animationTime);
           timeReadout.textContent = formatClockTime(animationTime);
+        }
+
+        function activeProjectedKnownMoths() {
+          const width = canvas.clientWidth;
+          const height = canvas.clientHeight;
+          const cx = width / 2;
+          const cy = height * config.scene.centerYRatio;
+
+          return moths
+            .map((moth) => projectMoth(moth, animationTime, width, height, cx, cy, false))
+            .filter((moth) => moth && moth.species !== "unknown" && moth.opacity > 0.02)
+            .sort((a, b) => a.entryTime - b.entryTime);
+        }
+
+        function setFocusedMoth(mothId, pausePlayback = true) {
+          hoverState.hoveredMothId = mothId;
+          canvas.style.cursor = mothId ? "pointer" : "default";
+
+          if (mothId && pausePlayback && !isHoverPaused && !isScrubbing) {
+            wasPlayingBeforeHover = isPlaying;
+            isPlaying = false;
+            isHoverPaused = true;
+            lastTimestamp = null;
+          }
+
+          if (!mothId && isHoverPaused && !isScrubbing) {
+            isPlaying = wasPlayingBeforeHover;
+            lastTimestamp = null;
+            isHoverPaused = false;
+          }
+        }
+
+        function createActiveMothCard(moth) {
+          const card = document.createElement("button");
+          card.className = "active-moths-card is-entering";
+          card.type = "button";
+          card.dataset.mothId = moth.id;
+
+          const swatch = document.createElement("span");
+          swatch.className = "active-moths-card__swatch";
+          swatch.style.background = moth.color;
+          swatch.style.color = moth.color;
+
+          const name = document.createElement("span");
+          name.className = "active-moths-card__name";
+          name.textContent = moth.speciesName || moth.label || moth.id;
+
+          const time = document.createElement("span");
+          time.className = "active-moths-card__time";
+
+          card.append(swatch, name, time);
+          card.addEventListener("pointerenter", () => {
+            setFocusedMoth(card.dataset.mothId);
+          });
+          card.addEventListener("pointerleave", () => {
+            if (hoverState.hoveredMothId === card.dataset.mothId) {
+              clearHover();
+            }
+          });
+          card.addEventListener("focus", () => {
+            setFocusedMoth(card.dataset.mothId);
+          });
+          card.addEventListener("blur", () => {
+            if (hoverState.hoveredMothId === card.dataset.mothId) {
+              clearHover();
+            }
+          });
+          card.addEventListener("click", () => {
+            if (hoverState.hoveredMothId === card.dataset.mothId) {
+              clearHover();
+            } else {
+              setFocusedMoth(card.dataset.mothId);
+            }
+            drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState, presentationMode);
+          });
+
+          requestAnimationFrame(() => card.classList.remove("is-entering"));
+          return card;
+        }
+
+        function updateActiveMothCard(card, moth) {
+          const name = card.querySelector(".active-moths-card__name");
+          const time = card.querySelector(".active-moths-card__time");
+          const swatch = card.querySelector(".active-moths-card__swatch");
+          const isFocused = hoverState.hoveredMothId === moth.id;
+
+          card.classList.toggle("is-focused", isFocused);
+          card.setAttribute("aria-pressed", isFocused ? "true" : "false");
+          card.setAttribute("aria-label", "Focus " + (moth.speciesName || moth.label || moth.id));
+
+          if (name) {
+            name.textContent = moth.speciesName || moth.label || moth.id;
+          }
+          if (time) {
+            time.textContent = formatClockTime(moth.entryTime) + " - " + formatClockTime(moth.exitTime);
+          }
+          if (swatch) {
+            swatch.style.background = moth.color;
+            swatch.style.color = moth.color;
+          }
+        }
+
+        function updateActiveMothsPanel() {
+          if (!activeMothsList) {
+            return;
+          }
+
+          const previousRects = new Map();
+          activeCardRecords.forEach((record, mothId) => {
+            if (record.card.parentElement && !record.card.classList.contains("is-leaving")) {
+              previousRects.set(mothId, record.card.getBoundingClientRect());
+            }
+          });
+
+          const activeMoths = activeProjectedKnownMoths();
+          const activeIds = new Set(activeMoths.map((moth) => moth.id));
+
+          activeMoths.forEach((moth, index) => {
+            let record = activeCardRecords.get(moth.id);
+            if (!record) {
+              const card = createActiveMothCard(moth);
+              record = {
+                card,
+                exitTimer: null
+              };
+              activeCardRecords.set(moth.id, record);
+            }
+
+            if (record.exitTimer) {
+              clearTimeout(record.exitTimer);
+              record.exitTimer = null;
+            }
+            record.card.classList.remove("is-leaving");
+            updateActiveMothCard(record.card, moth);
+            record.card.style.order = String(index);
+            if (!record.card.parentElement) {
+              activeMothsList.append(record.card);
+            }
+          });
+
+          activeCardRecords.forEach((record, mothId) => {
+            if (activeIds.has(mothId) || record.exitTimer) {
+              return;
+            }
+
+            record.card.classList.add("is-leaving");
+            record.exitTimer = window.setTimeout(() => {
+              record.card.remove();
+              activeCardRecords.delete(mothId);
+              if (hoverState.hoveredMothId === mothId) {
+                clearHover();
+              }
+            }, cardExitDelay);
+          });
+
+          requestAnimationFrame(() => {
+            activeCardRecords.forEach((record, mothId) => {
+              if (!record.card.parentElement || record.card.classList.contains("is-leaving") || record.card.classList.contains("is-entering")) {
+                return;
+              }
+
+              const previousRect = previousRects.get(mothId);
+              const currentRect = record.card.getBoundingClientRect();
+              if (!previousRect) {
+                return;
+              }
+
+              const deltaY = previousRect.top - currentRect.top;
+              if (deltaY !== 0) {
+                record.card.style.transform = `translateY(${deltaY}px)`;
+                record.card.getBoundingClientRect();
+                requestAnimationFrame(() => {
+                  record.card.style.transform = "";
+                });
+              }
+            });
+          });
         }
 
         function resizeCanvas() {
@@ -1767,6 +2174,7 @@ $html = @"
 
           drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, timestamp, animationTime, hoverState, presentationMode);
           updateTimelineControls();
+          updateActiveMothsPanel();
           requestAnimationFrame(tick);
         }
 
@@ -1820,20 +2228,12 @@ $html = @"
           const pointerY = event.clientY - rect.top;
           const hoveredMoth = findHoveredMoth(pointerX, pointerY);
 
-          hoverState.hoveredMothId = hoveredMoth ? hoveredMoth.id : null;
-          canvas.style.cursor = hoveredMoth ? "pointer" : "default";
-
           if (!hoveredMoth) {
             clearHover();
             return;
           }
 
-          if (!isHoverPaused && !isScrubbing) {
-            wasPlayingBeforeHover = isPlaying;
-            isPlaying = false;
-            isHoverPaused = true;
-            lastTimestamp = null;
-          }
+          setFocusedMoth(hoveredMoth.id);
         }
 
         function handleTapFocus(event) {
@@ -1854,18 +2254,7 @@ $html = @"
             return;
           }
 
-          hoverState.hoveredMothId = tappedMoth.id;
-          canvas.style.cursor = "pointer";
-
-          if (!isHoverPaused && !isScrubbing) {
-            wasPlayingBeforeHover = isPlaying;
-          }
-
-          if (!isScrubbing) {
-            isPlaying = false;
-            isHoverPaused = true;
-            lastTimestamp = null;
-          }
+          setFocusedMoth(tappedMoth.id);
 
           drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState, presentationMode);
         }
@@ -1910,6 +2299,17 @@ $html = @"
 
           lastTimestamp = null;
         });
+
+        if (activeMothsToggle && activeMothsPanel) {
+          activeMothsToggle.addEventListener("click", () => {
+            const isOpen = !activeMothsPanel.classList.contains("is-open");
+            activeMothsPanel.classList.toggle("is-open", isOpen);
+            activeMothsToggle.classList.toggle("is-open", isOpen);
+            activeMothsToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+            activeMothsToggle.setAttribute("aria-label", isOpen ? "Hide active moths" : "Show active moths");
+            updateActiveMothsPanel();
+          });
+        }
 
         if (canHover) {
           canvas.addEventListener("pointermove", updateHover);

@@ -21,7 +21,7 @@
     "playbackSpeed": 1.5,
     "autoplay": true,
     "loop": true,
-    "launchScreenEnabled": false
+    "launchScreenEnabled": true
   },
   "audio": {
     "enabled": true,
@@ -50,7 +50,7 @@
     "groundFrontColor": "#dbdbdb",
     "lightPoolColor": "rgba(255, 239, 188, 0.58)",
     "lightPoolRadius": 430,
-    "mothShadowsEnabled": true,
+    "mothShadowsEnabled": false,
     "mothShadowOpacity": 0.05,
     "mothShadowLength": 130,
     "mothShadowBlur": 5

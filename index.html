@@ -151,9 +151,199 @@
 
       body.launch-screen-active:not(.launch-controls-visible) .animation-heading,
       body.launch-screen-active:not(.launch-controls-visible) .timeline-control,
-      body.launch-screen-active:not(.launch-controls-visible) .sound-toggle {
+      body.launch-screen-active:not(.launch-controls-visible) .sound-toggle,
+      body.launch-screen-active:not(.launch-controls-visible) .active-moths-toggle,
+      body.launch-screen-active:not(.launch-controls-visible) .active-moths-panel {
         opacity: 0;
         pointer-events: none;
+      }
+
+      .active-moths-toggle {
+        align-items: center;
+        background: rgba(10, 10, 12, 0.32);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 999px;
+        color: rgba(245, 241, 232, 0.86);
+        cursor: pointer;
+        display: flex;
+        height: 34px;
+        justify-content: center;
+        padding: 0;
+        position: fixed;
+        right: clamp(14px, 2.1vw, 26px);
+        top: 50%;
+        transform: translateY(-50%);
+        transition: background 260ms ease, border-color 260ms ease, opacity 820ms ease, transform 520ms ease;
+        width: 34px;
+        z-index: 12;
+      }
+
+      .active-moths-toggle:hover,
+      .active-moths-toggle:focus-visible {
+        background: rgba(18, 18, 22, 0.72);
+        border-color: rgba(255, 255, 255, 0.42);
+        outline: none;
+      }
+
+      .active-moths-toggle::before,
+      .active-moths-toggle::after {
+        background: currentColor;
+        border-radius: 999px;
+        content: "";
+        height: 2px;
+        position: absolute;
+        transition: transform 260ms ease;
+        width: 13px;
+      }
+
+      .active-moths-toggle::before {
+        transform: translateY(-4px) rotate(-45deg);
+      }
+
+      .active-moths-toggle::after {
+        transform: translateY(4px) rotate(45deg);
+      }
+
+      .active-moths-toggle.is-open {
+        transform: translateY(-50%) translateX(-286px);
+      }
+
+      .active-moths-toggle.is-open::before {
+        transform: translateY(-4px) rotate(45deg);
+      }
+
+      .active-moths-toggle.is-open::after {
+        transform: translateY(4px) rotate(-45deg);
+      }
+
+      .active-moths-panel {
+        background: #08080a;
+        border-left: 1px solid rgba(255, 255, 255, 0.12);
+        bottom: 0;
+        box-shadow: -18px 0 34px rgba(0, 0, 0, 0.22);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        opacity: 0;
+        padding: calc(env(safe-area-inset-top, 0px) + 18px) 14px calc(env(safe-area-inset-bottom, 0px) + 18px);
+        pointer-events: none;
+        position: fixed;
+        right: 0;
+        top: 0;
+        transform: translateX(100%);
+        transition: opacity 520ms ease, transform 520ms ease;
+        width: 286px;
+        z-index: 11;
+      }
+
+      .active-moths-panel.is-open {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateX(0);
+      }
+
+      .active-moths-panel__title {
+        color: rgba(245, 241, 232, 0.82);
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0;
+        margin: 0;
+        text-align: right;
+      }
+
+      .active-moths-list {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 8px;
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        padding: 2px 2px 2px 0;
+        scrollbar-color: rgba(245, 241, 232, 0.28) transparent;
+        scrollbar-width: thin;
+      }
+
+      .active-moths-card {
+        background: rgba(255, 255, 255, 0.065);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        color: rgba(245, 241, 232, 0.9);
+        cursor: pointer;
+        display: grid;
+        gap: 3px;
+        grid-template-columns: auto 1fr;
+        min-height: 58px;
+        opacity: 1;
+        padding: 9px 10px;
+        position: relative;
+        text-align: left;
+        transform: translateX(0);
+        overflow: hidden;
+        max-height: 220px;
+        transition: background 220ms ease, border-color 220ms ease, opacity 820ms ease, transform 820ms ease, max-height 820ms ease, min-height 820ms ease, padding 820ms ease;
+        width: 258px;
+        will-change: transform, opacity;
+        border-color: rgba(255, 255, 255, 0.32);
+      }
+
+      .active-moths-card.is-entering,
+      .active-moths-card.is-leaving {
+        opacity: 0;
+        transform: translateX(14px);
+      }
+
+      .active-moths-card.is-entering {
+        opacity: 0.08;
+      }
+
+      .active-moths-card.is-leaving {
+        min-height: 0;
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+
+      .active-moths-card.is-focused {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.42);
+      }
+
+      .active-moths-card:hover,
+      .active-moths-card:focus-visible {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.28);
+        outline: none;
+      }
+
+      .active-moths-card__swatch {
+        border-radius: 999px;
+        box-shadow: 0 0 10px currentColor;
+        height: 9px;
+        margin-top: 5px;
+        width: 9px;
+      }
+
+      .active-moths-card__name {
+        font-size: 0.82rem;
+        font-weight: 600;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+      }
+
+      .active-moths-card__time {
+        color: rgba(245, 241, 232, 0.58);
+        font-size: 0.72rem;
+        font-variant-numeric: tabular-nums;
+        grid-column: 2;
+        line-height: 1.2;
+      }
+
+      .active-moths-card__meta {
+        color: rgba(245, 241, 232, 0.48);
+        font-size: 0.68rem;
+        grid-column: 2;
+        line-height: 1.2;
       }
 
       .sound-toggle span {
@@ -342,12 +532,17 @@
           <output class="time-readout" id="time-readout">00:00</output>
           <input id="timeline-scrubber" type="range" min="0" max="80" step="0.01" value="0" aria-label="Scrub animation time" />
         </div>
+        <button class="active-moths-toggle" id="active-moths-toggle" type="button" aria-label="Show active moths" aria-expanded="false" aria-controls="active-moths-panel"></button>
+        <aside class="active-moths-panel" id="active-moths-panel" aria-label="Active known moths">
+          <h2 class="active-moths-panel__title">Active moths</h2>
+          <div class="active-moths-list" id="active-moths-list"></div>
+        </aside>
         <button class="sound-toggle" id="sound-toggle" type="button" aria-label="Enable sound"><span aria-hidden="true"></span></button>
       </section>
     </main>
 
     <script>
-      const config = {"species":[{"inclinationDriftSpeed":0.1,"chimeNotes":["C3","G3","E4"],"chimeNote":"C3","color":"#eddcb9","id":"large-yellow-underwing","name":"Large Yellow Underwing","speed":0.6,"trailLength":10,"erraticness":3,"nodeDriftSpeed":0.1,"shadowColor":"rgba(243, 231, 207, 0.24)","speciesDescription":"A very common and widespread large moth, often abundant at light traps in peak season. It occupies many habitats, including grassland, farmland, woodland, wetlands, towns and gardens.","imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg","size":7,"shadowBlur":16},{"inclinationDriftSpeed":0.2,"chimeNotes":["D4","E4","G4"],"chimeNote":"E4","color":"#edd0bb","id":"silver-y","name":"Silver Y","speed":0.8,"trailLength":10,"erraticness":2.5,"nodeDriftSpeed":0.2,"shadowColor":"rgba(238, 228, 212, 0.2)","speciesDescription":"A migrant moth that can be very common in the UK, especially in late summer and in years with strong arrivals. It is often seen in flowery grasslands, sand dunes, farmland and gardens, feeding by day as well as flying at night.","imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/-2441-%20Silver%20Y%20%28Autographa%20gamma%29%20%2827543699747%29.jpg","size":6,"shadowBlur":12},{"inclinationDriftSpeed":0.5,"chimeNotes":["G4","A4","C5"],"chimeNote":"G4","color":"#f7f5c6","id":"brimstone-moth","name":"Brimstone Moth","speed":1,"trailLength":10,"erraticness":2,"nodeDriftSpeed":0.5,"shadowColor":"rgba(247, 239, 217, 0.22)","speciesDescription":"A common, widespread moth that frequently visits garden lights. It favours woodland, scrub, grassland and gardens, with caterpillars feeding on shrubs such as hawthorn, blackthorn and rowan.","imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Brimstone%20moth%20-%20opisthograptis%20luteolata%20%2841360608534%29.png","size":3,"shadowBlur":9},{"inclinationDriftSpeed":0.35,"chimeNotes":["E5","G5","A5","C6"],"chimeNote":"E5","color":"#919191","id":"unknown","name":"Unknown","speed":1.75,"trailLength":5,"erraticness":3.2,"nodeDriftSpeed":0.35,"shadowColor":"rgba(120, 124, 130, 0.18)","speciesDescription":"","imageURL":"","size":4,"shadowBlur":7}],"moths":[{"speciesName":"Large Yellow Underwing","chimeNote":"C3","speciesDescription":"A very common and widespread large moth, often abundant at light traps in peak season. It occupies many habitats, including grassland, farmland, woodland, wetlands, towns and gardens.","entryTime":3,"exitTime":145,"size":7,"shadowColor":"rgba(243, 231, 207, 0.24)","id":"known-001","chimeNotes":["C3","G3","E4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg","erraticness":3,"nodeDriftSpeed":0.1,"label":"Large Yellow Underwing","inclinationDriftSpeed":0.1,"speed":0.6,"species":"large-yellow-underwing","color":"#eddcb9","shadowBlur":16,"angle":0,"radius":0},{"speciesName":"Silver Y","chimeNote":"E4","speciesDescription":"A migrant moth that can be very common in the UK, especially in late summer and in years with strong arrivals. It is often seen in flowery grasslands, sand dunes, farmland and gardens, feeding by day as well as flying at night.","entryTime":8,"exitTime":156,"size":6,"shadowColor":"rgba(238, 228, 212, 0.2)","id":"known-002","chimeNotes":["D4","E4","G4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/-2441-%20Silver%20Y%20%28Autographa%20gamma%29%20%2827543699747%29.jpg","erraticness":2.5,"nodeDriftSpeed":0.2,"label":"Silver Y","inclinationDriftSpeed":0.2,"speed":0.8,"species":"silver-y","color":"#edd0bb","shadowBlur":12,"angle":5.1428571428571432,"radius":0},{"speciesName":"Brimstone Moth","chimeNote":"G4","speciesDescription":"A common, widespread moth that frequently visits garden lights. It favours woodland, scrub, grassland and gardens, with caterpillars feeding on shrubs such as hawthorn, blackthorn and rowan.","entryTime":14,"exitTime":126,"size":3,"shadowColor":"rgba(247, 239, 217, 0.22)","id":"known-003","chimeNotes":["G4","A4","C5"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Brimstone%20moth%20-%20opisthograptis%20luteolata%20%2841360608534%29.png","erraticness":2,"nodeDriftSpeed":0.5,"label":"Brimstone Moth","inclinationDriftSpeed":0.5,"speed":1,"species":"brimstone-moth","color":"#f7f5c6","shadowBlur":9,"angle":10.285714285714286,"radius":0},{"speciesName":"Large Yellow Underwing","chimeNote":"C3","speciesDescription":"A very common and widespread large moth, often abundant at light traps in peak season. It occupies many habitats, including grassland, farmland, woodland, wetlands, towns and gardens.","entryTime":28,"exitTime":210,"size":7,"shadowColor":"rgba(243, 231, 207, 0.24)","id":"known-004","chimeNotes":["C3","G3","E4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg","erraticness":3,"nodeDriftSpeed":0.1,"label":"Large Yellow Underwing","inclinationDriftSpeed":0.1,"speed":0.6,"species":"large-yellow-underwing","color":"#eddcb9","shadowBlur":16,"angle":15.428571428571429,"radius":0},{"speciesName":"Silver Y","chimeNote":"E4","speciesDescription":"A migrant moth that can be very common in the UK, especially in late summer and in years with strong arrivals. It is often seen in flowery grasslands, sand dunes, farmland and gardens, feeding by day as well as flying at night.","entryTime":34,"exitTime":184,"size":6,"shadowColor":"rgba(238, 228, 212, 0.2)","id":"known-005","chimeNotes":["D4","E4","G4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/-2441-%20Silver%20Y%20%28Autographa%20gamma%29%20%2827543699747%29.jpg","erraticness":2.5,"nodeDriftSpeed":0.2,"label":"Silver Y","inclinationDriftSpeed":0.2,"speed":0.8,"species":"silver-y","color":"#edd0bb","shadowBlur":12,"angle":20.571428571428573,"radius":0},{"speciesName":"Brimstone Moth","chimeNote":"G4","speciesDescription":"A common, widespread moth that frequently visits garden lights. It favours woodland, scrub, grassland and gardens, with caterpillars feeding on shrubs such as hawthorn, blackthorn and rowan.","entryTime":42,"exitTime":198,"size":3,"shadowColor":"rgba(247, 239, 217, 0.22)","id":"known-006","chimeNotes":["G4","A4","C5"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Brimstone%20moth%20-%20opisthograptis%20luteolata%20%2841360608534%29.png","erraticness":2,"nodeDriftSpeed":0.5,"label":"Brimstone Moth","inclinationDriftSpeed":0.5,"speed":1,"species":"brimstone-moth","color":"#f7f5c6","shadowBlur":9,"angle":25.714285714285715,"radius":0},{"speciesName":"Large Yellow Underwing","chimeNote":"C3","speciesDescription":"A very common and widespread large moth, often abundant at light traps in peak season. It occupies many habitats, including grassland, farmland, woodland, wetlands, towns and gardens.","entryTime":56,"exitTime":260,"size":7,"shadowColor":"rgba(243, 231, 207, 0.24)","id":"known-007","chimeNotes":["C3","G3","E4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg","erraticness":3,"nodeDriftSpeed":0.1,"label":"Large Yellow Underwing","inclinationDriftSpeed":0.1,"speed":0.6,"species":"large-yellow-underwing","color":"#eddcb9","shadowBlur":16,"angle":30.857142857142858,"radius":0},{"speciesName":"Silver Y","chimeNote":"E4","speciesDescription":"A migrant moth that can be very common in the UK, especially in late summer and in years with strong arrivals. It is often seen in flowery grasslands, sand dunes, farmland and gardens, feeding by day as well as flying at night.","entryTime":63,"exitTime":220,"size":6,"shadowColor":"rgba(238, 228, 212, 0.2)","id":"known-008","chimeNotes":["D4","E4","G4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/-2441-%20Silver%20Y%20%28Autographa%20gamma%29%20%2827543699747%29.jpg","erraticness":2.5,"nodeDriftSpeed":0.2,"label":"Silver Y","inclinationDriftSpeed":0.2,"speed":0.8,"species":"silver-y","color":"#edd0bb","shadowBlur":12,"angle":36,"radius":0},{"speciesName":"Brimstone Moth","chimeNote":"G4","speciesDescription":"A common, widespread moth that frequently visits garden lights. It favours woodland, scrub, grassland and gardens, with caterpillars feeding on shrubs such as hawthorn, blackthorn and rowan.","entryTime":76,"exitTime":245,"size":3,"shadowColor":"rgba(247, 239, 217, 0.22)","id":"known-009","chimeNotes":["G4","A4","C5"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Brimstone%20moth%20-%20opisthograptis%20luteolata%20%2841360608534%29.png","erraticness":2,"nodeDriftSpeed":0.5,"label":"Brimstone Moth","inclinationDriftSpeed":0.5,"speed":1,"species":"brimstone-moth","color":"#f7f5c6","shadowBlur":9,"angle":41.142857142857146,"radius":0},{"speciesName":"Large Yellow Underwing","chimeNote":"C3","speciesDescription":"A very common and widespread large moth, often abundant at light traps in peak season. It occupies many habitats, including grassland, farmland, woodland, wetlands, towns and gardens.","entryTime":92,"exitTime":310,"size":7,"shadowColor":"rgba(243, 231, 207, 0.24)","id":"known-010","chimeNotes":["C3","G3","E4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg","erraticness":3,"nodeDriftSpeed":0.1,"label":"Large Yellow Underwing","inclinationDriftSpeed":0.1,"speed":0.6,"species":"large-yellow-underwing","color":"#eddcb9","shadowBlur":16,"angle":46.285714285714285,"radius":0},{"speciesName":"Silver Y","chimeNote":"E4","speciesDescription":"A migrant moth that can be very common in the UK, especially in late summer and in years with strong arrivals. It is often seen in flowery grasslands, sand dunes, farmland and gardens, feeding by day as well as flying at night.","entryTime":108,"exitTime":280,"size":6,"shadowColor":"rgba(238, 228, 212, 0.2)","id":"known-011","chimeNotes":["D4","E4","G4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/-2441-%20Silver%20Y%20%28Autographa%20gamma%29%20%2827543699747%29.jpg","erraticness":2.5,"nodeDriftSpeed":0.2,"label":"Silver Y","inclinationDriftSpeed":0.2,"speed":0.8,"species":"silver-y","color":"#edd0bb","shadowBlur":12,"angle":51.428571428571431,"radius":0},{"speciesName":"Brimstone Moth","chimeNote":"G4","speciesDescription":"A common, widespread moth that frequently visits garden lights. It favours woodland, scrub, grassland and gardens, with caterpillars feeding on shrubs such as hawthorn, blackthorn and rowan.","entryTime":118,"exitTime":300,"size":3,"shadowColor":"rgba(247, 239, 217, 0.22)","id":"known-012","chimeNotes":["G4","A4","C5"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Brimstone%20moth%20-%20opisthograptis%20luteolata%20%2841360608534%29.png","erraticness":2,"nodeDriftSpeed":0.5,"label":"Brimstone Moth","inclinationDriftSpeed":0.5,"speed":1,"species":"brimstone-moth","color":"#f7f5c6","shadowBlur":9,"angle":56.571428571428569,"radius":0},{"speciesName":"Large Yellow Underwing","chimeNote":"C3","speciesDescription":"A very common and widespread large moth, often abundant at light traps in peak season. It occupies many habitats, including grassland, farmland, woodland, wetlands, towns and gardens.","entryTime":136,"exitTime":335,"size":7,"shadowColor":"rgba(243, 231, 207, 0.24)","id":"known-013","chimeNotes":["C3","G3","E4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg","erraticness":3,"nodeDriftSpeed":0.1,"label":"Large Yellow Underwing","inclinationDriftSpeed":0.1,"speed":0.6,"species":"large-yellow-underwing","color":"#eddcb9","shadowBlur":16,"angle":61.714285714285715,"radius":0},{"speciesName":"Silver Y","chimeNote":"E4","speciesDescription":"A migrant moth that can be very common in the UK, especially in late summer and in years with strong arrivals. It is often seen in flowery grasslands, sand dunes, farmland and gardens, feeding by day as well as flying at night.","entryTime":150,"exitTime":330,"size":6,"shadowColor":"rgba(238, 228, 212, 0.2)","id":"known-014","chimeNotes":["D4","E4","G4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/-2441-%20Silver%20Y%20%28Autographa%20gamma%29%20%2827543699747%29.jpg","erraticness":2.5,"nodeDriftSpeed":0.2,"label":"Silver Y","inclinationDriftSpeed":0.2,"speed":0.8,"species":"silver-y","color":"#edd0bb","shadowBlur":12,"angle":66.857142857142861,"radius":0},{"speciesName":"Brimstone Moth","chimeNote":"G4","speciesDescription":"A common, widespread moth that frequently visits garden lights. It favours woodland, scrub, grassland and gardens, with caterpillars feeding on shrubs such as hawthorn, blackthorn and rowan.","entryTime":168,"exitTime":346,"size":3,"shadowColor":"rgba(247, 239, 217, 0.22)","id":"known-015","chimeNotes":["G4","A4","C5"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Brimstone%20moth%20-%20opisthograptis%20luteolata%20%2841360608534%29.png","erraticness":2,"nodeDriftSpeed":0.5,"label":"Brimstone Moth","inclinationDriftSpeed":0.5,"speed":1,"species":"brimstone-moth","color":"#f7f5c6","shadowBlur":9,"angle":72,"radius":0},{"speciesName":"Large Yellow Underwing","chimeNote":"C3","speciesDescription":"A very common and widespread large moth, often abundant at light traps in peak season. It occupies many habitats, including grassland, farmland, woodland, wetlands, towns and gardens.","entryTime":190,"exitTime":358,"size":7,"shadowColor":"rgba(243, 231, 207, 0.24)","id":"known-016","chimeNotes":["C3","G3","E4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg","erraticness":3,"nodeDriftSpeed":0.1,"label":"Large Yellow Underwing","inclinationDriftSpeed":0.1,"speed":0.6,"species":"large-yellow-underwing","color":"#eddcb9","shadowBlur":16,"angle":77.142857142857139,"radius":0},{"speciesName":"Silver Y","chimeNote":"E4","speciesDescription":"A migrant moth that can be very common in the UK, especially in late summer and in years with strong arrivals. It is often seen in flowery grasslands, sand dunes, farmland and gardens, feeding by day as well as flying at night.","entryTime":205,"exitTime":350,"size":6,"shadowColor":"rgba(238, 228, 212, 0.2)","id":"known-017","chimeNotes":["D4","E4","G4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/-2441-%20Silver%20Y%20%28Autographa%20gamma%29%20%2827543699747%29.jpg","erraticness":2.5,"nodeDriftSpeed":0.2,"label":"Silver Y","inclinationDriftSpeed":0.2,"speed":0.8,"species":"silver-y","color":"#edd0bb","shadowBlur":12,"angle":82.285714285714292,"radius":0},{"speciesName":"Brimstone Moth","chimeNote":"G4","speciesDescription":"A common, widespread moth that frequently visits garden lights. It favours woodland, scrub, grassland and gardens, with caterpillars feeding on shrubs such as hawthorn, blackthorn and rowan.","entryTime":226,"exitTime":356,"size":3,"shadowColor":"rgba(247, 239, 217, 0.22)","id":"known-018","chimeNotes":["G4","A4","C5"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Brimstone%20moth%20-%20opisthograptis%20luteolata%20%2841360608534%29.png","erraticness":2,"nodeDriftSpeed":0.5,"label":"Brimstone Moth","inclinationDriftSpeed":0.5,"speed":1,"species":"brimstone-moth","color":"#f7f5c6","shadowBlur":9,"angle":87.428571428571431,"radius":0},{"speciesName":"Large Yellow Underwing","chimeNote":"C3","speciesDescription":"A very common and widespread large moth, often abundant at light traps in peak season. It occupies many habitats, including grassland, farmland, woodland, wetlands, towns and gardens.","entryTime":252,"exitTime":360,"size":7,"shadowColor":"rgba(243, 231, 207, 0.24)","id":"known-019","chimeNotes":["C3","G3","E4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg","erraticness":3,"nodeDriftSpeed":0.1,"label":"Large Yellow Underwing","inclinationDriftSpeed":0.1,"speed":0.6,"species":"large-yellow-underwing","color":"#eddcb9","shadowBlur":16,"angle":92.571428571428569,"radius":0},{"speciesName":"Silver Y","chimeNote":"E4","speciesDescription":"A migrant moth that can be very common in the UK, especially in late summer and in years with strong arrivals. It is often seen in flowery grasslands, sand dunes, farmland and gardens, feeding by day as well as flying at night.","entryTime":276,"exitTime":360,"size":6,"shadowColor":"rgba(238, 228, 212, 0.2)","id":"known-020","chimeNotes":["D4","E4","G4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/-2441-%20Silver%20Y%20%28Autographa%20gamma%29%20%2827543699747%29.jpg","erraticness":2.5,"nodeDriftSpeed":0.2,"label":"Silver Y","inclinationDriftSpeed":0.2,"speed":0.8,"species":"silver-y","color":"#edd0bb","shadowBlur":12,"angle":97.714285714285708,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":1,"exitTime":48,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-001","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":102.85714285714286,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":6,"exitTime":74,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-002","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":108,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":12,"exitTime":90,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-003","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":113.14285714285714,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":18,"exitTime":112,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-004","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":118.28571428571429,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":24,"exitTime":95,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-005","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":123.42857142857143,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":31,"exitTime":138,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-006","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":128.57142857142858,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":37,"exitTime":120,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-007","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":133.71428571428572,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":43,"exitTime":154,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-008","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":138.85714285714286,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":49,"exitTime":135,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-009","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":144,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":55,"exitTime":180,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-010","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":149.14285714285714,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":61,"exitTime":150,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-011","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":154.28571428571428,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":68,"exitTime":190,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-012","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":159.42857142857142,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":74,"exitTime":170,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-013","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":164.57142857142858,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":82,"exitTime":210,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-014","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":169.71428571428572,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":88,"exitTime":198,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-015","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":174.85714285714286,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":96,"exitTime":232,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-016","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":180,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":103,"exitTime":215,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-017","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":185.14285714285714,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":111,"exitTime":245,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-018","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":190.28571428571428,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":119,"exitTime":230,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-019","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":195.42857142857142,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":126,"exitTime":260,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-020","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":200.57142857142858,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":134,"exitTime":248,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-021","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":205.71428571428572,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":142,"exitTime":282,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-022","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":210.85714285714286,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":149,"exitTime":268,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-023","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":216,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":156,"exitTime":298,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-024","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":221.14285714285714,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":164,"exitTime":286,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-025","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":226.28571428571428,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":171,"exitTime":315,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-026","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":231.42857142857142,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":179,"exitTime":300,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-027","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":236.57142857142858,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":186,"exitTime":328,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-028","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":241.71428571428572,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":194,"exitTime":318,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-029","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":246.85714285714286,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":201,"exitTime":340,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-030","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":252,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":208,"exitTime":330,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-031","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":257.14285714285717,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":215,"exitTime":348,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-032","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":262.28571428571428,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":222,"exitTime":338,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-033","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":267.42857142857144,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":229,"exitTime":354,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-034","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":272.57142857142856,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":236,"exitTime":346,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-035","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":277.71428571428572,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":243,"exitTime":358,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-036","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":282.85714285714283,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":250,"exitTime":352,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-037","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":288,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":257,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-038","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":293.14285714285717,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":264,"exitTime":356,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-039","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":298.28571428571428,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":271,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-040","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":303.42857142857144,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":278,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-041","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":308.57142857142856,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":285,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-042","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":313.71428571428572,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":292,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-043","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":318.85714285714283,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":299,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-044","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":324,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":306,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-045","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":329.14285714285717,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":313,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-046","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":334.28571428571428,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":320,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-047","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":339.42857142857144,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":327,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-048","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":344.57142857142856,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":334,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-049","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":349.71428571428572,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":341,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-050","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":354.85714285714283,"radius":0}],"animation":{"titleSize":"clamp(1.25rem, 2.4vw, 2.35rem)","canvasBorderColor":"rgba(255, 255, 255, 0.16)","textColor":"#f5f1e8","duration":360,"startClockTime":"22:00","loop":true,"description":"A standalone animation generated from species and moth observations.","speciesTagDuration":10,"descriptionSize":"clamp(0.78rem, 1.1vw, 0.98rem)","title":"Moth Light Animation","backgroundColor":"#101114","speciesTagSize":13,"canvasBackground":"radial-gradient(circle at center, #252018 0%, #111114 58%, #07080a 100%)","launchScreenEnabled":false,"autoplay":true,"timeLabel":"Time","descriptionColor":"#f5f1e8","titleColor":"#f5f1e8","playbackSpeed":1.5,"speciesTagColor":""},"light":{"size":18,"color":"#fffdf4","flickerStrength":0.05,"haloColor":"rgba(255, 244, 201, 0.26)","glowColor":"rgba(255, 250, 226, 0.52)","flickerSpeed":0.006,"glowRadius":260,"shadowBlur":26},"scene":{"centerYRatio":0.56,"foregroundMothOpacity":0.6,"horizontalFadeEnabled":true,"lightPoolRadius":430,"mothShadowOpacity":0.05,"horizontalEdgeMothOpacity":0.1,"horizonYRatio":0.34,"groundMidColor":"#bfbfbf","backgroundMothOpacity":1,"lightPoolColor":"rgba(255, 239, 188, 0.58)","groundBackColor":"#212121","groundFrontColor":"#dbdbdb","showGround":false,"mothShadowBlur":5,"mothShadowsEnabled":true,"orbitRadiusScale":0.7,"orbitTilt":0.28,"mothShadowLength":130},"audio":{"droneBrightness":0.3,"enabled":true,"chimeProbability":0.26,"droneVariation":0.3,"droneNotes":["C3","G3","C4"],"volume":0.12,"noteDecay":8,"minInterval":1.1,"droneEnabled":true,"droneVolume":0.5}};
+      const config = {"species":[{"inclinationDriftSpeed":0.1,"chimeNotes":["C3","G3","E4"],"chimeNote":"C3","color":"#eddcb9","id":"large-yellow-underwing","name":"Large Yellow Underwing","speed":0.6,"trailLength":10,"erraticness":3,"nodeDriftSpeed":0.1,"shadowColor":"rgba(243, 231, 207, 0.24)","speciesDescription":"A very common and widespread large moth, often abundant at light traps in peak season. It occupies many habitats, including grassland, farmland, woodland, wetlands, towns and gardens.","imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg","size":7,"shadowBlur":16},{"inclinationDriftSpeed":0.2,"chimeNotes":["D4","E4","G4"],"chimeNote":"E4","color":"#edd0bb","id":"silver-y","name":"Silver Y","speed":0.8,"trailLength":10,"erraticness":2.5,"nodeDriftSpeed":0.2,"shadowColor":"rgba(238, 228, 212, 0.2)","speciesDescription":"A migrant moth that can be very common in the UK, especially in late summer and in years with strong arrivals. It is often seen in flowery grasslands, sand dunes, farmland and gardens, feeding by day as well as flying at night.","imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/-2441-%20Silver%20Y%20%28Autographa%20gamma%29%20%2827543699747%29.jpg","size":6,"shadowBlur":12},{"inclinationDriftSpeed":0.5,"chimeNotes":["G4","A4","C5"],"chimeNote":"G4","color":"#f7f5c6","id":"brimstone-moth","name":"Brimstone Moth","speed":1,"trailLength":10,"erraticness":2,"nodeDriftSpeed":0.5,"shadowColor":"rgba(247, 239, 217, 0.22)","speciesDescription":"A common, widespread moth that frequently visits garden lights. It favours woodland, scrub, grassland and gardens, with caterpillars feeding on shrubs such as hawthorn, blackthorn and rowan.","imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Brimstone%20moth%20-%20opisthograptis%20luteolata%20%2841360608534%29.png","size":3,"shadowBlur":9},{"inclinationDriftSpeed":0.35,"chimeNotes":["E5","G5","A5","C6"],"chimeNote":"E5","color":"#919191","id":"unknown","name":"Unknown","speed":1.75,"trailLength":5,"erraticness":3.2,"nodeDriftSpeed":0.35,"shadowColor":"rgba(120, 124, 130, 0.18)","speciesDescription":"","imageURL":"","size":4,"shadowBlur":7}],"moths":[{"speciesName":"Large Yellow Underwing","chimeNote":"C3","speciesDescription":"A very common and widespread large moth, often abundant at light traps in peak season. It occupies many habitats, including grassland, farmland, woodland, wetlands, towns and gardens.","entryTime":3,"exitTime":145,"size":7,"shadowColor":"rgba(243, 231, 207, 0.24)","id":"known-001","chimeNotes":["C3","G3","E4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg","erraticness":3,"nodeDriftSpeed":0.1,"label":"Large Yellow Underwing","inclinationDriftSpeed":0.1,"speed":0.6,"species":"large-yellow-underwing","color":"#eddcb9","shadowBlur":16,"angle":0,"radius":0},{"speciesName":"Silver Y","chimeNote":"E4","speciesDescription":"A migrant moth that can be very common in the UK, especially in late summer and in years with strong arrivals. It is often seen in flowery grasslands, sand dunes, farmland and gardens, feeding by day as well as flying at night.","entryTime":8,"exitTime":156,"size":6,"shadowColor":"rgba(238, 228, 212, 0.2)","id":"known-002","chimeNotes":["D4","E4","G4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/-2441-%20Silver%20Y%20%28Autographa%20gamma%29%20%2827543699747%29.jpg","erraticness":2.5,"nodeDriftSpeed":0.2,"label":"Silver Y","inclinationDriftSpeed":0.2,"speed":0.8,"species":"silver-y","color":"#edd0bb","shadowBlur":12,"angle":5.1428571428571432,"radius":0},{"speciesName":"Brimstone Moth","chimeNote":"G4","speciesDescription":"A common, widespread moth that frequently visits garden lights. It favours woodland, scrub, grassland and gardens, with caterpillars feeding on shrubs such as hawthorn, blackthorn and rowan.","entryTime":14,"exitTime":126,"size":3,"shadowColor":"rgba(247, 239, 217, 0.22)","id":"known-003","chimeNotes":["G4","A4","C5"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Brimstone%20moth%20-%20opisthograptis%20luteolata%20%2841360608534%29.png","erraticness":2,"nodeDriftSpeed":0.5,"label":"Brimstone Moth","inclinationDriftSpeed":0.5,"speed":1,"species":"brimstone-moth","color":"#f7f5c6","shadowBlur":9,"angle":10.285714285714286,"radius":0},{"speciesName":"Large Yellow Underwing","chimeNote":"C3","speciesDescription":"A very common and widespread large moth, often abundant at light traps in peak season. It occupies many habitats, including grassland, farmland, woodland, wetlands, towns and gardens.","entryTime":28,"exitTime":210,"size":7,"shadowColor":"rgba(243, 231, 207, 0.24)","id":"known-004","chimeNotes":["C3","G3","E4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg","erraticness":3,"nodeDriftSpeed":0.1,"label":"Large Yellow Underwing","inclinationDriftSpeed":0.1,"speed":0.6,"species":"large-yellow-underwing","color":"#eddcb9","shadowBlur":16,"angle":15.428571428571429,"radius":0},{"speciesName":"Silver Y","chimeNote":"E4","speciesDescription":"A migrant moth that can be very common in the UK, especially in late summer and in years with strong arrivals. It is often seen in flowery grasslands, sand dunes, farmland and gardens, feeding by day as well as flying at night.","entryTime":34,"exitTime":184,"size":6,"shadowColor":"rgba(238, 228, 212, 0.2)","id":"known-005","chimeNotes":["D4","E4","G4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/-2441-%20Silver%20Y%20%28Autographa%20gamma%29%20%2827543699747%29.jpg","erraticness":2.5,"nodeDriftSpeed":0.2,"label":"Silver Y","inclinationDriftSpeed":0.2,"speed":0.8,"species":"silver-y","color":"#edd0bb","shadowBlur":12,"angle":20.571428571428573,"radius":0},{"speciesName":"Brimstone Moth","chimeNote":"G4","speciesDescription":"A common, widespread moth that frequently visits garden lights. It favours woodland, scrub, grassland and gardens, with caterpillars feeding on shrubs such as hawthorn, blackthorn and rowan.","entryTime":42,"exitTime":198,"size":3,"shadowColor":"rgba(247, 239, 217, 0.22)","id":"known-006","chimeNotes":["G4","A4","C5"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Brimstone%20moth%20-%20opisthograptis%20luteolata%20%2841360608534%29.png","erraticness":2,"nodeDriftSpeed":0.5,"label":"Brimstone Moth","inclinationDriftSpeed":0.5,"speed":1,"species":"brimstone-moth","color":"#f7f5c6","shadowBlur":9,"angle":25.714285714285715,"radius":0},{"speciesName":"Large Yellow Underwing","chimeNote":"C3","speciesDescription":"A very common and widespread large moth, often abundant at light traps in peak season. It occupies many habitats, including grassland, farmland, woodland, wetlands, towns and gardens.","entryTime":56,"exitTime":260,"size":7,"shadowColor":"rgba(243, 231, 207, 0.24)","id":"known-007","chimeNotes":["C3","G3","E4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg","erraticness":3,"nodeDriftSpeed":0.1,"label":"Large Yellow Underwing","inclinationDriftSpeed":0.1,"speed":0.6,"species":"large-yellow-underwing","color":"#eddcb9","shadowBlur":16,"angle":30.857142857142858,"radius":0},{"speciesName":"Silver Y","chimeNote":"E4","speciesDescription":"A migrant moth that can be very common in the UK, especially in late summer and in years with strong arrivals. It is often seen in flowery grasslands, sand dunes, farmland and gardens, feeding by day as well as flying at night.","entryTime":63,"exitTime":220,"size":6,"shadowColor":"rgba(238, 228, 212, 0.2)","id":"known-008","chimeNotes":["D4","E4","G4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/-2441-%20Silver%20Y%20%28Autographa%20gamma%29%20%2827543699747%29.jpg","erraticness":2.5,"nodeDriftSpeed":0.2,"label":"Silver Y","inclinationDriftSpeed":0.2,"speed":0.8,"species":"silver-y","color":"#edd0bb","shadowBlur":12,"angle":36,"radius":0},{"speciesName":"Brimstone Moth","chimeNote":"G4","speciesDescription":"A common, widespread moth that frequently visits garden lights. It favours woodland, scrub, grassland and gardens, with caterpillars feeding on shrubs such as hawthorn, blackthorn and rowan.","entryTime":76,"exitTime":245,"size":3,"shadowColor":"rgba(247, 239, 217, 0.22)","id":"known-009","chimeNotes":["G4","A4","C5"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Brimstone%20moth%20-%20opisthograptis%20luteolata%20%2841360608534%29.png","erraticness":2,"nodeDriftSpeed":0.5,"label":"Brimstone Moth","inclinationDriftSpeed":0.5,"speed":1,"species":"brimstone-moth","color":"#f7f5c6","shadowBlur":9,"angle":41.142857142857146,"radius":0},{"speciesName":"Large Yellow Underwing","chimeNote":"C3","speciesDescription":"A very common and widespread large moth, often abundant at light traps in peak season. It occupies many habitats, including grassland, farmland, woodland, wetlands, towns and gardens.","entryTime":92,"exitTime":310,"size":7,"shadowColor":"rgba(243, 231, 207, 0.24)","id":"known-010","chimeNotes":["C3","G3","E4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg","erraticness":3,"nodeDriftSpeed":0.1,"label":"Large Yellow Underwing","inclinationDriftSpeed":0.1,"speed":0.6,"species":"large-yellow-underwing","color":"#eddcb9","shadowBlur":16,"angle":46.285714285714285,"radius":0},{"speciesName":"Silver Y","chimeNote":"E4","speciesDescription":"A migrant moth that can be very common in the UK, especially in late summer and in years with strong arrivals. It is often seen in flowery grasslands, sand dunes, farmland and gardens, feeding by day as well as flying at night.","entryTime":108,"exitTime":280,"size":6,"shadowColor":"rgba(238, 228, 212, 0.2)","id":"known-011","chimeNotes":["D4","E4","G4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/-2441-%20Silver%20Y%20%28Autographa%20gamma%29%20%2827543699747%29.jpg","erraticness":2.5,"nodeDriftSpeed":0.2,"label":"Silver Y","inclinationDriftSpeed":0.2,"speed":0.8,"species":"silver-y","color":"#edd0bb","shadowBlur":12,"angle":51.428571428571431,"radius":0},{"speciesName":"Brimstone Moth","chimeNote":"G4","speciesDescription":"A common, widespread moth that frequently visits garden lights. It favours woodland, scrub, grassland and gardens, with caterpillars feeding on shrubs such as hawthorn, blackthorn and rowan.","entryTime":118,"exitTime":300,"size":3,"shadowColor":"rgba(247, 239, 217, 0.22)","id":"known-012","chimeNotes":["G4","A4","C5"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Brimstone%20moth%20-%20opisthograptis%20luteolata%20%2841360608534%29.png","erraticness":2,"nodeDriftSpeed":0.5,"label":"Brimstone Moth","inclinationDriftSpeed":0.5,"speed":1,"species":"brimstone-moth","color":"#f7f5c6","shadowBlur":9,"angle":56.571428571428569,"radius":0},{"speciesName":"Large Yellow Underwing","chimeNote":"C3","speciesDescription":"A very common and widespread large moth, often abundant at light traps in peak season. It occupies many habitats, including grassland, farmland, woodland, wetlands, towns and gardens.","entryTime":136,"exitTime":335,"size":7,"shadowColor":"rgba(243, 231, 207, 0.24)","id":"known-013","chimeNotes":["C3","G3","E4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg","erraticness":3,"nodeDriftSpeed":0.1,"label":"Large Yellow Underwing","inclinationDriftSpeed":0.1,"speed":0.6,"species":"large-yellow-underwing","color":"#eddcb9","shadowBlur":16,"angle":61.714285714285715,"radius":0},{"speciesName":"Silver Y","chimeNote":"E4","speciesDescription":"A migrant moth that can be very common in the UK, especially in late summer and in years with strong arrivals. It is often seen in flowery grasslands, sand dunes, farmland and gardens, feeding by day as well as flying at night.","entryTime":150,"exitTime":330,"size":6,"shadowColor":"rgba(238, 228, 212, 0.2)","id":"known-014","chimeNotes":["D4","E4","G4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/-2441-%20Silver%20Y%20%28Autographa%20gamma%29%20%2827543699747%29.jpg","erraticness":2.5,"nodeDriftSpeed":0.2,"label":"Silver Y","inclinationDriftSpeed":0.2,"speed":0.8,"species":"silver-y","color":"#edd0bb","shadowBlur":12,"angle":66.857142857142861,"radius":0},{"speciesName":"Brimstone Moth","chimeNote":"G4","speciesDescription":"A common, widespread moth that frequently visits garden lights. It favours woodland, scrub, grassland and gardens, with caterpillars feeding on shrubs such as hawthorn, blackthorn and rowan.","entryTime":168,"exitTime":346,"size":3,"shadowColor":"rgba(247, 239, 217, 0.22)","id":"known-015","chimeNotes":["G4","A4","C5"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Brimstone%20moth%20-%20opisthograptis%20luteolata%20%2841360608534%29.png","erraticness":2,"nodeDriftSpeed":0.5,"label":"Brimstone Moth","inclinationDriftSpeed":0.5,"speed":1,"species":"brimstone-moth","color":"#f7f5c6","shadowBlur":9,"angle":72,"radius":0},{"speciesName":"Large Yellow Underwing","chimeNote":"C3","speciesDescription":"A very common and widespread large moth, often abundant at light traps in peak season. It occupies many habitats, including grassland, farmland, woodland, wetlands, towns and gardens.","entryTime":190,"exitTime":358,"size":7,"shadowColor":"rgba(243, 231, 207, 0.24)","id":"known-016","chimeNotes":["C3","G3","E4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg","erraticness":3,"nodeDriftSpeed":0.1,"label":"Large Yellow Underwing","inclinationDriftSpeed":0.1,"speed":0.6,"species":"large-yellow-underwing","color":"#eddcb9","shadowBlur":16,"angle":77.142857142857139,"radius":0},{"speciesName":"Silver Y","chimeNote":"E4","speciesDescription":"A migrant moth that can be very common in the UK, especially in late summer and in years with strong arrivals. It is often seen in flowery grasslands, sand dunes, farmland and gardens, feeding by day as well as flying at night.","entryTime":205,"exitTime":350,"size":6,"shadowColor":"rgba(238, 228, 212, 0.2)","id":"known-017","chimeNotes":["D4","E4","G4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/-2441-%20Silver%20Y%20%28Autographa%20gamma%29%20%2827543699747%29.jpg","erraticness":2.5,"nodeDriftSpeed":0.2,"label":"Silver Y","inclinationDriftSpeed":0.2,"speed":0.8,"species":"silver-y","color":"#edd0bb","shadowBlur":12,"angle":82.285714285714292,"radius":0},{"speciesName":"Brimstone Moth","chimeNote":"G4","speciesDescription":"A common, widespread moth that frequently visits garden lights. It favours woodland, scrub, grassland and gardens, with caterpillars feeding on shrubs such as hawthorn, blackthorn and rowan.","entryTime":226,"exitTime":356,"size":3,"shadowColor":"rgba(247, 239, 217, 0.22)","id":"known-018","chimeNotes":["G4","A4","C5"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Brimstone%20moth%20-%20opisthograptis%20luteolata%20%2841360608534%29.png","erraticness":2,"nodeDriftSpeed":0.5,"label":"Brimstone Moth","inclinationDriftSpeed":0.5,"speed":1,"species":"brimstone-moth","color":"#f7f5c6","shadowBlur":9,"angle":87.428571428571431,"radius":0},{"speciesName":"Large Yellow Underwing","chimeNote":"C3","speciesDescription":"A very common and widespread large moth, often abundant at light traps in peak season. It occupies many habitats, including grassland, farmland, woodland, wetlands, towns and gardens.","entryTime":252,"exitTime":360,"size":7,"shadowColor":"rgba(243, 231, 207, 0.24)","id":"known-019","chimeNotes":["C3","G3","E4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/Large%20Yellow%20Underwing%2C%20Noctua%20pronuba%20%2820325748541%29.jpg","erraticness":3,"nodeDriftSpeed":0.1,"label":"Large Yellow Underwing","inclinationDriftSpeed":0.1,"speed":0.6,"species":"large-yellow-underwing","color":"#eddcb9","shadowBlur":16,"angle":92.571428571428569,"radius":0},{"speciesName":"Silver Y","chimeNote":"E4","speciesDescription":"A migrant moth that can be very common in the UK, especially in late summer and in years with strong arrivals. It is often seen in flowery grasslands, sand dunes, farmland and gardens, feeding by day as well as flying at night.","entryTime":276,"exitTime":360,"size":6,"shadowColor":"rgba(238, 228, 212, 0.2)","id":"known-020","chimeNotes":["D4","E4","G4"],"trailLength":10,"imageURL":"https://commons.wikimedia.org/wiki/Special:FilePath/-2441-%20Silver%20Y%20%28Autographa%20gamma%29%20%2827543699747%29.jpg","erraticness":2.5,"nodeDriftSpeed":0.2,"label":"Silver Y","inclinationDriftSpeed":0.2,"speed":0.8,"species":"silver-y","color":"#edd0bb","shadowBlur":12,"angle":97.714285714285708,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":1,"exitTime":48,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-001","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":102.85714285714286,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":6,"exitTime":74,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-002","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":108,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":12,"exitTime":90,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-003","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":113.14285714285714,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":18,"exitTime":112,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-004","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":118.28571428571429,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":24,"exitTime":95,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-005","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":123.42857142857143,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":31,"exitTime":138,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-006","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":128.57142857142858,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":37,"exitTime":120,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-007","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":133.71428571428572,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":43,"exitTime":154,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-008","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":138.85714285714286,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":49,"exitTime":135,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-009","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":144,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":55,"exitTime":180,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-010","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":149.14285714285714,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":61,"exitTime":150,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-011","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":154.28571428571428,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":68,"exitTime":190,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-012","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":159.42857142857142,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":74,"exitTime":170,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-013","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":164.57142857142858,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":82,"exitTime":210,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-014","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":169.71428571428572,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":88,"exitTime":198,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-015","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":174.85714285714286,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":96,"exitTime":232,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-016","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":180,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":103,"exitTime":215,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-017","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":185.14285714285714,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":111,"exitTime":245,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-018","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":190.28571428571428,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":119,"exitTime":230,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-019","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":195.42857142857142,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":126,"exitTime":260,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-020","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":200.57142857142858,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":134,"exitTime":248,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-021","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":205.71428571428572,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":142,"exitTime":282,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-022","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":210.85714285714286,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":149,"exitTime":268,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-023","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":216,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":156,"exitTime":298,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-024","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":221.14285714285714,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":164,"exitTime":286,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-025","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":226.28571428571428,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":171,"exitTime":315,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-026","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":231.42857142857142,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":179,"exitTime":300,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-027","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":236.57142857142858,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":186,"exitTime":328,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-028","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":241.71428571428572,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":194,"exitTime":318,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-029","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":246.85714285714286,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":201,"exitTime":340,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-030","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":252,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":208,"exitTime":330,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-031","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":257.14285714285717,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":215,"exitTime":348,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-032","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":262.28571428571428,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":222,"exitTime":338,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-033","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":267.42857142857144,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":229,"exitTime":354,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-034","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":272.57142857142856,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":236,"exitTime":346,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-035","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":277.71428571428572,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":243,"exitTime":358,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-036","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":282.85714285714283,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":250,"exitTime":352,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-037","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":288,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":257,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-038","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":293.14285714285717,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":264,"exitTime":356,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-039","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":298.28571428571428,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":271,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-040","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":303.42857142857144,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":278,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-041","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":308.57142857142856,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":285,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-042","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":313.71428571428572,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":292,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-043","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":318.85714285714283,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":299,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-044","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":324,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":306,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-045","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":329.14285714285717,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":313,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-046","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":334.28571428571428,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":320,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-047","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":339.42857142857144,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":327,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-048","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":344.57142857142856,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":334,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-049","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":349.71428571428572,"radius":0},{"speciesName":"Unknown","chimeNote":"E5","speciesDescription":"","entryTime":341,"exitTime":360,"size":4,"shadowColor":"rgba(120, 124, 130, 0.18)","id":"unknown-050","chimeNotes":["E5","G5","A5","C6"],"trailLength":5,"imageURL":"","erraticness":3.2,"nodeDriftSpeed":0.35,"label":"Unknown","inclinationDriftSpeed":0.35,"speed":1.75,"species":"unknown","color":"#919191","shadowBlur":7,"angle":354.85714285714283,"radius":0}],"animation":{"titleSize":"clamp(1.25rem, 2.4vw, 2.35rem)","canvasBorderColor":"rgba(255, 255, 255, 0.16)","textColor":"#f5f1e8","duration":360,"startClockTime":"22:00","loop":true,"description":"A standalone animation generated from species and moth observations.","speciesTagDuration":10,"descriptionSize":"clamp(0.78rem, 1.1vw, 0.98rem)","title":"Moth Light Animation","backgroundColor":"#101114","speciesTagSize":13,"canvasBackground":"radial-gradient(circle at center, #252018 0%, #111114 58%, #07080a 100%)","launchScreenEnabled":true,"autoplay":true,"timeLabel":"Time","descriptionColor":"#f5f1e8","titleColor":"#f5f1e8","playbackSpeed":1.5,"speciesTagColor":""},"light":{"size":18,"color":"#fffdf4","flickerStrength":0.05,"haloColor":"rgba(255, 244, 201, 0.26)","glowColor":"rgba(255, 250, 226, 0.52)","flickerSpeed":0.006,"glowRadius":260,"shadowBlur":26},"scene":{"centerYRatio":0.56,"foregroundMothOpacity":0.6,"horizontalFadeEnabled":true,"lightPoolRadius":430,"mothShadowOpacity":0.05,"horizontalEdgeMothOpacity":0.1,"horizonYRatio":0.34,"groundMidColor":"#bfbfbf","backgroundMothOpacity":1,"lightPoolColor":"rgba(255, 239, 188, 0.58)","groundBackColor":"#212121","groundFrontColor":"#dbdbdb","showGround":false,"mothShadowBlur":5,"mothShadowsEnabled":false,"orbitRadiusScale":0.7,"orbitTilt":0.28,"mothShadowLength":130},"audio":{"droneBrightness":0.3,"enabled":true,"chimeProbability":0.26,"droneVariation":0.3,"droneNotes":["C3","G3","C4"],"volume":0.12,"noteDecay":8,"minInterval":1.1,"droneEnabled":true,"droneVolume":0.5}};
 
       function createMoths(config, width, height) {
         const maxMothSize = config.moths.reduce((largest, moth) => Math.max(largest, moth.size), 0);
@@ -557,7 +752,7 @@
         return points.reverse();
       }
 
-      function drawTrail(context, moth, dimFactor = 1) {
+      function drawTrail(context, moth, dimFactor = 1, isFocused = false) {
         if (!moth.trail || moth.trail.length < 2) {
           return;
         }
@@ -575,7 +770,9 @@
           const point = moth.trail[index];
           const progress = index / segmentCount;
           const fade = easeInOut(progress);
-          const opacity = Math.min(0.58, point.opacity * 0.58) * fade * dimFactor;
+          const opacity = isFocused
+            ? 1
+            : Math.min(0.58, point.opacity * 0.58) * fade * dimFactor;
           const width = baseWidth * (0.45 + fade * 0.55);
 
           context.strokeStyle = colorWithAlpha(moth.color, opacity);
@@ -685,9 +882,10 @@
 
         const dimFactor = state === "dimmed" ? 0.24 : 1;
         const focusFactor = state === "focused" ? 1.18 : 1;
+        const opacityFactor = state === "focused" ? 1 : moth.opacity;
 
         context.save();
-        context.globalAlpha = moth.opacity * dimFactor;
+        context.globalAlpha = opacityFactor * dimFactor;
         context.fillStyle = moth.color;
         context.shadowColor = moth.shadowColor;
         context.shadowBlur = moth.shadowBlur * focusFactor;
@@ -1005,6 +1203,33 @@
         context.fill();
         context.stroke();
 
+        const boxCenterX = x + boxWidth * 0.5;
+        const boxCenterY = y + boxHeight * 0.5;
+        const deltaX = moth.x - boxCenterX;
+        const deltaY = moth.y - boxCenterY;
+        let lineX = boxCenterX;
+        let lineY = boxCenterY;
+
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          lineX = deltaX > 0 ? x + boxWidth : x;
+          lineY = boxCenterY + (boxWidth * 0.5) * (deltaY / Math.abs(deltaX));
+        } else {
+          lineY = deltaY > 0 ? y + boxHeight : y;
+          lineX = boxCenterX + (boxHeight * 0.5) * (deltaX / Math.abs(deltaY || 1));
+        }
+
+        lineX = Math.max(x, Math.min(x + boxWidth, lineX));
+        lineY = Math.max(y, Math.min(y + boxHeight, lineY));
+
+        context.strokeStyle = colorWithAlpha(moth.color, 0.72);
+        context.lineWidth = 1.5;
+        context.setLineDash([4, 3]);
+        context.beginPath();
+        context.moveTo(moth.x, moth.y);
+        context.lineTo(lineX, lineY);
+        context.stroke();
+        context.setLineDash([]);
+
         context.textAlign = "left";
         context.textBaseline = "top";
 
@@ -1058,7 +1283,7 @@
 
         moths.forEach((moth) => {
           const state = getMothDrawState(moth, hoverState);
-          drawTrail(context, moth, state === "dimmed" ? 0.18 : 1);
+          drawTrail(context, moth, state === "dimmed" ? 0.18 : 1, state === "focused");
         });
 
         moths.forEach((moth) => drawMoth(context, moth, getMothDrawState(moth, hoverState)));
@@ -1451,6 +1676,9 @@
         const context = canvas.getContext("2d");
         const scrubber = document.getElementById("timeline-scrubber");
         const timeReadout = document.getElementById("time-readout");
+        const activeMothsToggle = document.getElementById("active-moths-toggle");
+        const activeMothsPanel = document.getElementById("active-moths-panel");
+        const activeMothsList = document.getElementById("active-moths-list");
         const audio = setupAudio(config.moths);
         let moths = [];
         let animationTime = 0;
@@ -1468,11 +1696,190 @@
           hoveredMothId: null,
           imageCache: new Map()
         };
+        const activeCardRecords = new Map();
+        const cardExitDelay = 1600;
 
         function updateTimelineControls() {
           scrubber.max = String(config.animation.duration);
           scrubber.value = String(animationTime);
           timeReadout.textContent = formatClockTime(animationTime);
+        }
+
+        function activeProjectedKnownMoths() {
+          const width = canvas.clientWidth;
+          const height = canvas.clientHeight;
+          const cx = width / 2;
+          const cy = height * config.scene.centerYRatio;
+
+          return moths
+            .map((moth) => projectMoth(moth, animationTime, width, height, cx, cy, false))
+            .filter((moth) => moth && moth.species !== "unknown" && moth.opacity > 0.02)
+            .sort((a, b) => a.entryTime - b.entryTime);
+        }
+
+        function setFocusedMoth(mothId, pausePlayback = true) {
+          hoverState.hoveredMothId = mothId;
+          canvas.style.cursor = mothId ? "pointer" : "default";
+
+          if (mothId && pausePlayback && !isHoverPaused && !isScrubbing) {
+            wasPlayingBeforeHover = isPlaying;
+            isPlaying = false;
+            isHoverPaused = true;
+            lastTimestamp = null;
+          }
+
+          if (!mothId && isHoverPaused && !isScrubbing) {
+            isPlaying = wasPlayingBeforeHover;
+            lastTimestamp = null;
+            isHoverPaused = false;
+          }
+        }
+
+        function createActiveMothCard(moth) {
+          const card = document.createElement("button");
+          card.className = "active-moths-card is-entering";
+          card.type = "button";
+          card.dataset.mothId = moth.id;
+
+          const swatch = document.createElement("span");
+          swatch.className = "active-moths-card__swatch";
+          swatch.style.background = moth.color;
+          swatch.style.color = moth.color;
+
+          const name = document.createElement("span");
+          name.className = "active-moths-card__name";
+          name.textContent = moth.speciesName || moth.label || moth.id;
+
+          const time = document.createElement("span");
+          time.className = "active-moths-card__time";
+
+          card.append(swatch, name, time);
+          card.addEventListener("pointerenter", () => {
+            setFocusedMoth(card.dataset.mothId);
+          });
+          card.addEventListener("pointerleave", () => {
+            if (hoverState.hoveredMothId === card.dataset.mothId) {
+              clearHover();
+            }
+          });
+          card.addEventListener("focus", () => {
+            setFocusedMoth(card.dataset.mothId);
+          });
+          card.addEventListener("blur", () => {
+            if (hoverState.hoveredMothId === card.dataset.mothId) {
+              clearHover();
+            }
+          });
+          card.addEventListener("click", () => {
+            if (hoverState.hoveredMothId === card.dataset.mothId) {
+              clearHover();
+            } else {
+              setFocusedMoth(card.dataset.mothId);
+            }
+            drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState, presentationMode);
+          });
+
+          requestAnimationFrame(() => card.classList.remove("is-entering"));
+          return card;
+        }
+
+        function updateActiveMothCard(card, moth) {
+          const name = card.querySelector(".active-moths-card__name");
+          const time = card.querySelector(".active-moths-card__time");
+          const swatch = card.querySelector(".active-moths-card__swatch");
+          const isFocused = hoverState.hoveredMothId === moth.id;
+
+          card.classList.toggle("is-focused", isFocused);
+          card.setAttribute("aria-pressed", isFocused ? "true" : "false");
+          card.setAttribute("aria-label", "Focus " + (moth.speciesName || moth.label || moth.id));
+
+          if (name) {
+            name.textContent = moth.speciesName || moth.label || moth.id;
+          }
+          if (time) {
+            time.textContent = formatClockTime(moth.entryTime) + " - " + formatClockTime(moth.exitTime);
+          }
+          if (swatch) {
+            swatch.style.background = moth.color;
+            swatch.style.color = moth.color;
+          }
+        }
+
+        function updateActiveMothsPanel() {
+          if (!activeMothsList) {
+            return;
+          }
+
+          const previousRects = new Map();
+          activeCardRecords.forEach((record, mothId) => {
+            if (record.card.parentElement && !record.card.classList.contains("is-leaving")) {
+              previousRects.set(mothId, record.card.getBoundingClientRect());
+            }
+          });
+
+          const activeMoths = activeProjectedKnownMoths();
+          const activeIds = new Set(activeMoths.map((moth) => moth.id));
+
+          activeMoths.forEach((moth, index) => {
+            let record = activeCardRecords.get(moth.id);
+            if (!record) {
+              const card = createActiveMothCard(moth);
+              record = {
+                card,
+                exitTimer: null
+              };
+              activeCardRecords.set(moth.id, record);
+            }
+
+            if (record.exitTimer) {
+              clearTimeout(record.exitTimer);
+              record.exitTimer = null;
+            }
+            record.card.classList.remove("is-leaving");
+            updateActiveMothCard(record.card, moth);
+            record.card.style.order = String(index);
+            if (!record.card.parentElement) {
+              activeMothsList.append(record.card);
+            }
+          });
+
+          activeCardRecords.forEach((record, mothId) => {
+            if (activeIds.has(mothId) || record.exitTimer) {
+              return;
+            }
+
+            record.card.classList.add("is-leaving");
+            record.exitTimer = window.setTimeout(() => {
+              record.card.remove();
+              activeCardRecords.delete(mothId);
+              if (hoverState.hoveredMothId === mothId) {
+                clearHover();
+              }
+            }, cardExitDelay);
+          });
+
+          requestAnimationFrame(() => {
+            activeCardRecords.forEach((record, mothId) => {
+              if (!record.card.parentElement || record.card.classList.contains("is-leaving") || record.card.classList.contains("is-entering")) {
+                return;
+              }
+
+              const previousRect = previousRects.get(mothId);
+              const currentRect = record.card.getBoundingClientRect();
+              if (!previousRect) {
+                return;
+              }
+
+              const deltaY = previousRect.top - currentRect.top;
+              if (deltaY !== 0) {
+                record.card.style.transform = 	ranslateY(px);
+                record.card.getBoundingClientRect();
+                requestAnimationFrame(() => {
+                  record.card.style.transform = "";
+                });
+              }
+            });
+          });
         }
 
         function resizeCanvas() {
@@ -1526,6 +1933,7 @@
 
           drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, timestamp, animationTime, hoverState, presentationMode);
           updateTimelineControls();
+          updateActiveMothsPanel();
           requestAnimationFrame(tick);
         }
 
@@ -1579,20 +1987,12 @@
           const pointerY = event.clientY - rect.top;
           const hoveredMoth = findHoveredMoth(pointerX, pointerY);
 
-          hoverState.hoveredMothId = hoveredMoth ? hoveredMoth.id : null;
-          canvas.style.cursor = hoveredMoth ? "pointer" : "default";
-
           if (!hoveredMoth) {
             clearHover();
             return;
           }
 
-          if (!isHoverPaused && !isScrubbing) {
-            wasPlayingBeforeHover = isPlaying;
-            isPlaying = false;
-            isHoverPaused = true;
-            lastTimestamp = null;
-          }
+          setFocusedMoth(hoveredMoth.id);
         }
 
         function handleTapFocus(event) {
@@ -1613,18 +2013,7 @@
             return;
           }
 
-          hoverState.hoveredMothId = tappedMoth.id;
-          canvas.style.cursor = "pointer";
-
-          if (!isHoverPaused && !isScrubbing) {
-            wasPlayingBeforeHover = isPlaying;
-          }
-
-          if (!isScrubbing) {
-            isPlaying = false;
-            isHoverPaused = true;
-            lastTimestamp = null;
-          }
+          setFocusedMoth(tappedMoth.id);
 
           drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState, presentationMode);
         }
@@ -1669,6 +2058,17 @@
 
           lastTimestamp = null;
         });
+
+        if (activeMothsToggle && activeMothsPanel) {
+          activeMothsToggle.addEventListener("click", () => {
+            const isOpen = !activeMothsPanel.classList.contains("is-open");
+            activeMothsPanel.classList.toggle("is-open", isOpen);
+            activeMothsToggle.classList.toggle("is-open", isOpen);
+            activeMothsToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+            activeMothsToggle.setAttribute("aria-label", isOpen ? "Hide active moths" : "Show active moths");
+            updateActiveMothsPanel();
+          });
+        }
 
         if (canHover) {
           canvas.addEventListener("pointermove", updateHover);

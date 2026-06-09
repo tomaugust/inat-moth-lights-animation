@@ -50,7 +50,7 @@
     "groundFrontColor": "#dbdbdb",
     "lightPoolColor": "rgba(255, 239, 188, 0.58)",
     "lightPoolRadius": 430,
-    "mothShadowsEnabled": true,
+    "mothShadowsEnabled": false,
     "mothShadowOpacity": 0.1,
     "mothShadowLength": 50,
     "mothShadowBlur": 2

@@ -84,6 +84,7 @@ function Read-AnimationConfig {
 
   $speciesById = @{}
   $normalizedSpecies = @()
+  $minMothDuration = ConvertTo-PositiveNumber (Get-ConfigValue $animation "minMothDuration" 0) 0 0
   foreach ($speciesRecord in $species) {
     $speciesId = [string](Get-ConfigValue $speciesRecord "id" "")
     if ([string]::IsNullOrWhiteSpace($speciesId)) {
@@ -130,6 +131,7 @@ function Read-AnimationConfig {
     $defaultEntryTime = [Math]::Min($index * 4, 20)
     $entryTime = ConvertTo-PositiveNumber (Get-ConfigValue $moth "entryTime" $defaultEntryTime) $defaultEntryTime 0
     $exitTime = ConvertTo-PositiveNumber (Get-ConfigValue $moth "exitTime" ($entryTime + 40)) ($entryTime + 40) $entryTime
+    $exitTime = [Math]::Max($exitTime, $entryTime + $minMothDuration)
     $normalizedMoths += @{
       angle = ($index * 360) / $moths.Count
       chimeNote = $speciesDefaults.chimeNote
@@ -167,8 +169,10 @@ function Read-AnimationConfig {
       duration = ConvertTo-PositiveNumber (Get-ConfigValue $animation "duration" 80) 80 1
       loop = [bool](Get-ConfigValue $animation "loop" $true)
       launchScreenEnabled = [bool](Get-ConfigValue $animation "launchScreenEnabled" $false)
+      minMothDuration = $minMothDuration
       playbackSpeed = ConvertTo-PositiveNumber (Get-ConfigValue $animation "playbackSpeed" 1) 1 0.01
       startClockTime = [string](Get-ConfigValue $animation "startClockTime" "22:00")
+      speciesTag = [bool](Get-ConfigValue $animation "speciesTag" $true)
       speciesTagColor = [string](Get-ConfigValue $animation "speciesTagColor" "")
       speciesTagDuration = ConvertTo-PositiveNumber (Get-ConfigValue $animation "speciesTagDuration" 5.5) 5.5 0.1
       speciesTagSize = ConvertTo-PositiveNumber (Get-ConfigValue $animation "speciesTagSize" 13) 13 1
@@ -1148,6 +1152,10 @@ $html = @"
       }
 
       function drawEntryLabels(context, moths, animationTime, width, height) {
+        if (config.animation.speciesTag !== true) {
+          return;
+        }
+
         const activeLabels = moths
           .map((moth) => {
             if (moth.species === "unknown") {
@@ -1185,10 +1193,10 @@ $html = @"
         const descriptionStyle = descriptionElement ? window.getComputedStyle(descriptionElement) : null;
         const tagSize = descriptionStyle ? parseFloat(descriptionStyle.fontSize) : Math.max(1, config.animation.speciesTagSize);
         context.font = "400 " + tagSize + "px Inter, system-ui, sans-serif";
-        context.textAlign = "center";
+        context.textAlign = "left";
         context.textBaseline = "middle";
 
-        const labelX = width * 0.5;
+        const labelX = Math.max(24, width * 0.08);
         const rowHeight = Math.max(18, tagSize * 1.65);
         const glowTopY = height * config.scene.centerYRatio - config.light.glowRadius - 18;
         const topPadding = 84;

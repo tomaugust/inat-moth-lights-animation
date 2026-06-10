@@ -1,0 +1,3 @@
+py -3 .\scripts\csv_to_config.py --input input_data\dep000144_tracks.csv --template public\template-config.json --output outputs\dep000144-config.json
+
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\build-standalone.ps1 --ConfigPath outputs\dep000144-config.json --OutputPath index.html

@@ -34,6 +34,13 @@ DEFAULT_CHIME_NOTE_SETS = [
     ["D4", "E4", "G4"],
     ["G4", "A4", "C5"],
 ]
+DEFAULT_SPECIES_COLORS = [
+    "#ffffff",
+    "#ffe1ca",
+    "#ff9a88",
+    "#a7b0ff",
+    "#e1ff6b",
+]
 
 
 def parse_args() -> argparse.Namespace:
@@ -105,6 +112,20 @@ def normalise_night_minutes(start_minutes: int, end_minutes: int) -> tuple[int, 
     return start_minutes, end_minutes
 
 
+def spans_midday(start: datetime, end: datetime) -> bool:
+    if end < start:
+        start, end = end, start
+
+    current_date = start.date()
+    final_date = end.date()
+    while current_date <= final_date:
+        midday = datetime.combine(current_date, datetime.min.time().replace(hour=12))
+        if start <= midday <= end:
+            return True
+        current_date = current_date.fromordinal(current_date.toordinal() + 1)
+    return False
+
+
 def slugify(value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug or "unknown"
@@ -130,13 +151,21 @@ def load_rows(path: Path, include_nonmoths: bool) -> list[dict[str, str]]:
     with path.open("r", encoding="utf-8-sig", newline="") as file:
         rows = list(csv.DictReader(file))
 
-    if include_nonmoths or not rows or "binary_class" not in rows[0]:
-        return rows
+    filtered_rows = rows
+    if not include_nonmoths and rows and "binary_class" in rows[0]:
+        filtered_rows = [
+            row
+            for row in rows
+            if row.get("binary_class", "").strip().lower() == "moth"
+        ]
 
     return [
         row
-        for row in rows
-        if row.get("binary_class", "").strip().lower() == "moth"
+        for row in filtered_rows
+        if not spans_midday(
+            parse_datetime(row["track_start_datetime"]),
+            parse_datetime(row["track_end_datetime"]),
+        )
     ]
 
 
@@ -163,17 +192,6 @@ def build_unknown_species() -> dict[str, Any]:
 def stable_random(species_name: str) -> random.Random:
     digest = hashlib.sha256(species_name.strip().lower().encode("utf-8")).digest()
     return random.Random(int.from_bytes(digest[:8], "big"))
-
-
-def interpolate_hex_color(start: str, end: str, ratio: float) -> str:
-    ratio = max(0.0, min(1.0, ratio))
-    start_rgb = tuple(int(start[index:index + 2], 16) for index in (1, 3, 5))
-    end_rgb = tuple(int(end[index:index + 2], 16) for index in (1, 3, 5))
-    mixed = tuple(
-        round(start_channel + (end_channel - start_channel) * ratio)
-        for start_channel, end_channel in zip(start_rgb, end_rgb)
-    )
-    return "#" + "".join(f"{channel:02x}" for channel in mixed)
 
 
 def parse_species_table_value(field: str, value: str) -> Any:
@@ -237,14 +255,14 @@ def build_default_species_entry(name: str) -> dict[str, Any]:
         "name": name,
         "imageURL": "",
         "speciesDescription": "",
-        "color": interpolate_hex_color("#ffffff", "#f7ce5e", rng.random()),
+        "color": rng.choice(DEFAULT_SPECIES_COLORS),
         "chimeNote": chime_notes[0],
         "chimeNotes": chime_notes,
-        "size": round(rng.uniform(2, 7), 2),
+        "size": round(rng.uniform(2, 5), 2),
         "speed": round(rng.uniform(0.4, 1.3), 2),
-        "erraticness": round(rng.uniform(1.2, 4), 2),
-        "inclinationDriftSpeed": round(rng.uniform(0.1, 0.7), 2),
-        "nodeDriftSpeed": round(rng.uniform(0.1, 0.7), 2),
+        "erraticness": round(rng.uniform(1.2, 3), 2),
+        "inclinationDriftSpeed": round(rng.uniform(0.1, 0.5), 2),
+        "nodeDriftSpeed": round(rng.uniform(0.1, 0.5), 2),
         "trailLength": 10,
         "shadowColor": "rgba(247, 239, 217, 0.22)",
         "shadowBlur": 9,

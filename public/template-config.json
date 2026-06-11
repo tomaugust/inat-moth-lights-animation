@@ -20,7 +20,7 @@
     "duration": 360,
     "timeLabel": "Time",
     "startClockTime": "22:00",
-    "playbackSpeed": 1.5,
+    "playbackSpeed": 3,
     "autoplay": true,
     "loop": true,
     "launchScreenEnabled": true
@@ -28,9 +28,9 @@
   "audio": {
     "enabled": true,
     "volume": 0.12,
-    "chimeProbability": 0.3,
-    "noteDecay": 8,
-    "minInterval": 0.5,
+    "chimeProbability": 0.15,
+    "noteDecay": 13,
+    "minInterval": 1.1,
     "droneEnabled": true,
     "droneNotes": ["C3", "G3", "C4"],
     "droneVariation": 0.3,

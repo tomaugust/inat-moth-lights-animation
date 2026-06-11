@@ -811,8 +811,10 @@ $html = @"
           angle: (moth.angle * Math.PI) / 180,
           chimeNote: moth.chimeNote,
           color: moth.color,
+          entryAngle: (sampleBiasedApproachAngle(noiseSeed, 173) * Math.PI) / 180,
           entryTime: moth.entryTime,
           erraticness: moth.erraticness,
+          exitAngle: (sampleBiasedApproachAngle(noiseSeed, 211) * Math.PI) / 180,
           exitTime: moth.exitTime,
           id: moth.id,
           inclinationDriftSpeed: moth.inclinationDriftSpeed,
@@ -837,6 +839,41 @@ $html = @"
       function easeInOut(value) {
         const t = Math.max(0, Math.min(1, value));
         return t * t * (3 - 2 * t);
+      }
+
+      function sampleBiasedApproachAngle(noiseSeed, salt) {
+        const baseAngle = seededUnit(noiseSeed, salt) < 0.5 ? 90 : 270;
+        const offset = (seededUnit(noiseSeed, salt + 1) * 60) - 30;
+        return (baseAngle + offset + 360) % 360;
+      }
+
+      function pointBeyondCanvas(x, y, width, height, margin, angleRadians) {
+        // 0 degrees is straight up, 90 right, 180 down, 270 left.
+        const directionX = Math.sin(angleRadians);
+        const directionY = -Math.cos(angleRadians);
+        const distances = [];
+
+        if (Math.abs(directionX) > 0.0001) {
+          distances.push(directionX > 0
+            ? (width + margin - x) / directionX
+            : (-margin - x) / directionX);
+        }
+
+        if (Math.abs(directionY) > 0.0001) {
+          distances.push(directionY > 0
+            ? (height + margin - y) / directionY
+            : (-margin - y) / directionY);
+        }
+
+        const distance = distances
+          .filter((candidate) => candidate > 0)
+          .reduce((smallest, candidate) => Math.min(smallest, candidate), Number.POSITIVE_INFINITY);
+        const safeDistance = Number.isFinite(distance) ? distance : Math.max(width, height) + margin;
+
+        return {
+          x: x + directionX * safeDistance,
+          y: y + directionY * safeDistance
+        };
       }
 
       function interpolatePoint(from, to, progress) {
@@ -915,20 +952,28 @@ $html = @"
 
         if (animationTime < moth.entryTime + entryDuration) {
           const progress = easeInOut((animationTime - moth.entryTime) / entryDuration);
-          const start = {
-            x: -moth.size * 4,
-            y: orbit.y - height * 0.16
-          };
+          const start = pointBeyondCanvas(
+            orbit.x,
+            orbit.y,
+            width,
+            height,
+            moth.size * 4,
+            moth.entryAngle
+          );
           const point = interpolatePoint(start, orbit, progress);
           x = point.x;
           y = point.y;
           phase = "entering";
         } else if (animationTime > exitStart) {
           const progress = easeInOut((animationTime - exitStart) / exitDuration);
-          const end = {
-            x: width + moth.size * 4,
-            y: orbit.y - height * 0.12
-          };
+          const end = pointBeyondCanvas(
+            orbit.x,
+            orbit.y,
+            width,
+            height,
+            moth.size * 4,
+            moth.exitAngle
+          );
           const point = interpolatePoint(orbit, end, progress);
           x = point.x;
           y = point.y;

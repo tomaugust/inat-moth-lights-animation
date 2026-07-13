@@ -1,0 +1,851 @@
+iNaturalist Live Moth Lights Website
+Detailed Development Plan
+
+1. Mission
+
+Create a public website that turns newly uploaded iNaturalist moth observations
+from around the world into a continuous, living version of the existing moth
+light animation.
+
+The new project should retain the current visual identity:
+https://www.checklistbank.org/about/API
+- a bright hanging light in dark space;
+- smooth moth entry, orbit, trails, shadows, labels, hover/tap details and audio;
+- an uncluttered, modern presentation that works on desktop and mobile;
+- deterministic species styling so the same species feels consistent;
+- accessibility, graceful failure and respectful use of public biodiversity data.
+
+The major change is architectural. The current project embeds a fixed JSON
+dataset into a standalone HTML file at build time. The new project will keep the
+animation running in the browser while a live data layer periodically discovers
+new observations and adds them to the scene.
+
+
+2. Recommended Architecture
+
+Recommended production architecture:
+
+  iNaturalist API
+        |
+        v
+  cached API adapter / edge function
+        |
+        v
+  GitHub Pages static website
+        |
+        v
+  observation queue -> live moth store -> canvas animation
+
+Recommended hosting:
+
+- Host the website itself on GitHub Pages.
+- Host a very small caching adapter on an edge/serverless platform such as a
+  Cloudflare Worker, Netlify Function or Vercel Function.
+- Prefer a request-driven cache rather than a permanently running process. When
+  a browser asks for observations, the adapter returns a cached response and
+  refreshes it only when the cache is stale.
+- Keep the iNaturalist API unauthenticated unless a future requirement genuinely
+  needs authentication. Public observation searches do not need a secret.
+
+Why this is the preferred design:
+
+- The existing animation is already browser-native JavaScript and canvas code.
+- GitHub Pages is inexpensive, simple, HTTPS-enabled and already used by this
+  project.
+- A shared cache prevents every visitor from making an independent stream of
+  requests to iNaturalist.
+- The adapter can identify the application with a custom User-Agent, enforce a
+  conservative request rate, retry carefully and return stale cached data when
+  iNaturalist is temporarily unavailable.
+- No database or always-on server is required for the first production version.
+
+
+3. Hosting Options Considered
+
+3.1 GitHub Pages alone
+
+This is technically plausible for an early prototype if the browser is allowed
+to fetch the public iNaturalist endpoint cross-origin.
+
+Advantages:
+
+- almost no infrastructure;
+- matches the current repository and deployment workflow;
+- easy local development and deployment;
+- no server cost or server maintenance.
+
+Limitations:
+
+- GitHub Pages is static and cannot hide credentials, set a useful server-side
+  User-Agent, centralize caching or enforce a global request rate;
+- every open browser would poll iNaturalist separately;
+- traffic growth would multiply API usage;
+- browser CORS behavior becomes a hard dependency;
+- API errors and schema changes are exposed directly to the frontend.
+
+Conclusion: suitable for a short API spike, but not the preferred public
+architecture.
+
+3.2 GitHub Pages plus a cached serverless adapter
+
+Advantages:
+
+- preserves the lightweight static frontend;
+- one cached upstream response can serve many visitors;
+- isolates API-specific code from the animation;
+- supports clear CORS policy, response validation, telemetry and stale fallback;
+- can later switch upstream API versions without rebuilding the animation engine.
+
+Limitations:
+
+- introduces one additional deployment;
+- cache and rate-limit behavior need testing;
+- the edge platform must be documented so the project is reproducible.
+
+Conclusion: recommended for the public version.
+
+3.3 shinyapps.io
+
+The existing animation could be placed in a Shiny UI and an R process could call
+iNaturalist and send observations to the browser through Shiny messages.
+
+Advantages:
+
+- R is convenient for data transformation and exploratory filters;
+- server-side requests can set headers and centralize some API logic;
+- useful if the project later becomes an analytical dashboard with substantial R
+  processing.
+
+Limitations:
+
+- the current animation does not need a reactive R server;
+- Shiny adds WebSocket/session lifecycle and deployment complexity;
+- app instances can sleep and restart, and local instance storage is not durable;
+- multiple workers or instances do not automatically share in-memory state;
+- shinyapps.io does not support a permanent scheduled background job;
+- long-running display sessions and public concurrency require careful plan and
+  timeout configuration.
+
+Conclusion: feasible, but not recommended unless R-based analysis and controls
+become a central part of the product. For the visual website described here,
+GitHub Pages plus a small cache is simpler and more robust.
+
+
+4. Important Product Decisions
+
+Resolve these decisions during the API prototype, before polishing the site.
+
+4.1 What counts as live?
+
+Recommended definition: observations newly uploaded to iNaturalist.
+
+- Use observation creation time or an increasing observation ID as the ingestion
+  cursor.
+- Keep the actual observation date as metadata for the popout.
+- Do not use observed_on as the arrival cursor because users can upload old
+  observations long after they were recorded.
+- Add visible copy such as "Recently shared on iNaturalist" rather than implying
+  that every moth was physically observed at this exact moment.
+
+4.2 What counts as a moth?
+
+The iNaturalist Lepidoptera taxon includes butterflies as well as moths. "Moth"
+is not a single clean taxonomic clade, so this cannot be solved by assuming that
+all Lepidoptera records are moths.
+
+Options to test:
+
+- MVP: use all Lepidoptera and describe the scope honestly;
+- maintain a curated list of moth family or superfamily taxon IDs and exclude
+  butterfly groups;
+- use an existing iNaturalist project or suitable taxon grouping if one proves
+  stable and complete;
+- include uncertain records as "Unknown moth" only when the observation is still
+  within the accepted moth taxon scope.
+
+Recommended path: use all Lepidoptera for the first technical prototype, then
+make moth-only filtering a release gate for public naming and launch.
+
+4.3 How should global volume affect the animation?
+
+The API can return observations faster than a calm animation can display them.
+The scene therefore needs a presentation queue rather than a one-to-one immediate
+burst.
+
+Recommended defaults:
+
+- poll the adapter every 60 seconds;
+- request up to 100 or 200 records in one upstream batch;
+- release queued observations into the animation at a controlled cadence;
+- cap active moths, initially around 40 to 60;
+- keep each moth visible for a configurable minimum duration;
+- retain a bounded queue and discard or sample oldest overflow records during a
+  surge;
+- expose a subtle count such as "23 recent observations" without turning the
+  artwork into a dashboard.
+
+4.4 Photos, attribution and licensing
+
+- Treat observation metadata and media licensing as separate concerns.
+- Request photo URL, photo license and attribution fields explicitly.
+- Show attribution and a link to the original iNaturalist observation wherever a
+  photo is displayed.
+- Use a small or medium image variant, not the original image.
+- Decide whether to display only photos with licenses compatible with the intended
+  use; do not assume all iNaturalist photos are openly licensed.
+- Do not proxy or permanently cache photos in the MVP. Let the browser load the
+  returned image URL from its original host.
+- Avoid exact coordinates. A broad place name is enough for the experience and is
+  safer for obscured or sensitive observations.
+
+
+5. API Strategy
+
+5.1 Endpoint
+
+Start with the iNaturalist v2 observations search endpoint:
+
+  GET https://api.inaturalist.org/v2/observations
+
+Use the current v2 documentation and OpenAPI schema rather than copying assumptions
+from the older v1 API.
+
+Initial query goals:
+
+- filter by the chosen Lepidoptera or moth taxon scope;
+- order consistently for incremental ingestion;
+- request only fields required by the website;
+- use a high per-page value so one request retrieves a useful batch;
+- retain a cursor such as the largest processed observation ID;
+- use id_above or the v2 equivalent confirmed during the API spike;
+- optionally require photos only if the design decides every popout needs one;
+- optionally filter quality grade, but do not imply research-grade certainty when
+  showing casual or needs-ID observations.
+
+Candidate response fields:
+
+- observation id and UUID;
+- created_at;
+- observed_on or time_observed_at;
+- observation URI;
+- quality grade;
+- taxon id, rank, scientific name and preferred common name;
+- taxon default photo or first observation photo;
+- photo URL, attribution and license code;
+- broad place_guess;
+- positional accuracy only if later needed for aggregate display, not exact map
+  placement.
+
+The final fields expression must be validated against the live v2 schema. V2
+returns minimal records by default, so fields must be requested explicitly.
+
+5.2 API etiquette and limits
+
+- Keep upstream calls far below the published ceiling. A 30 to 60 second shared
+  cache is much more conservative than the approximately one-request-per-second
+  recommended maximum.
+- Keep total daily calls comfortably below 10,000.
+- Request records in batches instead of fetching observations or taxa one by one.
+- Do not use the API as a bulk-download mechanism.
+- Set a descriptive User-Agent from the server-side adapter.
+- On HTTP 429, honor Retry-After when supplied and use exponential backoff with
+  jitter.
+- On 5xx or timeout, return the last good cached response with a stale marker.
+- Record only operational counts and errors; do not log unnecessary user or
+  observation data.
+
+5.3 Adapter response contract
+
+The frontend should consume a small project-owned contract rather than raw iNat
+objects. Example shape:
+
+  {
+    "fetchedAt": "2026-07-11T21:15:00Z",
+    "stale": false,
+    "cursor": "123456789",
+    "observations": [
+      {
+        "id": "inat-123456789",
+        "taxonId": 1234,
+        "scientificName": "Example species",
+        "commonName": "Example moth",
+        "taxonRank": "species",
+        "createdAt": "...",
+        "observedAt": "...",
+        "place": "Broad place name",
+        "imageUrl": "...",
+        "imageAttribution": "...",
+        "imageLicense": "cc-by",
+        "observationUrl": "..."
+      }
+    ]
+  }
+
+Validate and normalize upstream data in the adapter. The browser should not need
+to understand every variation of the iNaturalist response schema.
+
+
+6. Codebase Adaptation
+
+6.1 Split the generated monolith into modules
+
+The standalone HTML generator was right for emailed files, but a live website is
+easier to maintain as source files.
+
+Proposed structure:
+
+  index.html
+  src/
+    app.js
+    animation-engine.js
+    moth-store.js
+    observation-queue.js
+    inaturalist-client.js
+    observation-adapter.js
+    species-style.js
+    audio-engine.js
+    ui.js
+  styles/
+    main.css
+  config/
+    site-config.json
+  fixtures/
+    observations-page-1.json
+    observations-empty.json
+    observations-error.json
+  worker/
+    src/index.js
+    wrangler.toml or equivalent platform config
+  tests/
+  .github/workflows/pages.yml
+
+Keep scripts/build-standalone.ps1 only if the new repository should still support
+offline demos. It should no longer be the primary application architecture.
+
+6.2 Extract the animation engine
+
+Move reusable browser code from scripts/build-standalone.ps1 into normal JavaScript
+modules. Preserve behavior before introducing live data.
+
+The engine should expose a small API such as:
+
+- start();
+- pause();
+- resume();
+- resize();
+- addMoth(mothRecord);
+- removeMoth(id);
+- focusMoth(id);
+- clearFocus();
+- setConnectionState(state).
+
+Do not make the renderer fetch remote data. Rendering and data acquisition should
+remain independent.
+
+6.3 Replace the fixed timeline with a live moth store
+
+The current code assumes config.moths is immutable and every moth has an entry and
+exit position on a finite looping timeline. Live mode needs mutable state.
+
+Add a MothStore responsible for:
+
+- adding newly released observations;
+- assigning entry, orbit and exit phases from monotonic browser time;
+- enforcing minMothDuration and maximum active count;
+- removing completed moths and trail history;
+- preserving focused moths until focus is cleared or a safe timeout is reached;
+- providing the current moth array to drawing, hit testing, side panel and audio;
+- bounding all arrays and maps so a display left open for days does not leak
+  memory.
+
+Use performance.now() for animation lifetimes. Use wall-clock timestamps only for
+metadata and connection status.
+
+6.4 Introduce an observation queue
+
+The queue decouples API bursts from visual entry cadence.
+
+Responsibilities:
+
+- deduplicate by iNaturalist observation ID;
+- maintain a bounded set of recently seen IDs;
+- sort new records deterministically;
+- release observations at a configurable interval;
+- apply backpressure when the active scene is full;
+- sample fairly during large bursts rather than showing only one location or
+  species;
+- persist the recent cursor and seen-ID window in localStorage so refreshing the
+  page does not replay the same batch immediately;
+- recover safely if localStorage is unavailable or corrupt.
+
+6.5 Generate species appearance dynamically
+
+The current project expects a predefined species array. A global live stream will
+continually encounter unseen taxa.
+
+Create deterministic species styling from taxon ID:
+
+- hash taxon ID to a restrained near-white/cream/brown palette;
+- hash taxon ID to a compatible chime note set;
+- derive bounded size, speed, erraticness and orbit drift values;
+- cache the resulting style by taxon ID;
+- use one subdued grey profile for observations not identified to the chosen
+  taxonomic level;
+- keep mappings stable across browsers and sessions by using a documented seeded
+  algorithm, not Math.random().
+
+This avoids a separate API lookup or manually maintained species config for every
+taxon in the world.
+
+6.6 Adapt labels, cards and popouts
+
+For each live observation, display only useful, respectful metadata:
+
+- common name when available;
+- scientific name;
+- broad location;
+- when it was observed and/or shared;
+- licensed image and attribution when available;
+- link to the original observation;
+- identification status or quality grade, phrased carefully.
+
+Unknown or coarse identifications should retain the existing quieter treatment.
+Do not expose observer identity or exact coordinates unless there is a clear
+product reason and an explicit privacy review.
+
+6.7 Adapt the clock and scrub bar
+
+A live stream has no natural finite loop, so the current six-hour scrub timeline
+does not map cleanly.
+
+Recommended live behavior:
+
+- replace the animation clock with the viewer's current local time or UTC, clearly
+  labelled;
+- replace the scrub bar with a thin recent-activity indicator or remove it;
+- retain pause/resume as a familiar control;
+- while paused, keep fetching into a bounded queue but do not release new moths;
+- on resume, pace queued observations rather than releasing them all at once;
+- optionally add a separate Replay mode later using a captured JSON fixture.
+
+Do not attempt to scrub the global live stream in the MVP.
+
+6.8 Adapt audio
+
+- Keep browser-initiated audio enablement.
+- Trigger chimes from observation entry events rather than polling ticks.
+- Use deterministic taxon-to-note mapping so repeated species sound related.
+- Rate-limit overlapping chimes during bursts.
+- Keep the drone independent of network state.
+- Stop all Web Audio nodes immediately when sound is disabled.
+
+
+7. Reliability and User Experience
+
+Connection states:
+
+- starting: show the light and a subtle loading state;
+- live: show the latest successful refresh time;
+- quiet: remain animated but indicate that no new records have arrived;
+- stale: continue using queued/cached records and show a restrained connection
+  marker;
+- offline: stop polling, retain current moths, and retry when the browser reports
+  connectivity;
+- rate-limited: back off automatically without alarming the viewer;
+- fatal schema error: stop ingestion, preserve the scene and expose a useful
+  diagnostic in the console.
+
+Polling behavior:
+
+- use AbortController and a request timeout;
+- never allow overlapping polls;
+- pause or reduce polling when the tab is hidden;
+- resume with one immediate refresh when the tab becomes visible;
+- apply exponential backoff with jitter after failures;
+- reset the backoff after a successful response;
+- cap all queues, seen-ID sets, trail histories and image caches.
+
+
+8. Accessibility and Responsible Presentation
+
+- Respect prefers-reduced-motion with slower movement, shorter trails or a calm
+  reduced-motion mode.
+- Keep controls keyboard accessible with visible focus states and meaningful ARIA
+  labels.
+- Ensure text and controls remain readable on small mobile screens.
+- Keep sound off until explicit user interaction.
+- Provide text alternatives for observation photos.
+- Include an iNaturalist attribution and a statement that the site is an
+  independent visualization using iNaturalist data, not an official iNaturalist
+  product.
+- Link to data and media license information.
+- Do not imply identification certainty beyond the source record.
+- Avoid exact coordinates and avoid drawing conclusions about abundance from the
+  stream; upload activity is not an unbiased sample of moth abundance.
+
+
+9. New Repository Strategy
+
+Recommendation: create a new repository from the current repository rather than
+maintaining a long-lived fork relationship.
+
+Reasoning:
+
+- the mission changes from a standalone file generator to a live web application;
+- deployment, data ingestion and runtime state will diverge substantially;
+- the animation engine can retain attribution and history without forcing future
+  changes to merge between unlike products;
+- GitHub generally treats forks as contributions back to an upstream project,
+  which is not the main relationship here.
+
+Suggested repository names:
+
+- inaturalist-moth-lights
+- live-moth-lights
+- moth-lights-live
+
+Creation options:
+
+- Best: clone this repository locally, create a new empty GitHub repository,
+  change the remote and push. This preserves the full development history.
+- Alternative: mark the current repository as a GitHub template and use "Use this
+  template" for a clean history.
+- Use a true GitHub fork only if the new repository will live under a different
+  account or organization and ongoing upstream merging is desirable.
+
+Initial repository cleanup:
+
+- update title, description, README, LICENSE holder and repository URLs;
+- retain the existing MIT license and clearly credit the original animation;
+- remove trap CSV data and generated outputs not needed by the live website;
+- add fixture API responses with no personal or sensitive data;
+- add .gitignore entries for local environment files and build artifacts;
+- configure GitHub Pages through GitHub Actions;
+- add Dependabot only after a package manager is introduced;
+- add a SECURITY.md explaining how to report exposed credentials or privacy
+  issues, even though the MVP should contain no secrets.
+
+
+10. Development Phases
+
+Phase 0: research spike and decisions
+
+Deliverables:
+
+- confirm the exact v2 query parameters and fields;
+- save small redacted response fixtures;
+- test browser CORS for direct GET requests;
+- measure typical global Lepidoptera arrival volume at several times of day;
+- decide the public moth-only taxon strategy;
+- decide whether unlicensed photos are excluded;
+- choose the edge/serverless platform;
+- record the intended poll interval, active-moth cap and queue cap.
+
+Exit criteria:
+
+- one documented API request returns all fields needed for a moth card;
+- the request rate is demonstrably conservative;
+- the project can explain accurately what records are included.
+
+Phase 1: create the new repository and preserve visual parity
+
+Deliverables:
+
+- create the new repository from the existing code;
+- extract HTML, CSS and JavaScript from the PowerShell here-string;
+- render the existing example config through the new module structure;
+- retain desktop, mobile, audio, hover/tap, card panel and launch behavior;
+- deploy the static fixture-driven site to GitHub Pages.
+
+Exit criteria:
+
+- screenshots and behavior match the current project closely;
+- no live API dependency exists yet;
+- the site works locally through a small development server and in GitHub Pages.
+
+Phase 2: observation adapter with recorded fixtures
+
+Deliverables:
+
+- implement the project-owned observation contract;
+- build validation and normalization for fixture responses;
+- add deterministic taxon styling;
+- add MothStore and ObservationQueue;
+- replace the finite static timeline with live lifecycles;
+- add unit tests for duplicate IDs, missing taxa, missing photos, invalid dates,
+  queue overflow and minimum duration.
+
+Exit criteria:
+
+- fixture observations enter, orbit and exit continuously;
+- unknown taxa and missing fields never break rendering;
+- a multi-hour soak test shows bounded memory and stable frame rate.
+
+Phase 3: direct live API prototype
+
+Deliverables:
+
+- implement a development-only direct iNaturalist client;
+- poll slowly and prevent overlapping requests;
+- persist cursor and recent IDs locally;
+- add connection, stale and error states;
+- compare observed API volume with the assumptions from Phase 0.
+
+Exit criteria:
+
+- new records appear without refreshing;
+- records are not replayed after every poll;
+- offline and 429 simulations recover automatically;
+- the frontend remains usable when the API is unavailable.
+
+Phase 4: shared cache / API adapter
+
+Deliverables:
+
+- deploy the serverless adapter;
+- validate upstream responses and return the normalized contract;
+- add cache-control and stale fallback;
+- set a descriptive User-Agent;
+- restrict CORS to the production site and local development origins;
+- add request timeout, backoff and lightweight operational logging;
+- point the production frontend at the adapter.
+
+Exit criteria:
+
+- multiple browsers share cached upstream responses;
+- browser count does not multiply iNaturalist request volume directly;
+- no credentials are present in frontend JavaScript;
+- API downtime degrades gracefully.
+
+Phase 5: public experience polish
+
+Deliverables:
+
+- finalize titles, explanatory copy and iNaturalist attribution;
+- finalize clock/activity controls for live mode;
+- tune active count, entry pacing, lifetime, chime density and mobile layout;
+- add photo attribution and links;
+- implement reduced-motion behavior;
+- test long names and translated/common-name absence;
+- test desktop, Android and iOS-sized viewports;
+- run accessibility and performance checks.
+
+Exit criteria:
+
+- the experience remains calm during both quiet and busy API periods;
+- every visible image has attribution and a source link;
+- no controls overlap at supported screen sizes;
+- sound and motion preferences are respected.
+
+Phase 6: launch and operations
+
+Deliverables:
+
+- connect optional custom domain;
+- enable HTTPS and production caching;
+- add uptime monitoring for the website and adapter;
+- document deployment and rollback;
+- document how to change API filters without breaking the response contract;
+- review API usage after one week and one month;
+- publish a short data-use and limitations statement.
+
+Exit criteria:
+
+- deployments are reproducible from the repository;
+- rollback is documented and tested;
+- observed API usage remains comfortably within recommended limits;
+- ownership of maintenance and incident response is clear.
+
+
+11. Testing Plan
+
+Unit tests:
+
+- raw API object to normalized observation mapping;
+- taxon ID to deterministic visual/audio style;
+- deduplication and cursor advancement;
+- queue release order and overflow policy;
+- minimum moth duration;
+- missing photo, missing common name and coarse identification;
+- date parsing and timezone display;
+- retry delay and backoff caps.
+
+Integration tests:
+
+- adapter returns a valid normalized response;
+- cached and stale responses have correct headers and flags;
+- frontend can start from an empty response;
+- repeated pages do not duplicate moths;
+- pause/resume does not release a burst;
+- sound toggle mutes immediately;
+- hidden-tab polling slows and resumes correctly.
+
+Visual and browser tests:
+
+- desktop at common 16:9 and ultrawide sizes;
+- narrow Android and iPhone viewports;
+- reduced-motion mode;
+- slow network and offline mode;
+- 0, 1, 20 and maximum active moths;
+- exceptionally long scientific/common names;
+- missing and failed images;
+- side panel overflow and touch focus;
+- multi-hour soak test with synthetic high-volume input.
+
+Performance targets for the first release:
+
+- maintain smooth rendering on a representative mid-range phone;
+- keep active moths and trail samples strictly bounded;
+- avoid layout work inside the canvas animation loop;
+- lazy-load popout images;
+- keep the initial static application lightweight;
+- avoid one API or taxon request per moth.
+
+
+12. Configuration Plan
+
+Move runtime settings into config/site-config.json or a small JavaScript config
+module. Document default, minimum, maximum and behavior for every setting.
+
+Suggested settings:
+
+- api.adapterUrl;
+- api.pollIntervalSeconds;
+- api.requestTimeoutSeconds;
+- api.pageSize;
+- api.taxonIds;
+- api.qualityGrades;
+- api.photoLicenses;
+- api.maxBackoffSeconds;
+- live.initialSeedCount;
+- live.maxActiveMoths;
+- live.maxQueuedObservations;
+- live.seenIdCapacity;
+- live.releaseIntervalSeconds;
+- live.minMothDuration;
+- live.maxMothDuration;
+- live.pauseQueueLimit;
+- live.useLocalStorage;
+- display.clockMode: local, UTC or hidden;
+- display.showBroadLocation;
+- display.showObservationTime;
+- display.showPhoto;
+- display.reducedMotionMode;
+- audio existing chime and drone controls;
+- scene existing light, orbit, opacity, trail and shadow controls.
+
+Do not put secrets in this config. Anything shipped by GitHub Pages is public.
+
+
+13. Risks and Mitigations
+
+API changes or outages:
+
+- isolate raw API handling in the adapter;
+- validate responses;
+- keep fixtures and stale cache;
+- display a calm stale/offline state.
+
+API rate limiting:
+
+- use a shared cache;
+- poll conservatively;
+- batch requests;
+- back off on 429;
+- monitor request count.
+
+Unexpected global volume:
+
+- bounded queue and active count;
+- controlled release cadence;
+- documented sampling policy;
+- load test with synthetic bursts.
+
+Taxonomic ambiguity:
+
+- make the Lepidoptera-versus-moth decision explicit;
+- document the filter;
+- avoid overstating uncertain identifications.
+
+Media copyright:
+
+- request and display license/attribution;
+- optionally filter to approved licenses;
+- link to the source;
+- do not copy images into the repository.
+
+Privacy and sensitive species:
+
+- rely on public API output and geoprivacy;
+- do not request or show private coordinates;
+- prefer broad place text;
+- avoid storing observation data unnecessarily.
+
+Long-running browser stability:
+
+- use bounded data structures;
+- clean up audio nodes and image references;
+- remove expired trails and cards;
+- run soak tests and track memory.
+
+Misinterpretation of the visualization:
+
+- explain that this represents recently shared observations, not real-time moth
+  abundance or movement;
+- distinguish upload time from observation time;
+- credit observers and iNaturalist appropriately.
+
+
+14. Definition of Done for Version 1
+
+- A public GitHub Pages site continuously visualizes newly shared records from the
+  agreed iNaturalist moth/Lepidoptera scope.
+- New observations arrive without a page refresh.
+- API calls are served through a shared cache and remain well within iNaturalist
+  recommended limits.
+- The animation remains smooth and visually calm under variable data volume.
+- Each observation is deduplicated and every in-memory collection is bounded.
+- Species appearance and audio are deterministic from taxon identity.
+- Unknown and incomplete records degrade gracefully.
+- Photos include attribution, license information and a source link.
+- Exact sensitive locations are not displayed.
+- Network loss, API errors and rate limiting do not destroy the animation.
+- Desktop, mobile, keyboard, reduced-motion and sound behavior are tested.
+- Deployment and rollback are documented and reproducible.
+- The site clearly states that it is an independent visualization based on
+  iNaturalist data and that recently uploaded observations are not a measure of
+  real-time abundance.
+
+
+15. Immediate Next Step
+
+Create the new repository and complete Phase 0 as a short technical spike. The
+first implementation artifact should be a tiny page or script that makes one
+carefully scoped v2 observation request, saves a fixture, prints the normalized
+project-owned response and reports the observed arrival volume. Do not begin by
+editing the animation; prove the data contract and scope first.
+
+
+16. Sources Consulted
+
+iNaturalist v2 API documentation and OpenAPI schema:
+https://api.inaturalist.org/v2/docs/
+https://api.inaturalist.org/v2/api-docs
+
+iNaturalist API recommended practices:
+https://www.inaturalist.org/pages/api+recommended+practices
+
+iNaturalist search URL and media license guidance:
+https://www.inaturalist.org/pages/search+urls
+
+iNaturalist terms of use:
+https://www.inaturalist.org/pages/terms
+
+GitHub Pages limits:
+https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits
+
+shinyapps.io application lifecycle and instance behavior:
+https://docs.posit.co/shinyapps.io/guide/applications/
+
+shinyapps.io scheduled job limitation:
+https://docs.posit.co/shinyapps.io/guide/articles/scheduled-jobs/

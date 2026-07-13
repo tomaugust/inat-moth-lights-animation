@@ -176,7 +176,8 @@ Recommended defaults:
 
 - poll the adapter every 60 seconds;
 - request up to 100 or 200 records in one upstream batch;
-- release queued observations into the animation at a controlled cadence;
+- release queued observations using source creation-time gaps, with bounded deterministic jitter;
+- compress only when catching up after a backlog, and cap/safely sample large bursts;
 - cap active moths, initially around 40 to 60;
 - keep each moth visible for a configurable minimum duration;
 - retain a bounded queue and discard or sample oldest overflow records during a
@@ -370,7 +371,7 @@ Responsibilities:
 - deduplicate by iNaturalist observation ID;
 - maintain a bounded set of recently seen IDs;
 - sort new records deterministically;
-- release observations at a configurable interval;
+- release observations according to source createdAt gaps, scaled and jittered within configured bounds;
 - apply backpressure when the active scene is full;
 - sample fairly during large bursts rather than showing only one location or
   species;
@@ -528,7 +529,9 @@ Initial repository cleanup:
 
 10. Development Phases
 
-Phase 0: research spike and decisions
+Phase 0: research spike and decisions [COMPLETED 2026-07-13]
+
+Results and reproducible artifacts: research/phase-0.md
 
 Deliverables:
 
@@ -721,7 +724,10 @@ Suggested settings:
 - live.maxActiveMoths;
 - live.maxQueuedObservations;
 - live.seenIdCapacity;
-- live.releaseIntervalSeconds;
+- live.releaseMode and live.sourceTimeScale;
+- live.releaseJitterMin and live.releaseJitterMax;
+- live.minReleaseIntervalSeconds and live.maxReleaseIntervalSeconds;
+- live.maxCatchUpObservations and live.burstPolicy;
 - live.minMothDuration;
 - live.maxMothDuration;
 - live.pauseQueueLimit;

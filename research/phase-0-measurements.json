@@ -1,0 +1,39 @@
+{
+    "generatedAt":  "2026-07-13T13:46:43.3698633Z",
+    "apiVersion":  "2.2.0",
+    "endpoint":  "https://api.inaturalist.org/v2/observations",
+    "taxonId":  47157,
+    "sampleQuery":  "https://api.inaturalist.org/v2/observations?fields=(id%3A!t%2Cuuid%3A!t%2Ccreated_at%3A!t%2Cobserved_on%3A!t%2Ctime_observed_at%3A!t%2Curi%3A!t%2Cquality_grade%3A!t%2Cplace_guess%3A!t%2Ctaxon%3A(id%3A!t%2Crank%3A!t%2Cname%3A!t%2Cpreferred_common_name%3A!t)%2Cphotos%3A(id%3A!t%2Curl%3A!t%2Cattribution%3A!t%2Clicense_code%3A!t))\u0026order=desc\u0026order_by=created_at\u0026per_page=5\u0026photo_license=cc0%2Ccc-by%2Ccc-by-sa%2Ccc-by-nc%2Ccc-by-nc-sa%2Ccc-by-nd%2Ccc-by-nc-nd\u0026photos=true\u0026taxon_id=47157",
+    "sampleCount":  5,
+    "cors":  {
+                 "testOrigin":  "http://localhost:8000",
+                 "accessControlAllowOrigin":  "*",
+                 "accessControlAllowMethods":  "GET, POST, OPTIONS, PUT, DELETE"
+             },
+    "volumeWindows":  [
+                          {
+                              "startUtc":  "2026-07-12T00:00:00.0000000Z",
+                              "endUtc":  "2026-07-12T05:59:59.9990000Z",
+                              "observations":  9425,
+                              "observationsPerHour":  1570.8
+                          },
+                          {
+                              "startUtc":  "2026-07-12T06:00:00.0000000Z",
+                              "endUtc":  "2026-07-12T11:59:59.9990000Z",
+                              "observations":  8980,
+                              "observationsPerHour":  1496.7
+                          },
+                          {
+                              "startUtc":  "2026-07-12T12:00:00.0000000Z",
+                              "endUtc":  "2026-07-12T17:59:59.9990000Z",
+                              "observations":  14913,
+                              "observationsPerHour":  2485.5
+                          },
+                          {
+                              "startUtc":  "2026-07-12T18:00:00.0000000Z",
+                              "endUtc":  "2026-07-12T23:59:59.9990000Z",
+                              "observations":  13091,
+                              "observationsPerHour":  2181.8
+                          }
+                      ]
+}

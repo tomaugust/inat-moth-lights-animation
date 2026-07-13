@@ -1,0 +1,9 @@
+{
+    "fetchedAt":  "2026-07-13T13:46:37.5326027Z",
+    "stale":  true,
+    "cursor":  "example-cursor",
+    "observations":  [
+
+                     ],
+    "error":  "fixture-upstream-unavailable"
+}

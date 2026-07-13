@@ -1,0 +1,48 @@
+{
+  "scope": {
+    "prototypeTaxonId": 47157,
+    "prototypeLabel": "Butterflies and moths (Lepidoptera)",
+    "publicMothStrategy": "Use a reviewed, versioned allowlist of moth families and superfamilies before public launch; do not describe all Lepidoptera as moths."
+  },
+  "media": {
+    "requirePhoto": true,
+    "excludeUnlicensedPhotos": true,
+    "photoLicenses": [
+      "cc0",
+      "cc-by",
+      "cc-by-sa",
+      "cc-by-nc",
+      "cc-by-nc-sa",
+      "cc-by-nd",
+      "cc-by-nc-nd"
+    ],
+    "imageSize": "medium",
+    "showAttributionAndLicense": true
+  },
+  "hosting": {
+    "frontend": "GitHub Pages",
+    "adapter": "Cloudflare Worker",
+    "reason": "A request-driven edge cache keeps browser count from multiplying iNaturalist traffic and supports stale fallback without an always-on server."
+  },
+  "api": {
+    "pollIntervalSeconds": 60,
+    "requestTimeoutSeconds": 15,
+    "pageSize": 200,
+    "maxBackoffSeconds": 900
+  },
+  "live": {
+    "maxActiveMoths": 50,
+    "maxQueuedObservations": 500,
+    "seenIdCapacity": 2000,
+    "minMothDurationSeconds": 4,
+    "maxMothDurationSeconds": 10,
+    "releaseMode": "source-time",
+    "sourceTimeScale": 1.0,
+    "releaseJitterMin": 0.65,
+    "releaseJitterMax": 1.35,
+    "minReleaseIntervalSeconds": 0.75,
+    "maxReleaseIntervalSeconds": 30,
+    "maxCatchUpObservations": 50,
+    "burstPolicy": "sample-oldest-on-overflow-and-cap-catch-up"
+  }
+}

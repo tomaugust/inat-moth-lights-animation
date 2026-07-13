@@ -1,0 +1,82 @@
+{
+    "fetchedAt":  "2026-07-13T13:46:37.5326027Z",
+    "stale":  false,
+    "cursor":  "example-cursor",
+    "observations":  [
+                         {
+                             "id":  "inat-example-1",
+                             "taxonId":  1650173,
+                             "scientificName":  "Limochores mystic",
+                             "commonName":  "Long Dash",
+                             "taxonRank":  "species",
+                             "createdAt":  "2026-07-13T10:46:30-03:00",
+                             "observedAt":  "2026-07-12T17:29:00-03:00",
+                             "place":  "Northern Europe",
+                             "qualityGrade":  "needs_id",
+                             "imageUrl":  "https://example.invalid/images/moth-1-medium.jpg",
+                             "imageAttribution":  "Example attribution (licensed media)",
+                             "imageLicense":  "cc-by-nc",
+                             "observationUrl":  "https://www.inaturalist.org/observations/example-1"
+                         },
+                         {
+                             "id":  "inat-example-2",
+                             "taxonId":  48662,
+                             "scientificName":  "Danaus plexippus",
+                             "commonName":  "Monarch",
+                             "taxonRank":  "species",
+                             "createdAt":  "2026-07-13T09:46:30-04:00",
+                             "observedAt":  "2026-07-11T20:33:00-04:00",
+                             "place":  "Central America",
+                             "qualityGrade":  "needs_id",
+                             "imageUrl":  "https://example.invalid/images/moth-2-medium.jpg",
+                             "imageAttribution":  "Example attribution (licensed media)",
+                             "imageLicense":  "cc-by-nc",
+                             "observationUrl":  "https://www.inaturalist.org/observations/example-2"
+                         },
+                         {
+                             "id":  "inat-example-3",
+                             "taxonId":  118929,
+                             "scientificName":  "Acrolophus",
+                             "commonName":  "Grass Tubeworm Moths",
+                             "taxonRank":  "genus",
+                             "createdAt":  "2026-07-13T09:46:29-04:00",
+                             "observedAt":  "2026-07-11T12:00:00-04:00",
+                             "place":  "North America",
+                             "qualityGrade":  "needs_id",
+                             "imageUrl":  "https://example.invalid/images/moth-3-medium.jpg",
+                             "imageAttribution":  "Example attribution (licensed media)",
+                             "imageLicense":  "cc-by-nc",
+                             "observationUrl":  "https://www.inaturalist.org/observations/example-3"
+                         },
+                         {
+                             "id":  "inat-example-4",
+                             "taxonId":  320060,
+                             "scientificName":  "Gracillaria syringella",
+                             "commonName":  "Lilac Leafminer Moth",
+                             "taxonRank":  "species",
+                             "createdAt":  "2026-07-13T06:46:22-07:00",
+                             "observedAt":  "2026-07-13T06:36:02-07:00",
+                             "place":  "Southeast Asia",
+                             "qualityGrade":  "needs_id",
+                             "imageUrl":  "https://example.invalid/images/moth-4-medium.jpg",
+                             "imageAttribution":  "Example attribution (licensed media)",
+                             "imageLicense":  "cc-by-nc",
+                             "observationUrl":  "https://www.inaturalist.org/observations/example-4"
+                         },
+                         {
+                             "id":  "inat-example-5",
+                             "taxonId":  149216,
+                             "scientificName":  "Artipe eryx",
+                             "commonName":  "Green Flash",
+                             "taxonRank":  "species",
+                             "createdAt":  "2026-07-13T21:46:18+08:00",
+                             "observedAt":  "2026-07-13T11:36:51+08:00",
+                             "place":  "Southern Africa",
+                             "qualityGrade":  "needs_id",
+                             "imageUrl":  "https://example.invalid/images/moth-5-medium.jpg",
+                             "imageAttribution":  "Example attribution (licensed media)",
+                             "imageLicense":  "cc-by-nc",
+                             "observationUrl":  "https://www.inaturalist.org/observations/example-5"
+                         }
+                     ]
+}

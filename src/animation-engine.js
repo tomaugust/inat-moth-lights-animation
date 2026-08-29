@@ -863,5 +863,6 @@ export {
   hashString,
   normalizeAnimationTime,
   projectMoth,
+  sampleBiasedApproachAngle,
   seededUnit
 };

@@ -16,7 +16,15 @@ Phase 1 extracted the previous single-file, PowerShell-generated `index.html` in
 - `src/app.js` — DOM wiring, canvas controller, launch screen, and the bootstrap that fetches `config/site-config.json` and starts the animation.
 - `config/site-config.json` — the real animation/species/moth data currently shown on the site.
 
-This still has no live iNaturalist data behind it (that's Phase 2+); it is the same static, fixed-timeline animation as before, just as source files instead of one generated file.
+`index.html` itself still has no live iNaturalist data behind it — it is the same static, fixed-timeline animation as before, just as source files instead of one generated file. The pieces below run alongside it, unused by the production page, in preparation for Phase 3+ swapping in a real API poller.
+
+Phase 2 added the live-data engine components, proven against the recorded fixtures from Phase 0 rather than a real API call:
+
+- `src/observation-adapter.js` — validates and normalizes a raw observation payload (the contract in `fixtures/observations-*.json`) into records the rest of the app can trust; a missing id or unparseable date drops just that record instead of breaking the batch.
+- `src/species-style.js` — deterministic per-taxon visual/audio styling (color, chime notes, size, speed, drift) hashed from the taxon ID, so a global stream never needs a hand-maintained species list. Anything not identified to species level gets one shared grey "unknown" profile.
+- `src/observation-queue.js` — dedupes by observation id, paces release by the source `createdAt` gaps (scaled, jittered, clamped), caps how many overdue observations catch up in one call, keeps the oldest observations on overflow, and persists its cursor/seen-id window (tolerating missing or corrupt storage).
+- `src/moth-store.js` — the mutable replacement for the old fixed `config.moths` timeline: each observation gets an independent entry/orbit/exit lifecycle from a monotonic clock, bounded to `maxActiveMoths`, with a focused (hovered/tapped) moth kept alive past its exit until focus clears or a grace period elapses. Its output is drop-in compatible with `animation-engine.js`'s `projectMoth`/`drawScene` — no rendering code changed.
+- `fixtures-demo.html` / `src/fixtures-demo.js` — a minimal page (no launch screen, audio or side panel — that polish is Phase 5) wiring all of the above together: it polls the three committed fixture files on a loop, replaying them with relabeled ids/timestamps after the first pass so the queue and store are exercised continuously rather than draining once, and shows a live active/pending count for an easy soak check.
 
 ### Run it locally
 
@@ -25,7 +33,8 @@ The app fetches its config over `fetch()`, so it needs to be served over HTTP ra
 ```sh
 npm install
 npm run serve
-# then open http://localhost:8080/
+# then open http://localhost:8080/               (the production animation)
+# or       http://localhost:8080/fixtures-demo.html (the Phase 2 fixture/queue/store demo)
 ```
 
 Any static file server works equally well (`python3 -m http.server`, `npx serve`, etc.).
@@ -41,9 +50,18 @@ npm run test:e2e   # Playwright: boots the real page and drives it end to end
 npm test           # unit tests only (what CI's fast path runs first)
 ```
 
-Unit tests (`test/unit/`) cover the pure functions in `src/animation-engine.js` and `src/audio-engine.js` (orbit math, seeded randomness, color/time formatting) against a small hand-written fixture in `test/fixtures/sample-config.mjs` — no DOM or browser involved.
+Unit tests (`test/unit/`) cover:
+- the pure functions in `src/animation-engine.js` and `src/audio-engine.js` (orbit math, seeded randomness, color/time formatting) against a small hand-written fixture in `test/fixtures/sample-config.mjs`;
+- `src/observation-adapter.js` against the real committed fixtures plus deliberately broken records (missing id, missing/invalid `createdAt`, no taxon, an incomplete photo);
+- `src/species-style.js`'s determinism, bounds, and unknown-taxon fallback;
+- `src/observation-queue.js`'s dedup/sort/pacing/catch-up-cap/overflow behavior (with an injected clock, no real timers) and its persistence against fake and deliberately corrupt storage;
+- `src/moth-store.js`'s admit/expire/focus/capacity logic, plus one check that its output actually renders through the real `projectMoth()`.
 
-End-to-end tests (`test/e2e/`) spin up the zero-dependency static server in `scripts/dev-server.mjs` and drive the real page with Playwright: launch screen → animation start, the active-moths side panel populating, the sound toggle, and a check that nothing lands in the browser console or throws.
+No DOM or browser is involved in any of the above.
+
+End-to-end tests (`test/e2e/`) spin up the zero-dependency static server in `scripts/dev-server.mjs` and drive the real pages with Playwright:
+- `site.test.js` — the production page: launch screen → animation start, the active-moths side panel populating, the sound toggle, and a check that nothing lands in the browser console or throws;
+- `fixtures-demo.test.js` — the Phase 2 demo: the fixture loads and moths are admitted and drawn, and the active count both stays within `maxActiveMoths` and comes back down (proving expired moths are actually removed, not just capped).
 
 Playwright needs a Chromium build. `npm ci && npx playwright install --with-deps chromium` (as CI does) downloads one; in an environment that already provides a compatible browser binary, point at it instead with `PLAYWRIGHT_CHROMIUM_PATH=/path/to/chromium npm run test:e2e` to skip the download.
 

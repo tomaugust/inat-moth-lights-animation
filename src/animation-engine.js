@@ -855,9 +855,12 @@ function clampAnimationTime(animationTime) {
 
 export {
   clampAnimationTime,
+  colorWithAlpha,
   createMoths,
   drawScene,
+  easeInOut,
   formatClockTime,
+  hashString,
   normalizeAnimationTime,
   projectMoth,
   seededUnit

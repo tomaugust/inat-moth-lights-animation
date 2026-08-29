@@ -23,11 +23,31 @@ This still has no live iNaturalist data behind it (that's Phase 2+); it is the s
 The app fetches its config over `fetch()`, so it needs to be served over HTTP rather than opened as a `file://` URL:
 
 ```sh
-npx http-server . -p 8080
+npm install
+npm run serve
 # then open http://localhost:8080/
 ```
 
 Any static file server works equally well (`python3 -m http.server`, `npx serve`, etc.).
+
+## Testing
+
+```sh
+npm install
+
+npm run lint       # ESLint over src/, scripts/ and test/
+npm run test:unit  # node:test against the pure animation/audio logic, no browser needed
+npm run test:e2e   # Playwright: boots the real page and drives it end to end
+npm test           # unit tests only (what CI's fast path runs first)
+```
+
+Unit tests (`test/unit/`) cover the pure functions in `src/animation-engine.js` and `src/audio-engine.js` (orbit math, seeded randomness, color/time formatting) against a small hand-written fixture in `test/fixtures/sample-config.mjs` — no DOM or browser involved.
+
+End-to-end tests (`test/e2e/`) spin up the zero-dependency static server in `scripts/dev-server.mjs` and drive the real page with Playwright: launch screen → animation start, the active-moths side panel populating, the sound toggle, and a check that nothing lands in the browser console or throws.
+
+Playwright needs a Chromium build. `npm ci && npx playwright install --with-deps chromium` (as CI does) downloads one; in an environment that already provides a compatible browser binary, point at it instead with `PLAYWRIGHT_CHROMIUM_PATH=/path/to/chromium npm run test:e2e` to skip the download.
+
+CI (`.github/workflows/ci.yml`) runs lint, unit tests and the Playwright suite on every push and pull request.
 
 ### Legacy offline export
 

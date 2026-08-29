@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Phase 3 live iNaturalist demo (dev only)</title>
+    <link rel="stylesheet" href="styles/main.css" />
+    <style>
+      .demo-status {
+        background: rgba(10, 10, 12, 0.55);
+        border-radius: 8px;
+        color: rgba(245, 241, 232, 0.8);
+        font-family: monospace;
+        font-size: 0.78rem;
+        left: 16px;
+        line-height: 1.5;
+        margin: 0;
+        padding: 10px 14px;
+        pointer-events: none;
+        position: fixed;
+        top: 16px;
+        white-space: pre;
+        z-index: 5;
+      }
+
+      .demo-warning {
+        background: rgba(120, 40, 20, 0.55);
+        border-radius: 8px;
+        color: rgba(255, 235, 220, 0.95);
+        font-size: 0.8rem;
+        line-height: 1.5;
+        margin: 0;
+        max-width: 360px;
+        padding: 10px 14px;
+        position: fixed;
+        right: 16px;
+        top: 16px;
+        z-index: 5;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="canvas-shell" aria-label="Live iNaturalist orbit animation">
+        <canvas id="orbit-canvas"></canvas>
+        <pre class="demo-status" id="demo-status">loading…</pre>
+        <p class="demo-warning">
+          Development-only prototype (Phase 3). This page calls the real
+          <code>api.inaturalist.org</code> directly from your browser and is
+          not part of the deployed site — see inat_website.txt section 10.
+        </p>
+      </section>
+    </main>
+
+    <script type="module" src="src/live-demo.js"></script>
+  </body>
+</html>

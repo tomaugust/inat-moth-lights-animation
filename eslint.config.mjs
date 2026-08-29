@@ -1,19 +1,26 @@
 const browserGlobals = {
   window: "readonly",
   document: "readonly",
+  navigator: "readonly",
   fetch: "readonly",
   performance: "readonly",
   requestAnimationFrame: "readonly",
   Image: "readonly",
   console: "readonly",
   setTimeout: "readonly",
-  clearTimeout: "readonly"
+  clearTimeout: "readonly",
+  URL: "readonly",
+  URLSearchParams: "readonly",
+  AbortController: "readonly"
 };
 
 const nodeGlobals = {
   process: "readonly",
   console: "readonly",
-  URL: "readonly"
+  URL: "readonly",
+  setTimeout: "readonly",
+  clearTimeout: "readonly",
+  setImmediate: "readonly"
 };
 
 export default [

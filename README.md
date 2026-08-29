@@ -26,6 +26,11 @@ Phase 2 added the live-data engine components, proven against the recorded fixtu
 - `src/moth-store.js` — the mutable replacement for the old fixed `config.moths` timeline: each observation gets an independent entry/orbit/exit lifecycle from a monotonic clock, bounded to `maxActiveMoths`, with a focused (hovered/tapped) moth kept alive past its exit until focus clears or a grace period elapses. Its output is drop-in compatible with `animation-engine.js`'s `projectMoth`/`drawScene` — no rendering code changed.
 - `fixtures-demo.html` / `src/fixtures-demo.js` — a minimal page (no launch screen, audio or side panel — that polish is Phase 5) wiring all of the above together: it polls the three committed fixture files on a loop, replaying them with relabeled ids/timestamps after the first pass so the queue and store are exercised continuously rather than draining once, and shows a live active/pending count for an easy soak check.
 
+Phase 3 added a real (development-only) API poller, reusing the same queue/store/adapter from Phase 2 unchanged:
+
+- `src/inaturalist-client.js` — polls the real `https://api.inaturalist.org/v2/observations` directly from the browser (the Phase 0 spike confirmed CORS allows this for a prototype), maps each raw v2 result into the same contract shape `observation-adapter.js` already validates, advances the `id_above` cursor so pages aren't replayed, and never overlaps polls. It tracks the `starting` / `live` / `quiet` / `stale` / `offline` / `rate-limited` / `fatal-schema-error` connection states from inat_website.txt section 7, honors `Retry-After` on a 429, backs off with jitter on other failures (resetting after a success), and stops polling on `offline`/resumes immediately on `online`. A browser `fetch()` cannot set a custom `User-Agent` header, so the "descriptive User-Agent" requirement from section 5.2 genuinely can't be met until Phase 4's server-side adapter exists — this file documents that rather than pretending otherwise.
+- `live-demo.html` / `src/live-demo.js` — wires the client into the Phase 2 queue/store/renderer and shows connection state, request count and an observed observations/minute rate next to the Phase 0 measurement (~25-41/min) for comparison. **This page is deliberately not deployed** (see `.github/workflows/pages.yml`) — it makes real requests to a third party, and Phase 3 is explicitly a local dev prototype, not the production architecture.
+
 ### Run it locally
 
 The app fetches its config over `fetch()`, so it needs to be served over HTTP rather than opened as a `file://` URL:
@@ -35,6 +40,7 @@ npm install
 npm run serve
 # then open http://localhost:8080/               (the production animation)
 # or       http://localhost:8080/fixtures-demo.html (the Phase 2 fixture/queue/store demo)
+# or       http://localhost:8080/live-demo.html     (the Phase 3 real-API prototype — makes real requests to iNaturalist)
 ```
 
 Any static file server works equally well (`python3 -m http.server`, `npx serve`, etc.).
@@ -56,8 +62,9 @@ Unit tests (`test/unit/`) cover:
 - `src/species-style.js`'s determinism, bounds, and unknown-taxon fallback;
 - `src/observation-queue.js`'s dedup/sort/pacing/catch-up-cap/overflow behavior (with an injected clock, no real timers) and its persistence against fake and deliberately corrupt storage;
 - `src/moth-store.js`'s admit/expire/focus/capacity logic, plus one check that its output actually renders through the real `projectMoth()`.
+- `src/inaturalist-client.js` against a fake `fetch`/timer/clock (never the real API): mapping a raw v2 result, cursor advancement, overlap prevention, 429/`Retry-After` and jittered backoff, stale-then-recovers on a server error or network failure, the fatal-schema-error stop, and offline/online handling.
 
-No DOM or browser is involved in any of the above.
+No DOM or browser — and no real network request — is involved in any of the above.
 
 End-to-end tests (`test/e2e/`) spin up the zero-dependency static server in `scripts/dev-server.mjs` and drive the real pages with Playwright:
 - `site.test.js` — the production page: launch screen → animation start, the active-moths side panel populating, the sound toggle, and a check that nothing lands in the browser console or throws;

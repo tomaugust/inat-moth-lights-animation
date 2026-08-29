@@ -1,0 +1,18 @@
+{
+  "name": "inat-moth-lights-animation",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Living canvas animation of iNaturalist moth-light observations.",
+  "scripts": {
+    "lint": "eslint .",
+    "test": "npm run test:unit",
+    "test:unit": "node --test test/unit/*.test.js",
+    "test:e2e": "node --test test/e2e/*.test.js",
+    "serve": "node scripts/dev-server.mjs"
+  },
+  "devDependencies": {
+    "eslint": "^10.9.1",
+    "playwright": "^1.62.1"
+  }
+}

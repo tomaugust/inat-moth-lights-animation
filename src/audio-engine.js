@@ -324,4 +324,4 @@ function setupAudio(moths) {
   };
 }
 
-export { setupAudio };
+export { noteToFrequency, setupAudio };

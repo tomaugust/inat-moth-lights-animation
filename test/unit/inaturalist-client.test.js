@@ -296,3 +296,62 @@ describe("InatClient.getStats", () => {
     assert.equal(stats.observationsPerMinute, 4); // 2 observations / 0.5 minutes
   });
 });
+
+describe("InatClient in adapter-contract mode (Phase 4)", () => {
+  it("treats the response as an already-normalized contract payload, with no client-side mapping", async () => {
+    const { client, batches } = createClient({
+      responses: [
+        jsonResponse({
+          fetchedAt: "2026-01-01T00:00:00Z",
+          stale: false,
+          cursor: "999",
+          observations: [{ id: "inat-1", taxonId: 1, scientificName: "X", createdAt: "2026-01-01T00:00:00Z" }]
+        })
+      ],
+      options: {
+        upstreamShape: "adapter-contract",
+        buildUrl: () => "https://adapter.example.invalid/observations"
+      }
+    });
+
+    client.isRunning = true;
+    await client._pollNow();
+
+    assert.equal(batches.length, 1);
+    assert.deepEqual(batches[0].observations, [
+      { id: "inat-1", taxonId: 1, scientificName: "X", createdAt: "2026-01-01T00:00:00Z" }
+    ]);
+    assert.equal(batches[0].cursor, "999");
+  });
+
+  it("requests the adapter's own URL rather than building a direct-API query", async () => {
+    const { client, fake } = createClient({
+      responses: [jsonResponse({ fetchedAt: "2026-01-01T00:00:00Z", stale: false, cursor: "", observations: [] })],
+      options: {
+        upstreamShape: "adapter-contract",
+        buildUrl: () => "https://adapter.example.invalid/observations"
+      }
+    });
+
+    client.isRunning = true;
+    await client._pollNow();
+
+    assert.equal(fake.calls[0].url, "https://adapter.example.invalid/observations");
+  });
+
+  it("treats a raw v2-shaped response (missing .observations) as a fatal schema error", async () => {
+    const { client, states } = createClient({
+      responses: [jsonResponse({ total_results: 1, results: [rawObservation()] })],
+      options: {
+        upstreamShape: "adapter-contract",
+        buildUrl: () => "https://adapter.example.invalid/observations"
+      }
+    });
+
+    client.isRunning = true;
+    await client._pollNow();
+
+    assert.ok(states.includes(CONNECTION_STATES.FATAL_SCHEMA_ERROR));
+    assert.equal(client.isRunning, false);
+  });
+});

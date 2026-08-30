@@ -41,7 +41,15 @@ const DEFAULT_OPTIONS = {
   maxBackoffSeconds: 900,
   getCursor: () => null,
   onBatch: () => {},
-  onStateChange: () => {}
+  onStateChange: () => {},
+  // How to build the request URL and interpret its response. Defaults to
+  // talking directly to the real iNaturalist v2 API (Phase 3). Pass
+  // upstreamShape: "adapter-contract" (with a buildUrl pointed at a deployed
+  // Phase 4 worker) to talk through the shared cache/adapter instead — its
+  // response is already the project-owned contract, not a raw v2 page, so it
+  // needs no client-side mapping.
+  buildUrl: buildQueryUrl,
+  upstreamShape: "inat-v2"
 };
 
 // Matches the medium.<ext> rewrite from research/phase-0.md: v2 currently
@@ -232,7 +240,7 @@ export class InatClient {
     this.stats.requestCount += 1;
 
     const cursor = this.options.getCursor();
-    const url = buildQueryUrl(this.options, cursor);
+    const url = this.options.buildUrl(this.options, cursor);
     const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
     const timeoutHandle = controller
       ? this.options.setTimeoutImpl(() => controller.abort(), this.options.requestTimeoutSeconds * 1000)
@@ -260,30 +268,41 @@ export class InatClient {
       }
 
       const payload = await response.json();
-      if (!Array.isArray(payload.results)) {
-        this._setState(CONNECTION_STATES.FATAL_SCHEMA_ERROR);
-        console.error("iNaturalist client: unexpected response shape, stopping ingestion.", payload);
-        this.stop();
-        return;
+      let observations;
+      let newCursor;
+
+      if (this.options.upstreamShape === "adapter-contract") {
+        if (!Array.isArray(payload.observations)) {
+          this._setState(CONNECTION_STATES.FATAL_SCHEMA_ERROR);
+          console.error("iNaturalist client: unexpected adapter response shape, stopping ingestion.", payload);
+          this.stop();
+          return;
+        }
+        observations = payload.observations;
+        newCursor = payload.cursor || cursor;
+      } else {
+        if (!Array.isArray(payload.results)) {
+          this._setState(CONNECTION_STATES.FATAL_SCHEMA_ERROR);
+          console.error("iNaturalist client: unexpected response shape, stopping ingestion.", payload);
+          this.stop();
+          return;
+        }
+        observations = payload.results.map(mapRawObservationToContract);
+        const numericIds = payload.results
+          .map((raw) => Number(raw && raw.id))
+          .filter((id) => Number.isFinite(id));
+        newCursor = numericIds.length > 0 ? Math.max(Number(cursor) || 0, ...numericIds) : cursor;
       }
 
-      const mapped = payload.results.map(mapRawObservationToContract);
-      const numericIds = payload.results
-        .map((raw) => Number(raw && raw.id))
-        .filter((id) => Number.isFinite(id));
-      const newCursor = numericIds.length > 0
-        ? Math.max(Number(cursor) || 0, ...numericIds)
-        : cursor;
-
-      this.stats.observationsReceived += mapped.length;
+      this.stats.observationsReceived += observations.length;
       this.backoffSeconds = 0;
-      this._setState(mapped.length > 0 ? CONNECTION_STATES.LIVE : CONNECTION_STATES.QUIET);
+      this._setState(observations.length > 0 ? CONNECTION_STATES.LIVE : CONNECTION_STATES.QUIET);
 
       this.options.onBatch({
         fetchedAt: new Date(this.options.now()).toISOString(),
         stale: false,
         cursor: newCursor !== null && newCursor !== undefined ? String(newCursor) : "",
-        observations: mapped
+        observations
       });
 
       this._scheduleNext(this.options.pollIntervalSeconds);

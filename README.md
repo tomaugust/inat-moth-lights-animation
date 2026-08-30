@@ -31,6 +31,22 @@ Phase 3 added a real (development-only) API poller, reusing the same queue/store
 - `src/inaturalist-client.js` — polls the real `https://api.inaturalist.org/v2/observations` directly from the browser (the Phase 0 spike confirmed CORS allows this for a prototype), maps each raw v2 result into the same contract shape `observation-adapter.js` already validates, advances the `id_above` cursor so pages aren't replayed, and never overlaps polls. It tracks the `starting` / `live` / `quiet` / `stale` / `offline` / `rate-limited` / `fatal-schema-error` connection states from inat_website.txt section 7, honors `Retry-After` on a 429, backs off with jitter on other failures (resetting after a success), and stops polling on `offline`/resumes immediately on `online`. A browser `fetch()` cannot set a custom `User-Agent` header, so the "descriptive User-Agent" requirement from section 5.2 genuinely can't be met until Phase 4's server-side adapter exists — this file documents that rather than pretending otherwise.
 - `live-demo.html` / `src/live-demo.js` — wires the client into the Phase 2 queue/store/renderer and shows connection state, request count and an observed observations/minute rate next to the Phase 0 measurement (~25-41/min) for comparison. **This page is deliberately not deployed** (see `.github/workflows/pages.yml`) — it makes real requests to a third party, and Phase 3 is explicitly a local dev prototype, not the production architecture.
 
+Phase 4 adds the shared cache/API adapter — a Cloudflare Worker sitting between every visitor's browser and iNaturalist:
+
+- `worker/src/index.js` — validates and normalizes upstream responses (reusing `mapRawObservationToContract`/`buildQueryUrl` from `src/inaturalist-client.js` and `parseObservationsResponse` from `src/observation-adapter.js` unchanged, so the contract can't drift between the direct-client and adapter paths), sets a real `User-Agent` (something only a server-side fetch can do — a browser silently strips a custom one), and restricts CORS to an allow-listed origin list. Rather than caching per client cursor, it always asks upstream for the freshest page and caches **that one response** for every caller for a short shared TTL (default 45s) — so any number of concurrent browsers within that window costs exactly one upstream request; each client's own `ObservationQueue` already dedupes by id, so handing everyone "the latest snapshot" is exactly what a shared feed should do. On a timeout, 429, or non-2xx from upstream it falls back to a separate, much-longer-lived "last known good" cached copy marked `stale: true` — never an empty/fabricated list — so a real outage degrades gracefully instead of breaking every viewer at once.
+- `worker/wrangler.toml` — Cloudflare Worker config: allow-listed CORS origins, taxon scope, page size, cache TTL, upstream timeout, all as `[vars]` you can tune per-deployment.
+- `src/inaturalist-client.js` gained a `buildUrl`/`upstreamShape: "adapter-contract"` option so the exact same `InatClient` (state machine, backoff, overlap prevention — all unchanged) can point at a deployed adapter instead of iNaturalist directly, treating the response as the already-normalized contract instead of a raw v2 page.
+
+**Not yet deployed.** Deploying a Cloudflare Worker needs a real Cloudflare account/credentials, which this environment doesn't have — the code, tests and config are ready, but nobody has run `wrangler deploy` yet. To deploy it yourself:
+
+```sh
+cd worker
+npx wrangler login          # opens a browser OAuth flow, no pasted secrets
+npx wrangler deploy         # publishes to <name>.<your-subdomain>.workers.dev
+```
+
+Update `ALLOWED_ORIGINS` in `wrangler.toml` first if your GitHub Pages URL or local dev port differ from the defaults. Once deployed, the production frontend can be pointed at it by constructing an `InatClient` with `buildUrl: () => "<your-worker-url>/observations"` and `upstreamShape: "adapter-contract"` — that wiring (and any production `index.html` changes) is intentionally not done yet, since pointing the live site at a URL that doesn't exist would break it.
+
 ### Run it locally
 
 The app fetches its config over `fetch()`, so it needs to be served over HTTP rather than opened as a `file://` URL:
@@ -62,13 +78,15 @@ Unit tests (`test/unit/`) cover:
 - `src/species-style.js`'s determinism, bounds, and unknown-taxon fallback;
 - `src/observation-queue.js`'s dedup/sort/pacing/catch-up-cap/overflow behavior (with an injected clock, no real timers) and its persistence against fake and deliberately corrupt storage;
 - `src/moth-store.js`'s admit/expire/focus/capacity logic, plus one check that its output actually renders through the real `projectMoth()`.
-- `src/inaturalist-client.js` against a fake `fetch`/timer/clock (never the real API): mapping a raw v2 result, cursor advancement, overlap prevention, 429/`Retry-After` and jittered backoff, stale-then-recovers on a server error or network failure, the fatal-schema-error stop, and offline/online handling.
+- `src/inaturalist-client.js` against a fake `fetch`/timer/clock (never the real API): mapping a raw v2 result, cursor advancement, overlap prevention, 429/`Retry-After` and jittered backoff, stale-then-recovers on a server error or network failure, the fatal-schema-error stop, offline/online handling, and adapter-contract mode.
+- `worker/src/index.js` against a fake `fetch` and a fake Cache implementation (with a fake clock, so Cache-Control TTLs don't need real waiting): CORS origin allow-listing, the shared single-upstream-request-per-TTL-window behavior, the real `User-Agent`, and every upstream failure mode (429, 5xx, network error, malformed/unexpected shape) falling back to the last-known-good cached contract — or a stale empty list, never a throw — instead of a hard failure.
 
 No DOM or browser — and no real network request — is involved in any of the above.
 
 End-to-end tests (`test/e2e/`) spin up the zero-dependency static server in `scripts/dev-server.mjs` and drive the real pages with Playwright:
 - `site.test.js` — the production page: launch screen → animation start, the active-moths side panel populating, the sound toggle, and a check that nothing lands in the browser console or throws;
-- `fixtures-demo.test.js` — the Phase 2 demo: the fixture loads and moths are admitted and drawn, and the active count both stays within `maxActiveMoths` and comes back down (proving expired moths are actually removed, not just capped).
+- `fixtures-demo.test.js` — the Phase 2 demo: the fixture loads and moths are admitted and drawn, and the active count both stays within `maxActiveMoths` and comes back down (proving expired moths are actually removed, not just capped);
+- `live-demo.test.js` — the Phase 3 demo with the real `api.inaturalist.org` request intercepted (`page.route`) and answered with a canned response: a normal poll renders moths with a `live` connection state, and a mocked 429 recovers without throwing.
 
 Playwright needs a Chromium build. `npm ci && npx playwright install --with-deps chromium` (as CI does) downloads one; in an environment that already provides a compatible browser binary, point at it instead with `PLAYWRIGHT_CHROMIUM_PATH=/path/to/chromium npm run test:e2e` to skip the download.
 

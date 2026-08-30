@@ -1,19 +1,47 @@
 const browserGlobals = {
   window: "readonly",
   document: "readonly",
+  navigator: "readonly",
   fetch: "readonly",
   performance: "readonly",
   requestAnimationFrame: "readonly",
   Image: "readonly",
   console: "readonly",
   setTimeout: "readonly",
-  clearTimeout: "readonly"
+  clearTimeout: "readonly",
+  URL: "readonly",
+  URLSearchParams: "readonly",
+  AbortController: "readonly"
 };
 
 const nodeGlobals = {
   process: "readonly",
   console: "readonly",
-  URL: "readonly"
+  URL: "readonly",
+  setTimeout: "readonly",
+  clearTimeout: "readonly",
+  setImmediate: "readonly",
+  // Node 18+ provides the WHATWG fetch API globally; the worker tests use it
+  // directly to build fake Request/Response objects.
+  fetch: "readonly",
+  Request: "readonly",
+  Response: "readonly",
+  Headers: "readonly",
+  AbortController: "readonly"
+};
+
+const workerGlobals = {
+  fetch: "readonly",
+  console: "readonly",
+  Request: "readonly",
+  Response: "readonly",
+  Headers: "readonly",
+  AbortController: "readonly",
+  URL: "readonly",
+  URLSearchParams: "readonly",
+  setTimeout: "readonly",
+  clearTimeout: "readonly",
+  caches: "readonly"
 };
 
 export default [
@@ -26,6 +54,18 @@ export default [
       ecmaVersion: 2022,
       sourceType: "module",
       globals: browserGlobals
+    },
+    rules: {
+      "no-undef": "error",
+      "no-unused-vars": "warn"
+    }
+  },
+  {
+    files: ["worker/src/**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: workerGlobals
     },
     rules: {
       "no-undef": "error",

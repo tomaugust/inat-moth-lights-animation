@@ -32,9 +32,11 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html _site/index.html
+          cp fixtures-demo.html _site/fixtures-demo.html
           cp -r src _site/src
           cp -r styles _site/styles
           cp -r config _site/config
+          cp -r fixtures _site/fixtures
           touch _site/.nojekyll
 
       - name: Configure Pages

@@ -1,0 +1,13 @@
+name = "inat-moth-lights-adapter"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# CORS origins allowed to call this adapter, comma-separated. Update
+# ALLOWED_ORIGINS if the production site moves to a custom domain, and add
+# whatever local dev port you actually use.
+[vars]
+ALLOWED_ORIGINS = "https://tomaugust.github.io,http://localhost:8080"
+TAXON_ID = "47157"
+PAGE_SIZE = "200"
+CACHE_SECONDS = "45"
+UPSTREAM_TIMEOUT_MS = "15000"

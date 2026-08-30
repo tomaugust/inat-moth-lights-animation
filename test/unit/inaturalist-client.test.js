@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { afterEach, describe, it } from "node:test";
 
 import { CONNECTION_STATES, InatClient, buildQueryUrl, mapRawObservationToContract } from "../../src/inaturalist-client.js";
 
@@ -142,6 +142,32 @@ describe("InatClient polling", () => {
     assert.equal(scheduler.lastDelayMs(), 60000);
   });
 
+  it("normalizes inat-v2 batches the same way adapter-contract responses already arrive, so onBatch never has to special-case the upstream shape", async () => {
+    const { client, batches } = createClient({
+      responses: [
+        jsonResponse({
+          total_results: 2,
+          results: [
+            rawObservation({ id: 1 }),
+            rawObservation({
+              id: 2,
+              photos: [{ url: "https://example.invalid/photos/2/square.jpg", attribution: "", license_code: "" }]
+            })
+          ]
+        })
+      ]
+    });
+
+    client.isRunning = true;
+    await client._pollNow();
+
+    const [first, second] = batches[0].observations;
+    assert.equal(first.createdAtMs, Date.parse("2026-07-13T10:46:30-03:00"));
+    assert.equal(first.imageUrl, "https://example.invalid/photos/1/medium.jpg", "a complete photo triplet should survive normalization");
+    assert.equal(second.imageUrl, "", "an incomplete photo triplet (no attribution/license) should be dropped, not shown unattributed");
+    assert.equal(second.imageAttribution, "");
+  });
+
   it("reports the quiet state when a poll returns no new observations", async () => {
     const { client, states } = createClient({
       responses: [jsonResponse({ total_results: 0, results: [] })]
@@ -273,6 +299,80 @@ describe("InatClient offline/online handling", () => {
     await new Promise((resolve) => setImmediate(resolve));
 
     assert.equal(fake.calls.length, 1, "coming back online should trigger an immediate poll");
+  });
+
+  it("stays offline and does not re-arm a backoff timer when an in-flight fetch rejects after going offline", async () => {
+    let rejectFetch;
+    const { client, states, scheduler } = createClient({});
+    client.options.fetchImpl = () => new Promise((_, reject) => {
+      rejectFetch = reject;
+    });
+
+    const originalNavigatorDescriptor = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+    try {
+      client.isRunning = true;
+      const pollPromise = client._pollNow();
+
+      // Connectivity drops mid-request: _handleOffline aborts the in-flight
+      // fetch, and the browser now reports navigator.onLine === false.
+      client._handleOffline();
+      Object.defineProperty(globalThis, "navigator", { value: { onLine: false }, configurable: true });
+      rejectFetch(new Error("network request failed"));
+      await pollPromise;
+
+      assert.equal(client.state, CONNECTION_STATES.OFFLINE, "should remain offline rather than flipping to stale");
+      assert.equal(scheduler.pendingCount(), 0, "should not schedule a retry while still offline");
+      assert.ok(!states.includes(CONNECTION_STATES.STALE), "an offline rejection should never be reported as a generic stale error");
+    } finally {
+      if (originalNavigatorDescriptor) {
+        Object.defineProperty(globalThis, "navigator", originalNavigatorDescriptor);
+      } else {
+        delete globalThis.navigator;
+      }
+    }
+  });
+});
+
+describe("InatClient visibilitychange handling", () => {
+  afterEach(() => {
+    delete globalThis.document;
+  });
+
+  it("does not cancel an active rate-limit backoff when the tab regains focus", async () => {
+    const { client, fake, scheduler } = createClient({
+      responses: [jsonResponse(null, { status: 429, headers: { "Retry-After": "30" } })]
+    });
+
+    client.isRunning = true;
+    await client._pollNow();
+    assert.equal(client.state, CONNECTION_STATES.RATE_LIMITED);
+    assert.equal(scheduler.pendingCount(), 1);
+
+    globalThis.document = { visibilityState: "visible" };
+    client._handleVisibilityChange();
+
+    assert.equal(fake.calls.length, 1, "a focus event during an active backoff should not trigger an immediate poll");
+    assert.equal(scheduler.pendingCount(), 1, "the backoff timer should be left running");
+  });
+
+  it("polls immediately on focus when not in a backoff/cooldown", async () => {
+    const { client, fake } = createClient({
+      responses: [
+        jsonResponse({ total_results: 0, results: [] }),
+        jsonResponse({ total_results: 0, results: [] })
+      ]
+    });
+
+    client.isRunning = true;
+    await client._pollNow();
+    assert.equal(client.state, CONNECTION_STATES.QUIET);
+
+    globalThis.document = { visibilityState: "visible" };
+    client._handleVisibilityChange();
+    // _handleVisibilityChange fires _pollNow() without awaiting; give it a tick.
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.equal(fake.calls.length, 2, "a focus event on the normal interval should trigger an immediate poll");
   });
 });
 

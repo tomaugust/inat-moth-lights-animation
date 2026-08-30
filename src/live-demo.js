@@ -9,7 +9,6 @@
 // and the frontend stays usable while the API is unavailable.
 import { setConfig } from "./config-store.js";
 import { drawScene } from "./animation-engine.js";
-import { parseObservationsResponse } from "./observation-adapter.js";
 import { ObservationQueue } from "./observation-queue.js";
 import { MothStore } from "./moth-store.js";
 import { InatClient } from "./inaturalist-client.js";
@@ -45,9 +44,11 @@ async function main() {
       connectionState = state;
     },
     onBatch: (payload) => {
-      const parsed = parseObservationsResponse(payload);
-      const added = queue.enqueue(parsed.observations, payload.cursor);
-      lastFetchSummary = `+${added} new of ${parsed.observations.length} in this page`;
+      // InatClient already delivers validated, contract-shaped observations
+      // here regardless of upstreamShape — re-parsing them would assume the
+      // raw pre-normalization shape and silently drop every record.
+      const added = queue.enqueue(payload.observations, payload.cursor);
+      lastFetchSummary = `+${added} new of ${payload.observations.length} in this page`;
     }
   });
 

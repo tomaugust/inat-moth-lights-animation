@@ -114,45 +114,32 @@ async function staleFallback(cache, errorCode, extraHeaders) {
   );
 }
 
-// The testable core: takes the cache instance explicitly instead of reading
-// the Workers-global `caches`, so tests can pass a fake in-memory cache
-// without needing the real Workers runtime.
-export async function handleRequest(request, env, cache) {
-  const allowedOrigins = parseAllowedOrigins(env.ALLOWED_ORIGINS);
-  const requestOrigin = request.headers.get("Origin");
-  const cors = corsHeaders(requestOrigin, allowedOrigins);
+// Shared across concurrent requests hitting a cache miss in the same worker
+// instance, so N callers landing in the same miss window cost exactly one
+// upstream fetch instead of N — otherwise every one of them would race to
+// refill the cache independently (see the file header). Never throws: it
+// resolves to a discriminated result so every waiter can build its own
+// response (its own CORS headers) without re-fetching.
+let inFlightRefresh = null;
 
-  if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: cors });
-  }
-
-  if (request.method !== "GET") {
-    return jsonResponse({ error: "method-not-allowed" }, { status: 405, headers: cors });
-  }
-
-  const cached = await readContract(cache, CACHE_KEY_URL);
-  if (cached) {
-    log("cache-hit");
-    return jsonResponse(cached, { headers: { ...cors, "Cache-Control": `public, max-age=${Number(env.CACHE_SECONDS) || DEFAULT_CACHE_SECONDS}` } });
-  }
-
+async function refreshContract(env, cache) {
   let upstreamResponse;
   try {
     upstreamResponse = await fetchUpstream(env);
   } catch (error) {
     log("upstream-network-error", { message: error.message });
-    return staleFallback(cache, "upstream-unavailable", cors);
+    return { ok: false, reason: "upstream-unavailable" };
   }
 
   if (upstreamResponse.status === 429) {
     const retryAfter = upstreamResponse.headers.get("Retry-After") || "60";
     log("upstream-rate-limited", { retryAfter });
-    return staleFallback(cache, "rate-limited", { ...cors, "Retry-After": retryAfter });
+    return { ok: false, reason: "rate-limited", retryAfter };
   }
 
   if (!upstreamResponse.ok) {
     log("upstream-error", { status: upstreamResponse.status });
-    return staleFallback(cache, "upstream-error", cors);
+    return { ok: false, reason: "upstream-error" };
   }
 
   let payload;
@@ -160,12 +147,12 @@ export async function handleRequest(request, env, cache) {
     payload = await upstreamResponse.json();
   } catch {
     log("upstream-invalid-json");
-    return staleFallback(cache, "invalid-upstream-response", cors);
+    return { ok: false, reason: "invalid-upstream-response" };
   }
 
   if (!Array.isArray(payload.results)) {
     log("upstream-unexpected-shape");
-    return staleFallback(cache, "unexpected-upstream-shape", cors);
+    return { ok: false, reason: "unexpected-upstream-shape" };
   }
 
   const mapped = payload.results.map(mapRawObservationToContract);
@@ -188,7 +175,44 @@ export async function handleRequest(request, env, cache) {
   ]);
 
   log("cache-miss-refreshed", { count: contract.observations.length });
-  return jsonResponse(contract, { headers: { ...cors, "Cache-Control": `public, max-age=${cacheSeconds}` } });
+  return { ok: true, contract, cacheSeconds };
+}
+
+// The testable core: takes the cache instance explicitly instead of reading
+// the Workers-global `caches`, so tests can pass a fake in-memory cache
+// without needing the real Workers runtime.
+export async function handleRequest(request, env, cache) {
+  const allowedOrigins = parseAllowedOrigins(env.ALLOWED_ORIGINS);
+  const requestOrigin = request.headers.get("Origin");
+  const cors = corsHeaders(requestOrigin, allowedOrigins);
+
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: cors });
+  }
+
+  if (request.method !== "GET") {
+    return jsonResponse({ error: "method-not-allowed" }, { status: 405, headers: cors });
+  }
+
+  const cached = await readContract(cache, CACHE_KEY_URL);
+  if (cached) {
+    log("cache-hit");
+    return jsonResponse(cached, { headers: { ...cors, "Cache-Control": `public, max-age=${Number(env.CACHE_SECONDS) || DEFAULT_CACHE_SECONDS}` } });
+  }
+
+  if (!inFlightRefresh) {
+    inFlightRefresh = refreshContract(env, cache).finally(() => {
+      inFlightRefresh = null;
+    });
+  }
+  const result = await inFlightRefresh;
+
+  if (!result.ok) {
+    const extraHeaders = result.retryAfter ? { ...cors, "Retry-After": result.retryAfter } : cors;
+    return staleFallback(cache, result.reason, extraHeaders);
+  }
+
+  return jsonResponse(result.contract, { headers: { ...cors, "Cache-Control": `public, max-age=${result.cacheSeconds}` } });
 }
 
 export default {

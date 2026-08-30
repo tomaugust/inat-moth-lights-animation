@@ -13,6 +13,8 @@
 // "set a descriptive User-Agent" requirement from section 5.2 can only be
 // met once a server-side adapter (Phase 4's Cloudflare Worker) makes the
 // request instead of the browser.
+import { parseObservationsResponse } from "./observation-adapter.js";
+
 const API_BASE = "https://api.inaturalist.org/v2/observations";
 
 const FIELDS =
@@ -190,13 +192,20 @@ export class InatClient {
   }
 
   _handleVisibilityChange() {
-    if (this.isRunning && typeof document !== "undefined" && document.visibilityState === "visible") {
-      if (this.timeoutHandle !== null) {
-        this.options.clearTimeoutImpl(this.timeoutHandle);
-        this.timeoutHandle = null;
-      }
-      this._pollNow();
+    if (!this.isRunning || typeof document === "undefined" || document.visibilityState !== "visible") {
+      return;
     }
+    // A tab regaining focus should not stomp on an active rate-limit/error
+    // backoff — that would hammer a server that just told us to slow down.
+    // Only short-circuit the wait when we're on the normal poll interval.
+    if (this.state === CONNECTION_STATES.RATE_LIMITED || this.state === CONNECTION_STATES.STALE) {
+      return;
+    }
+    if (this.timeoutHandle !== null) {
+      this.options.clearTimeoutImpl(this.timeoutHandle);
+      this.timeoutHandle = null;
+    }
+    this._pollNow();
   }
 
   _handleOffline() {
@@ -204,6 +213,9 @@ export class InatClient {
     if (this.timeoutHandle !== null) {
       this.options.clearTimeoutImpl(this.timeoutHandle);
       this.timeoutHandle = null;
+    }
+    if (this.currentAbortController) {
+      this.currentAbortController.abort();
     }
   }
 
@@ -242,6 +254,7 @@ export class InatClient {
     const cursor = this.options.getCursor();
     const url = this.options.buildUrl(this.options, cursor);
     const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    this.currentAbortController = controller;
     const timeoutHandle = controller
       ? this.options.setTimeoutImpl(() => controller.abort(), this.options.requestTimeoutSeconds * 1000)
       : null;
@@ -287,7 +300,12 @@ export class InatClient {
           this.stop();
           return;
         }
-        observations = payload.results.map(mapRawObservationToContract);
+        // Normalize here too so onBatch always receives the same validated
+        // contract shape adapter-contract mode already delivers — callers
+        // must not have to know or care which upstream shape produced a
+        // batch (see observation-adapter.js's normalizeObservation).
+        const mapped = payload.results.map(mapRawObservationToContract);
+        observations = parseObservationsResponse({ observations: mapped }).observations;
         const numericIds = payload.results
           .map((raw) => Number(raw && raw.id))
           .filter((id) => Number.isFinite(id));
@@ -307,12 +325,21 @@ export class InatClient {
 
       this._scheduleNext(this.options.pollIntervalSeconds);
     } catch {
-      this._setState(CONNECTION_STATES.STALE);
-      this._advanceBackoff(null);
+      // An in-flight fetch that fails because we've since gone offline
+      // (_handleOffline aborts it) should leave the client waiting for the
+      // 'online' event, not re-arm a backoff timer that fires while still
+      // disconnected.
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        this._setState(CONNECTION_STATES.OFFLINE);
+      } else {
+        this._setState(CONNECTION_STATES.STALE);
+        this._advanceBackoff(null);
+      }
     } finally {
       if (timeoutHandle !== null) {
         this.options.clearTimeoutImpl(timeoutHandle);
       }
+      this.currentAbortController = null;
       this.isPolling = false;
     }
   }

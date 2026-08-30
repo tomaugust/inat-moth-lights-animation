@@ -157,6 +157,22 @@ describe("worker adapter: upstream fetch, mapping and caching", () => {
     assert.match(fetchCalls[0].url, /order_by=created_at/);
     assert.doesNotMatch(fetchCalls[0].url, /id_above/);
   });
+
+  it("coalesces concurrent cache-miss requests into a single upstream fetch", async () => {
+    const cache = createFakeCache();
+    fetchQueue.push(upstreamJson({ total_results: 1, results: [rawObservation()] }));
+
+    const responses = await Promise.all([
+      handleRequest(get(), ENV, cache),
+      handleRequest(get(), ENV, cache),
+      handleRequest(get(), ENV, cache)
+    ]);
+
+    assert.equal(fetchCalls.length, 1, "concurrent callers hitting a cache miss together should share one upstream fetch");
+    responses.forEach((response) => assert.equal(response.status, 200));
+    const bodies = await Promise.all(responses.map((response) => response.json()));
+    bodies.forEach((body) => assert.equal(body.observations.length, 1));
+  });
 });
 
 describe("worker adapter: upstream failure handling", () => {

@@ -669,12 +669,18 @@ function drawHoverPopout(context, moth, width, height, animationTime, imageCache
   const titleFont = "600 " + Math.max(12, fontSize) + "px Inter, system-ui, sans-serif";
   const detailFont = "400 " + Math.max(11, fontSize * 0.82) + "px Inter, system-ui, sans-serif";
   const descriptionFont = "400 " + Math.max(10.5, fontSize * 0.78) + "px Inter, system-ui, sans-serif";
+  const attributionFont = "400 " + Math.max(9.5, fontSize * 0.68) + "px Inter, system-ui, sans-serif";
   const imageRecord = imageCache && moth.imageURL ? imageCache.get(moth.imageURL) : null;
   const hasImage = imageRecord && imageRecord.loaded && imageRecord.image;
   const imageWidth = hasImage ? 92 : 0;
   const imageHeight = hasImage ? 72 : 0;
   const textWidth = 188;
   const description = moth.speciesDescription || "";
+  // Only present when the adapter confirmed a licensed, attributed photo (see
+  // observation-adapter.js) — an image without both is never shown at all.
+  const attributionText = moth.imageAttribution
+    ? [moth.imageLicense ? moth.imageLicense.toUpperCase() : null, moth.imageAttribution].filter(Boolean).join(" · ")
+    : "";
 
   context.save();
   context.font = titleFont;
@@ -683,10 +689,19 @@ function drawHoverPopout(context, moth, width, height, animationTime, imageCache
   const detailWidth = context.measureText(activeRange).width;
   context.font = descriptionFont;
   const descriptionLines = wrapTextLines(context, description, textWidth);
+  context.font = attributionFont;
+  const attributionLines = attributionText ? wrapTextLines(context, attributionText, textWidth) : [];
+
+  const titleLineHeight = fontSize;
+  const detailLineHeight = fontSize * 0.82;
+  const descriptionLineHeight = fontSize * 1.05;
+  const attributionLineHeight = fontSize * 0.68 * 1.15;
+  const descriptionBlockHeight = descriptionLines.length > 0 ? gap + descriptionLines.length * descriptionLineHeight : 0;
+  const attributionBlockHeight = attributionLines.length > 0 ? gap + attributionLines.length * attributionLineHeight : 0;
 
   const contentGap = hasImage ? 10 : 0;
   const bodyWidth = imageWidth + contentGap + textWidth;
-  const textBlockHeight = fontSize + gap + fontSize * 0.82 + (descriptionLines.length > 0 ? gap + descriptionLines.length * fontSize * 1.05 : 0);
+  const textBlockHeight = titleLineHeight + gap + detailLineHeight + descriptionBlockHeight + attributionBlockHeight;
   const bodyHeight = Math.max(imageHeight, textBlockHeight);
   const boxWidth = Math.ceil(Math.max(titleWidth, detailWidth, bodyWidth) + paddingX * 2);
   const boxHeight = Math.ceil(bodyHeight + paddingY * 2);
@@ -759,13 +774,32 @@ function drawHoverPopout(context, moth, width, height, animationTime, imageCache
   context.fillText(speciesName, textX, contentY);
   context.font = detailFont;
   context.fillStyle = "rgba(255, 255, 255, 0.72)";
-  context.fillText(activeRange, textX, contentY + fontSize + gap);
+  context.fillText(activeRange, textX, contentY + titleLineHeight + gap);
+
+  let cursorY = contentY + titleLineHeight + gap + detailLineHeight;
 
   if (descriptionLines.length > 0) {
+    cursorY += gap;
     context.font = descriptionFont;
     context.fillStyle = "rgba(255, 255, 255, 0.68)";
     descriptionLines.forEach((line, index) => {
-      context.fillText(line, textX, contentY + fontSize + gap + fontSize * 0.82 + gap + index * fontSize * 1.05);
+      context.fillText(line, textX, cursorY + index * descriptionLineHeight);
+    });
+    cursorY += descriptionLines.length * descriptionLineHeight;
+  }
+
+  // Required whenever a licensed photo is shown (inat_website.txt 6.6/8): the
+  // license code and the photographer's attribution, e.g. "CC-BY-NC · A.
+  // Person". observationUrl is threaded through the moth record too (see
+  // moth-store.js) for a future clickable "view on iNaturalist" link — canvas
+  // has no native hyperlinks, so that needs its own hit-region/DOM affordance
+  // rather than rendering a bare, unclickable URL here.
+  if (attributionLines.length > 0) {
+    cursorY += gap;
+    context.font = attributionFont;
+    context.fillStyle = "rgba(255, 255, 255, 0.5)";
+    attributionLines.forEach((line, index) => {
+      context.fillText(line, textX, cursorY + index * attributionLineHeight);
     });
   }
 

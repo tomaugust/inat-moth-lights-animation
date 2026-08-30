@@ -67,6 +67,33 @@ describe("MothStore.addObservation", () => {
     assert.equal(moth.species, "unknown");
     assert.equal(moth.color, "#919191");
   });
+
+  it("carries photo attribution, license, source link and raw taxon fields through to the rendered moth", () => {
+    const store = new MothStore();
+    store.addObservation(
+      observation("a", {
+        imageUrl: "https://example.invalid/medium.jpg",
+        imageAttribution: "A. Person",
+        imageLicense: "cc-by-nc",
+        observationUrl: "https://www.inaturalist.org/observations/a",
+        place: "Northern Europe",
+        qualityGrade: "needs_id"
+      }),
+      0,
+      800,
+      600
+    );
+    const [moth] = store.getActiveMoths();
+
+    assert.equal(moth.imageURL, "https://example.invalid/medium.jpg");
+    assert.equal(moth.imageAttribution, "A. Person");
+    assert.equal(moth.imageLicense, "cc-by-nc");
+    assert.equal(moth.observationUrl, "https://www.inaturalist.org/observations/a");
+    assert.equal(moth.place, "Northern Europe");
+    assert.equal(moth.qualityGrade, "needs_id");
+    assert.equal(moth.scientificName, "Example species");
+    assert.equal(moth.commonName, "Example moth");
+  });
 });
 
 describe("MothStore.removeExpired", () => {

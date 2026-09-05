@@ -13,13 +13,23 @@ on:
       - .github/workflows/deploy-worker.yml
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+# Scoped by ref so a manual workflow_dispatch test run on some branch never
+# queues behind (or blocks) a real push-triggered deploy from main, or vice
+# versa — only re-triggers of the *same* ref serialize against each other.
 concurrency:
-  group: deploy-worker
+  group: deploy-worker-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Bounded well under GitHub's 360-minute default so a hung wrangler
+    # deploy or a hung curl can't wedge this ref's concurrency group closed
+    # for hours with nothing able to recover it.
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,23 +71,47 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      - name: Verify the deployed Worker answers with a valid contract
+      - name: Verify the deployed Worker answers with a valid, non-empty contract
         if: steps.check-secrets.outputs.configured == 'true'
         run: |
           url="${{ steps.deploy.outputs.worker_url }}/observations"
-          echo "Checking $url"
-          status=$(curl -sS "$url" -o response.json -w '%{http_code}')
-          echo "HTTP status: $status"
-          cat response.json
-          echo
-          node -e '
-            const data = JSON.parse(require("fs").readFileSync("response.json", "utf8"));
-            if (!Array.isArray(data.observations)) {
-              console.error("Response is missing an observations array:", data);
-              process.exit(1);
-            }
-            console.log(`Parsed OK: ${data.observations.length} observations, stale=${data.stale}, error=${data.error}`);
-          '
+          attempts=3
+          for attempt in $(seq 1 "$attempts"); do
+            echo "Attempt $attempt/$attempts: checking $url"
+            status=$(curl -sS --max-time 15 "$url" -o response.json -w '%{http_code}') || true
+            echo "HTTP status: ${status:-<request failed>}"
+            cat response.json 2>/dev/null || echo "(no response body)"
+            echo
+            # A stale/empty fallback (the Worker's own documented behavior
+            # when it can't reach iNaturalist) is valid JSON with an
+            # observations array, so checking for that alone would let a
+            # Worker that can *never* reach upstream report "verified"
+            # forever. Require a fresh, non-empty response instead, and
+            # retry a couple of times first in case this is just an ordinary
+            # transient upstream hiccup right after a cold deploy (exactly
+            # what happened the first time this workflow ran for real).
+            if node -e '
+              const data = JSON.parse(require("fs").readFileSync("response.json", "utf8"));
+              if (!Array.isArray(data.observations)) {
+                console.error("Response is missing an observations array:", data);
+                process.exit(1);
+              }
+              console.log(`observations=${data.observations.length} stale=${data.stale} error=${data.error}`);
+              if (data.stale !== false || data.observations.length === 0) {
+                process.exit(2);
+              }
+            '; then
+              echo "Verified: got a fresh, non-empty contract."
+              exit 0
+            fi
+            echo "Not a healthy response yet."
+            if [ "$attempt" -lt "$attempts" ]; then
+              echo "Retrying in 5s..."
+              sleep 5
+            fi
+          done
+          echo "::error::The Worker never returned a fresh, non-empty observations contract after $attempts attempts — it may be unable to reach iNaturalist upstream. Check the deploy logs and worker/src/index.js's fetchUpstream."
+          exit 1
 
       - name: Skip (credentials not configured)
         if: steps.check-secrets.outputs.configured == 'false'

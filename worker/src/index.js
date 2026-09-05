@@ -18,10 +18,12 @@ import { parseObservationsResponse } from "../../src/observation-adapter.js";
 
 const DEFAULT_TAXON_ID = 47157;
 const DEFAULT_PAGE_SIZE = 200;
-// research/phase-0.md: "A 30 to 60 second shared cache is much more
-// conservative than the approximately one-request-per-second recommended
-// maximum."
-const DEFAULT_CACHE_SECONDS = 45;
+// iNaturalist's own API guidance asks callers to stay under ~60
+// requests/minute (hard-throttled at 100/minute) — a 120s shared cache
+// keeps this adapter's upstream traffic far under that regardless of
+// visitor count, and also cuts how often it's exposed at all to
+// Cloudflare-edge throttling unrelated to this app's own request volume.
+const DEFAULT_CACHE_SECONDS = 120;
 const DEFAULT_UPSTREAM_TIMEOUT_MS = 15000;
 const USER_AGENT = "inat-moth-lights-adapter/1.0 (+https://github.com/tomaugust/inat-moth-lights-animation)";
 const CACHE_KEY_URL = "https://inat-moth-lights-adapter.internal/observations";

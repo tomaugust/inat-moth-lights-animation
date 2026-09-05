@@ -78,7 +78,7 @@ jobs:
           attempts=3
           for attempt in $(seq 1 "$attempts"); do
             echo "Attempt $attempt/$attempts: checking $url"
-            status=$(curl -sS --max-time 15 "$url" -o response.json -w '%{http_code}') || true
+            status=$(curl -sS --max-time 15 -D headers.txt "$url" -o response.json -w '%{http_code}') || true
             echo "HTTP status: ${status:-<request failed>}"
             cat response.json 2>/dev/null || echo "(no response body)"
             echo
@@ -106,8 +106,25 @@ jobs:
             fi
             echo "Not a healthy response yet."
             if [ "$attempt" -lt "$attempts" ]; then
-              echo "Retrying in 5s..."
-              sleep 5
+              # The Worker forwards a Retry-After header on a rate-limited
+              # upstream response (see worker/src/index.js) — honor it
+              # instead of guessing a fixed delay, so a real rate-limit
+              # cooldown gets an actually-long-enough wait rather than a
+              # token 5 seconds. Capped so one bad header can't stall the
+              # job for the full timeout, and defaulting to 5s when the
+              # response carried no such header (e.g. a stale cache hit).
+              wait_seconds=$(node -e '
+                const fs = require("fs");
+                let seconds = 5;
+                try {
+                  const raw = fs.readFileSync("headers.txt", "utf8");
+                  const match = raw.match(/^retry-after:\s*(\d+)/im);
+                  if (match) seconds = Number(match[1]);
+                } catch {}
+                console.log(Math.min(Math.max(seconds, 1), 60));
+              ')
+              echo "Retrying in ${wait_seconds}s..."
+              sleep "$wait_seconds"
             fi
           done
           echo "::error::The Worker never returned a fresh, non-empty observations contract after $attempts attempts — it may be unable to reach iNaturalist upstream. Check the deploy logs and worker/src/index.js's fetchUpstream."

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - claude/repository-review-iok690 # TEMP: verifying the deploy before opening the PR; remove before merge
     paths:
       - worker/**
       - src/inaturalist-client.js

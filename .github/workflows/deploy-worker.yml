@@ -67,14 +67,17 @@ jobs:
         run: |
           url="${{ steps.deploy.outputs.worker_url }}/observations"
           echo "Checking $url"
-          curl -sS -f "$url" -o response.json
+          status=$(curl -sS "$url" -o response.json -w '%{http_code}')
+          echo "HTTP status: $status"
+          cat response.json
+          echo
           node -e '
             const data = JSON.parse(require("fs").readFileSync("response.json", "utf8"));
             if (!Array.isArray(data.observations)) {
               console.error("Response is missing an observations array:", data);
               process.exit(1);
             }
-            console.log(`OK: ${data.observations.length} observations, stale=${data.stale}`);
+            console.log(`Parsed OK: ${data.observations.length} observations, stale=${data.stale}, error=${data.error}`);
           '
 
       - name: Skip (credentials not configured)

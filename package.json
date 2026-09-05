@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "eslint": "^10.9.1",
-    "playwright": "^1.62.1"
+    "playwright": "^1.62.1",
+    "wrangler": "^4.129.0"
   }
 }

@@ -37,7 +37,13 @@ Phase 4 adds the shared cache/API adapter — a Cloudflare Worker sitting betwee
 - `worker/wrangler.toml` — Cloudflare Worker config: allow-listed CORS origins, taxon scope, page size, cache TTL, upstream timeout, all as `[vars]` you can tune per-deployment.
 - `src/inaturalist-client.js` gained a `buildUrl`/`upstreamShape: "adapter-contract"` option so the exact same `InatClient` (state machine, backoff, overlap prevention — all unchanged) can point at a deployed adapter instead of iNaturalist directly, treating the response as the already-normalized contract instead of a raw v2 page.
 
-**Not yet deployed.** Deploying a Cloudflare Worker needs a real Cloudflare account/credentials, which this environment doesn't have — the code, tests and config are ready, but nobody has run `wrangler deploy` yet. To deploy it yourself:
+**Not yet deployed.** Deploying a Cloudflare Worker needs a real Cloudflare account/credentials, which this environment doesn't have — the code, tests and config are ready, but nobody has run `wrangler deploy` yet.
+
+Update `ALLOWED_ORIGINS` in `wrangler.toml` first if your GitHub Pages URL or local dev port differ from the defaults. Once deployed, the production frontend can be pointed at it by constructing an `InatClient` with `buildUrl: () => "<your-worker-url>/observations"` and `upstreamShape: "adapter-contract"` — that wiring (and any production `index.html` changes) is intentionally not done yet, since pointing the live site at a URL that doesn't exist would break it.
+
+There are two ways to deploy:
+
+**Option A — from your own machine**, if you're comfortable running Wrangler locally:
 
 ```sh
 cd worker
@@ -45,7 +51,12 @@ npx wrangler login          # opens a browser OAuth flow, no pasted secrets
 npx wrangler deploy         # publishes to <name>.<your-subdomain>.workers.dev
 ```
 
-Update `ALLOWED_ORIGINS` in `wrangler.toml` first if your GitHub Pages URL or local dev port differ from the defaults. Once deployed, the production frontend can be pointed at it by constructing an `InatClient` with `buildUrl: () => "<your-worker-url>/observations"` and `upstreamShape: "adapter-contract"` — that wiring (and any production `index.html` changes) is intentionally not done yet, since pointing the live site at a URL that doesn't exist would break it.
+**Option B — via GitHub Actions** (`.github/workflows/deploy-worker.yml`), if you'd rather not run Wrangler (and the native binaries it pulls in, e.g. esbuild) on your own machine at all. This runs `wrangler deploy` inside GitHub's CI runner on every push to `main` that touches `worker/` (or the shared client/adapter modules it bundles), or on demand via the Actions tab's "Run workflow" button. It needs two repository secrets, set once under **Settings → Secrets and variables → Actions**:
+
+- `CLOUDFLARE_API_TOKEN` — create at https://dash.cloudflare.com/profile/api-tokens using the **"Edit Cloudflare Workers"** template (don't grant broader permissions than that).
+- `CLOUDFLARE_ACCOUNT_ID` — shown in the Cloudflare dashboard sidebar, or via `wrangler whoami` once logged in anywhere.
+
+Until both secrets are set, the workflow runs but skips the deploy step with a warning rather than failing — so it's safe to merge before Cloudflare is set up.
 
 ### Run it locally
 

@@ -46,12 +46,36 @@ jobs:
         run: npm ci
 
       - name: Deploy Worker
+        id: deploy
         if: steps.check-secrets.outputs.configured == 'true'
         working-directory: worker
-        run: npx wrangler deploy
+        run: |
+          set -o pipefail
+          npx wrangler deploy | tee deploy-output.txt
+          url=$(grep -oE 'https://[A-Za-z0-9.-]+\.workers\.dev' deploy-output.txt | head -1)
+          if [ -z "$url" ]; then
+            echo "::error::Could not find the deployed Worker's URL in wrangler's output."
+            exit 1
+          fi
+          echo "worker_url=$url" >> "$GITHUB_OUTPUT"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Verify the deployed Worker answers with a valid contract
+        if: steps.check-secrets.outputs.configured == 'true'
+        run: |
+          url="${{ steps.deploy.outputs.worker_url }}/observations"
+          echo "Checking $url"
+          curl -sS -f "$url" -o response.json
+          node -e '
+            const data = JSON.parse(require("fs").readFileSync("response.json", "utf8"));
+            if (!Array.isArray(data.observations)) {
+              console.error("Response is missing an observations array:", data);
+              process.exit(1);
+            }
+            console.log(`OK: ${data.observations.length} observations, stale=${data.stale}`);
+          '
 
       - name: Skip (credentials not configured)
         if: steps.check-secrets.outputs.configured == 'false'

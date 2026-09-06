@@ -8,6 +8,8 @@ compatibility_date = "2024-01-01"
 [vars]
 ALLOWED_ORIGINS = "https://tomaugust.github.io,http://localhost:8080"
 TAXON_ID = "47157"
+# iNaturalist place_id 6857 = United Kingdom (admin_level 0).
+PLACE_ID = "6857"
 PAGE_SIZE = "200"
 CACHE_SECONDS = "45"
 UPSTREAM_TIMEOUT_MS = "15000"

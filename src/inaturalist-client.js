@@ -34,8 +34,14 @@ export const CONNECTION_STATES = Object.freeze({
   FATAL_SCHEMA_ERROR: "fatal-schema-error"
 });
 
+// iNaturalist place_id for the United Kingdom (admin_level 0), confirmed
+// against GET /v1/places/autocomplete?q=United%20Kingdom. Scopes the feed to
+// UK records instead of the unfiltered global stream.
+const DEFAULT_PLACE_ID = 6857;
+
 const DEFAULT_OPTIONS = {
   taxonId: 47157,
+  placeId: DEFAULT_PLACE_ID,
   photoLicenses: DEFAULT_PHOTO_LICENSES,
   pageSize: 200,
   pollIntervalSeconds: 60,
@@ -90,6 +96,12 @@ export function mapRawObservationToContract(raw) {
 export function buildQueryUrl(options, cursor) {
   const params = new URLSearchParams();
   params.set("taxon_id", String(options.taxonId));
+  // place_id (not a lat/lng bounding box) is the documented way to scope
+  // /v1/observations to a place: "Must be observed within the place with
+  // this ID" — see GET /v1/observations in the iNaturalist API docs.
+  if (options.placeId) {
+    params.set("place_id", String(options.placeId));
+  }
   params.set("photos", "true");
   params.set("photo_license", options.photoLicenses.join(","));
   params.set("per_page", String(options.pageSize));

@@ -6,6 +6,7 @@ import { handleRequest } from "../../worker/src/index.js";
 const ENV = {
   ALLOWED_ORIGINS: "https://tomaugust.github.io,http://localhost:8080",
   TAXON_ID: "47157",
+  PLACE_ID: "6857",
   PAGE_SIZE: "200",
   CACHE_SECONDS: "45",
   UPSTREAM_TIMEOUT_MS: "15000"
@@ -112,6 +113,17 @@ describe("worker adapter: CORS and method handling", () => {
 });
 
 describe("worker adapter: upstream fetch, mapping and caching", () => {
+  it("scopes the upstream request to PLACE_ID via place_id, not a lat/lng bounding box", async () => {
+    const cache = createFakeCache();
+    fetchQueue.push(upstreamJson({ total_results: 0, results: [] }));
+
+    await handleRequest(get(), ENV, cache);
+
+    assert.equal(fetchCalls.length, 1);
+    assert.match(fetchCalls[0].url, /place_id=6857/);
+    assert.doesNotMatch(fetchCalls[0].url, /swlat|swlng|nelat|nelng/);
+  });
+
   it("fetches upstream, maps to the contract shape, and caches it", async () => {
     const cache = createFakeCache();
     fetchQueue.push(upstreamJson({ total_results: 1, results: [rawObservation()] }));

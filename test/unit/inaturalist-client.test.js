@@ -123,6 +123,17 @@ describe("buildQueryUrl", () => {
     assert.match(url, /order_by=id/);
     assert.match(url, /order=asc/);
   });
+
+  it("omits place_id when no placeId option is given", () => {
+    const url = buildQueryUrl(options, null);
+    assert.doesNotMatch(url, /place_id/);
+  });
+
+  it("sets place_id to scope the query to a place instead of a lat/lng bounding box", () => {
+    const url = buildQueryUrl({ ...options, placeId: 6857 }, null);
+    assert.match(url, /place_id=6857/);
+    assert.doesNotMatch(url, /swlat|swlng|nelat|nelng/);
+  });
 });
 
 describe("InatClient polling", () => {

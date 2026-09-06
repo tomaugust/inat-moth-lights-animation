@@ -17,6 +17,9 @@ import { buildQueryUrl, mapRawObservationToContract } from "../../src/inaturalis
 import { parseObservationsResponse } from "../../src/observation-adapter.js";
 
 const DEFAULT_TAXON_ID = 47157;
+// iNaturalist place_id for the United Kingdom (admin_level 0), confirmed
+// against GET /v1/places/autocomplete?q=United%20Kingdom.
+const DEFAULT_PLACE_ID = 6857;
 const DEFAULT_PAGE_SIZE = 200;
 // research/phase-0.md: "A 30 to 60 second shared cache is much more
 // conservative than the approximately one-request-per-second recommended
@@ -76,6 +79,7 @@ async function readContract(cache, key) {
 async function fetchUpstream(env) {
   const options = {
     taxonId: Number(env.TAXON_ID) || DEFAULT_TAXON_ID,
+    placeId: Number(env.PLACE_ID) || DEFAULT_PLACE_ID,
     photoLicenses: ["cc0", "cc-by", "cc-by-sa", "cc-by-nc", "cc-by-nc-sa", "cc-by-nd", "cc-by-nc-nd"],
     pageSize: Number(env.PAGE_SIZE) || DEFAULT_PAGE_SIZE
   };

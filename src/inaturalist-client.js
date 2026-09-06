@@ -36,8 +36,10 @@ export const CONNECTION_STATES = Object.freeze({
 
 // iNaturalist place_id for the United Kingdom (admin_level 0), confirmed
 // against GET /v1/places/autocomplete?q=United%20Kingdom. Scopes the feed to
-// UK records instead of the unfiltered global stream.
-const DEFAULT_PLACE_ID = 6857;
+// UK records instead of the unfiltered global stream. Exported so
+// geolocation.js can fall back to the same place when it can't resolve the
+// visitor's own country.
+export const DEFAULT_PLACE_ID = 6857;
 
 const DEFAULT_OPTIONS = {
   taxonId: 47157,

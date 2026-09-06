@@ -12,6 +12,7 @@ import { drawScene } from "./animation-engine.js";
 import { ObservationQueue } from "./observation-queue.js";
 import { MothStore } from "./moth-store.js";
 import { InatClient } from "./inaturalist-client.js";
+import { resolveUserPlace } from "./geolocation.js";
 
 function getStorage() {
   try {
@@ -19,6 +20,25 @@ function getStorage() {
   } catch {
     return null;
   }
+}
+
+// Human-readable line for the status readout, distinguishing an actually
+// resolved location from every fallback reason so a visitor (or a developer
+// watching this page) can tell why they're seeing UK records instead of
+// their own.
+function formatLocationSummary(place) {
+  if (place.source === "geolocation") {
+    return `location: ${place.countryName} (from your browser's location)`;
+  }
+
+  const fallbackReasons = {
+    unsupported: "geolocation isn't supported here",
+    denied: "location permission was denied",
+    unavailable: "location unavailable",
+    "lookup-failed": "couldn't resolve a country for your location"
+  };
+  const reason = fallbackReasons[place.source] || "location unavailable";
+  return `location: ${place.countryName} (default — ${reason})`;
 }
 
 async function main() {
@@ -32,6 +52,12 @@ async function main() {
   const context = canvas.getContext("2d");
   const statusElement = document.getElementById("demo-status");
 
+  if (statusElement) {
+    statusElement.textContent = "finding your location…";
+  }
+  const place = await resolveUserPlace();
+  const locationSummary = formatLocationSummary(place);
+
   const queue = new ObservationQueue({ storage: getStorage(), storageKey: "inat-moth-lights:live-demo-queue" });
   const store = new MothStore();
 
@@ -39,6 +65,7 @@ async function main() {
   let lastFetchSummary = "waiting for the first response…";
 
   const client = new InatClient({
+    placeId: place.placeId,
     getCursor: () => queue.cursor || null,
     onStateChange: (state) => {
       connectionState = state;
@@ -78,6 +105,7 @@ async function main() {
     if (statusElement) {
       const stats = client.getStats();
       statusElement.textContent = [
+        locationSummary,
         `connection: ${connectionState}`,
         `active moths: ${store.activeCount}`,
         `queue pending: ${queue.pendingCount}`,

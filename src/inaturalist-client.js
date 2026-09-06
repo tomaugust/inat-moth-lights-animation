@@ -24,6 +24,21 @@ const FIELDS =
 
 const DEFAULT_PHOTO_LICENSES = ["cc0", "cc-by", "cc-by-sa", "cc-by-nc", "cc-by-nc-sa", "cc-by-nd", "cc-by-nc-nd"];
 
+// A query with no time bound at all (sort by recency, or an indefinite
+// id_above walk) is both expensive for iNaturalist to compute and, from
+// their side, structurally indistinguishable from systematic full-history
+// scraping — regardless of how little of a response actually comes back.
+// Bounding by a rolling recent-hours window keeps every request cheap and
+// clearly recency-scoped.
+const DEFAULT_RECENT_HOURS = 48;
+
+// Stopgap ahead of scoping each visitor by their own detected location:
+// bounds every query to a plain lat/lng rectangle covering Great Britain and
+// Northern Ireland (not iNaturalist's own place-boundary polygon, so it can
+// include small slivers of neighbouring territory/sea) rather than
+// querying worldwide.
+const UK_BOUNDING_BOX = { swLat: 49.8, swLng: -8.65, neLat: 60.9, neLng: 1.8 };
+
 export const CONNECTION_STATES = Object.freeze({
   STARTING: "starting",
   LIVE: "live",
@@ -38,6 +53,8 @@ const DEFAULT_OPTIONS = {
   taxonId: 47157,
   photoLicenses: DEFAULT_PHOTO_LICENSES,
   pageSize: 200,
+  recentHours: DEFAULT_RECENT_HOURS,
+  boundingBox: UK_BOUNDING_BOX,
   pollIntervalSeconds: 60,
   requestTimeoutSeconds: 15,
   maxBackoffSeconds: 900,
@@ -94,6 +111,26 @@ export function buildQueryUrl(options, cursor) {
   params.set("photo_license", options.photoLicenses.join(","));
   params.set("per_page", String(options.pageSize));
   params.set("fields", FIELDS);
+
+  // Bound by time and place rather than querying worldwide with no window
+  // at all (see the constants above). Applied on every request, including
+  // id_above follow-up pages, so query cost is bounded consistently
+  // regardless of pagination style.
+  const now = typeof options.now === "function" ? options.now() : Date.now();
+  const recentHours = options.recentHours ?? DEFAULT_RECENT_HOURS;
+  params.set("created_d1", new Date(now - recentHours * 60 * 60 * 1000).toISOString());
+  params.set("created_d2", new Date(now).toISOString());
+
+  // "boundingBox" in options (not ??) so passing boundingBox: null
+  // deliberately disables it, rather than being indistinguishable from not
+  // passing one at all and silently falling back to the UK default.
+  const box = "boundingBox" in options ? options.boundingBox : UK_BOUNDING_BOX;
+  if (box) {
+    params.set("swlat", String(box.swLat));
+    params.set("swlng", String(box.swLng));
+    params.set("nelat", String(box.neLat));
+    params.set("nelng", String(box.neLng));
+  }
 
   if (cursor) {
     params.set("id_above", String(cursor));

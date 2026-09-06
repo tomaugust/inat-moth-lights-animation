@@ -8,7 +8,8 @@ const ENV = {
   TAXON_ID: "47157",
   PAGE_SIZE: "200",
   CACHE_SECONDS: "45",
-  UPSTREAM_TIMEOUT_MS: "15000"
+  UPSTREAM_TIMEOUT_MS: "15000",
+  RECENT_HOURS: "48"
 };
 
 // Mirrors just enough of the real Cache API for these tests: entries expire
@@ -156,6 +157,20 @@ describe("worker adapter: upstream fetch, mapping and caching", () => {
 
     assert.match(fetchCalls[0].url, /order_by=created_at/);
     assert.doesNotMatch(fetchCalls[0].url, /id_above/);
+  });
+
+  it("bounds the upstream query to RECENT_HOURS and the UK bounding box", async () => {
+    const cache = createFakeCache();
+    fetchQueue.push(upstreamJson({ total_results: 0, results: [] }));
+
+    await handleRequest(get(), ENV, cache);
+
+    const params = new URL(fetchCalls[0].url).searchParams;
+    assert.equal(params.get("swlat"), "49.8");
+    assert.equal(params.get("nelng"), "1.8");
+    const d1 = new Date(params.get("created_d1")).getTime();
+    const d2 = new Date(params.get("created_d2")).getTime();
+    assert.ok(Math.abs(d2 - d1 - Number(ENV.RECENT_HOURS) * 60 * 60 * 1000) < 1000);
   });
 
   it("coalesces concurrent cache-miss requests into a single upstream fetch", async () => {

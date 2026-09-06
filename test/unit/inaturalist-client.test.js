@@ -123,6 +123,41 @@ describe("buildQueryUrl", () => {
     assert.match(url, /order_by=id/);
     assert.match(url, /order=asc/);
   });
+
+  it("bounds by a rolling recent-hours window using the injected clock", () => {
+    const now = Date.UTC(2026, 5, 15, 12, 0, 0);
+    const url = buildQueryUrl({ ...options, recentHours: 48, now: () => now }, null);
+    const params = new URL(url).searchParams;
+    assert.equal(params.get("created_d1"), new Date(now - 48 * 60 * 60 * 1000).toISOString());
+    assert.equal(params.get("created_d2"), new Date(now).toISOString());
+  });
+
+  it("defaults to a 48-hour window and the UK bounding box when not overridden", () => {
+    const url = buildQueryUrl(options, null);
+    const params = new URL(url).searchParams;
+    const d1 = new Date(params.get("created_d1")).getTime();
+    const d2 = new Date(params.get("created_d2")).getTime();
+    assert.ok(Math.abs(d2 - d1 - 48 * 60 * 60 * 1000) < 1000, "default window should be ~48 hours");
+    assert.equal(params.get("swlat"), "49.8");
+    assert.equal(params.get("swlng"), "-8.65");
+    assert.equal(params.get("nelat"), "60.9");
+    assert.equal(params.get("nelng"), "1.8");
+  });
+
+  it("uses a caller-supplied boundingBox instead of the UK default", () => {
+    const box = { swLat: 1, swLng: 2, neLat: 3, neLng: 4 };
+    const url = buildQueryUrl({ ...options, boundingBox: box }, null);
+    const params = new URL(url).searchParams;
+    assert.equal(params.get("swlat"), "1");
+    assert.equal(params.get("swlng"), "2");
+    assert.equal(params.get("nelat"), "3");
+    assert.equal(params.get("nelng"), "4");
+  });
+
+  it("omits the bounding box entirely when boundingBox is explicitly null", () => {
+    const url = buildQueryUrl({ ...options, boundingBox: null }, null);
+    assert.doesNotMatch(url, /swlat/);
+  });
 });
 
 describe("InatClient polling", () => {

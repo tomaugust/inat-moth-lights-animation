@@ -11,3 +11,7 @@ TAXON_ID = "47157"
 PAGE_SIZE = "200"
 CACHE_SECONDS = "120"
 UPSTREAM_TIMEOUT_MS = "15000"
+# Testing-only: bounds every upstream query to the last N hours, ahead of
+# scoping by each visitor's own detected location. Geographic scope (UK-only
+# for now) is a plain constant in src/inaturalist-client.js, not a var here.
+RECENT_HOURS = "48"

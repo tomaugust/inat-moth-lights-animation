@@ -18,6 +18,11 @@ import { parseObservationsResponse } from "../../src/observation-adapter.js";
 
 const DEFAULT_TAXON_ID = 47157;
 const DEFAULT_PAGE_SIZE = 200;
+// Testing-only stopgap ahead of scoping by each visitor's own detected
+// location — see buildQueryUrl's own UK_BOUNDING_BOX in
+// src/inaturalist-client.js, which this worker relies on by default since
+// it doesn't pass its own boundingBox override.
+const DEFAULT_RECENT_HOURS = 48;
 // iNaturalist's own API guidance asks callers to stay under ~60
 // requests/minute (hard-throttled at 100/minute) — a 120s shared cache
 // keeps this adapter's upstream traffic far under that regardless of
@@ -79,7 +84,9 @@ async function fetchUpstream(env) {
   const options = {
     taxonId: Number(env.TAXON_ID) || DEFAULT_TAXON_ID,
     photoLicenses: ["cc0", "cc-by", "cc-by-sa", "cc-by-nc", "cc-by-nc-sa", "cc-by-nd", "cc-by-nc-nd"],
-    pageSize: Number(env.PAGE_SIZE) || DEFAULT_PAGE_SIZE
+    pageSize: Number(env.PAGE_SIZE) || DEFAULT_PAGE_SIZE,
+    recentHours: Number(env.RECENT_HOURS) || DEFAULT_RECENT_HOURS,
+    now: () => Date.now()
   };
   // Always the freshest-first seed query (never id_above): the point of this
   // adapter is one shared "latest snapshot" for every caller, not per-client

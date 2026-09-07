@@ -3,6 +3,7 @@ import { after, before, describe, it } from "node:test";
 import { chromium } from "playwright";
 
 import { startStaticServer } from "../helpers/static-server.mjs";
+import { stubGeolocation } from "../helpers/geolocation.mjs";
 
 let site;
 let browser;
@@ -70,6 +71,11 @@ describe("Phase 3 live demo (network mocked)", () => {
     });
 
     const getRequestCount = await mockInatApi(page);
+    // Denied so resolveUserPlace() falls back immediately without a network
+    // call — headless Chromium with no stub and no granted permission never
+    // invokes either getCurrentPosition callback, which would otherwise hang
+    // this test forever rather than reject or time out.
+    await stubGeolocation(page, { error: { code: 1, message: "denied" } });
 
     await page.goto(`${site.url}live-demo.html`, { waitUntil: "networkidle" });
     await page.waitForFunction(() => document.getElementById("demo-status")?.textContent.includes("connection: live"), {
@@ -102,6 +108,7 @@ describe("Phase 3 live demo (network mocked)", () => {
 
   it("recovers to a quiet/live state after a mocked 429, without crashing", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await stubGeolocation(page, { error: { code: 1, message: "denied" } });
     let requestCount = 0;
     await page.route("https://api.inaturalist.org/**", async (route) => {
       requestCount += 1;

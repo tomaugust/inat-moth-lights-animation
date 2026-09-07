@@ -73,7 +73,7 @@ export default [
     }
   },
   {
-    files: ["scripts/**/*.mjs", "test/unit/**/*.mjs", "test/unit/**/*.js", "test/helpers/**/*.mjs", "test/fixtures/**/*.mjs", "eslint.config.mjs"],
+    files: ["scripts/**/*.mjs", "test/unit/**/*.mjs", "test/unit/**/*.js", "test/fixtures/**/*.mjs", "eslint.config.mjs"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",
@@ -85,9 +85,10 @@ export default [
     }
   },
   {
-    // e2e tests embed page.evaluate() callbacks that run in the browser, so
-    // these files need both Node and browser globals available.
-    files: ["test/e2e/**/*.mjs", "test/e2e/**/*.js"],
+    // e2e tests (and helpers like geolocation.mjs) embed page.evaluate()/
+    // addInitScript() callbacks that run in the browser, so these files need
+    // both Node and browser globals available.
+    files: ["test/e2e/**/*.mjs", "test/e2e/**/*.js", "test/helpers/**/*.mjs"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",

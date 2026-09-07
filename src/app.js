@@ -73,11 +73,27 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     }
   }
 
+  // The card is a wrapper around two independent controls, not one big
+  // button: `.active-moths-card__focus` toggles the moth's highlight in the
+  // scene (the card's original behavior), while `.active-moths-card__link`
+  // navigates to the iNaturalist observation when one is known. An <a> can't
+  // be nested inside a <button> (invalid content model, and unreliable
+  // focus/click handling across browsers), so the two live as siblings
+  // instead, with the whole card's hover area still setting scene focus.
   function createActiveMothCard(moth) {
-    const card = document.createElement("button");
+    const card = document.createElement("div");
     card.className = "active-moths-card is-entering";
-    card.type = "button";
     card.dataset.mothId = moth.id;
+
+    const focusButton = document.createElement("button");
+    focusButton.type = "button";
+    focusButton.className = "active-moths-card__focus";
+
+    const thumb = document.createElement("img");
+    thumb.className = "active-moths-card__thumb";
+    thumb.alt = "";
+    thumb.loading = "lazy";
+    thumb.hidden = true;
 
     const swatch = document.createElement("span");
     swatch.className = "active-moths-card__swatch";
@@ -91,7 +107,22 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     const time = document.createElement("span");
     time.className = "active-moths-card__time";
 
-    card.append(swatch, name, time);
+    focusButton.append(thumb, swatch, name, time);
+
+    const link = document.createElement("a");
+    link.className = "active-moths-card__link";
+    link.textContent = "View observation ↗";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.hidden = true;
+    // Clicking through to iNaturalist is a separate action from focusing the
+    // moth in the scene, so it must not also trigger the card's own
+    // pointerenter/click handling below.
+    link.addEventListener("pointerdown", (event) => event.stopPropagation());
+    link.addEventListener("click", (event) => event.stopPropagation());
+
+    card.append(focusButton, link);
+
     card.addEventListener("pointerenter", () => {
       setFocusedMoth(card.dataset.mothId);
     });
@@ -100,15 +131,15 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
         clearHover();
       }
     });
-    card.addEventListener("focus", () => {
+    focusButton.addEventListener("focus", () => {
       setFocusedMoth(card.dataset.mothId);
     });
-    card.addEventListener("blur", () => {
+    focusButton.addEventListener("blur", () => {
       if (hoverState.hoveredMothId === card.dataset.mothId) {
         clearHover();
       }
     });
-    card.addEventListener("click", () => {
+    focusButton.addEventListener("click", () => {
       if (hoverState.hoveredMothId === card.dataset.mothId) {
         clearHover();
       } else {
@@ -122,17 +153,23 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   }
 
   function updateActiveMothCard(card, moth) {
+    const focusButton = card.querySelector(".active-moths-card__focus");
     const name = card.querySelector(".active-moths-card__name");
     const time = card.querySelector(".active-moths-card__time");
     const swatch = card.querySelector(".active-moths-card__swatch");
+    const thumb = card.querySelector(".active-moths-card__thumb");
+    const link = card.querySelector(".active-moths-card__link");
     const isFocused = hoverState.hoveredMothId === moth.id;
+    const displayName = moth.speciesName || moth.label || moth.id;
 
     card.classList.toggle("is-focused", isFocused);
-    card.setAttribute("aria-pressed", isFocused ? "true" : "false");
-    card.setAttribute("aria-label", "Focus " + (moth.speciesName || moth.label || moth.id));
+    if (focusButton) {
+      focusButton.setAttribute("aria-pressed", isFocused ? "true" : "false");
+      focusButton.setAttribute("aria-label", "Focus " + displayName);
+    }
 
     if (name) {
-      name.textContent = moth.speciesName || moth.label || moth.id;
+      name.textContent = displayName;
     }
     if (time) {
       time.textContent = formatClockTime(moth.entryTime) + " - " + formatClockTime(moth.exitTime);
@@ -140,6 +177,37 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     if (swatch) {
       swatch.style.background = moth.color;
       swatch.style.color = moth.color;
+    }
+
+    // dataset-guarded so a plain observation photo/link isn't re-applied on
+    // every animation frame (updateActiveMothsPanel runs once per tick).
+    if (thumb) {
+      const nextImageUrl = moth.imageURL || "";
+      if (thumb.dataset.src !== nextImageUrl) {
+        thumb.dataset.src = nextImageUrl;
+        if (nextImageUrl) {
+          thumb.src = nextImageUrl;
+          thumb.alt = displayName;
+          thumb.hidden = false;
+        } else {
+          thumb.removeAttribute("src");
+          thumb.hidden = true;
+        }
+      }
+    }
+
+    if (link) {
+      const nextObservationUrl = moth.observationUrl || "";
+      if (link.dataset.href !== nextObservationUrl) {
+        link.dataset.href = nextObservationUrl;
+        if (nextObservationUrl) {
+          link.href = nextObservationUrl;
+          link.hidden = false;
+        } else {
+          link.removeAttribute("href");
+          link.hidden = true;
+        }
+      }
     }
   }
 

@@ -262,19 +262,16 @@ body.launch-screen-active:not(.launch-controls-visible) .active-moths-panel {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   color: rgba(245, 241, 232, 0.9);
-  cursor: pointer;
-  display: grid;
-  gap: 3px;
-  grid-template-columns: auto 1fr;
+  display: flex;
+  flex-direction: column;
   min-height: 58px;
   opacity: 1;
-  padding: 9px 10px;
   position: relative;
   text-align: left;
   transform: translateX(0);
   overflow: hidden;
-  max-height: 220px;
-  transition: background 220ms ease, border-color 220ms ease, opacity 820ms ease, transform 820ms ease, max-height 820ms ease, min-height 820ms ease, padding 820ms ease;
+  max-height: 260px;
+  transition: background 220ms ease, border-color 220ms ease, opacity 820ms ease, transform 820ms ease, max-height 820ms ease, min-height 820ms ease;
   width: 258px;
   will-change: transform, opacity;
   border-color: rgba(255, 255, 255, 0.32);
@@ -293,8 +290,6 @@ body.launch-screen-active:not(.launch-controls-visible) .active-moths-panel {
 .active-moths-card.is-leaving {
   min-height: 0;
   max-height: 0;
-  padding-top: 0;
-  padding-bottom: 0;
 }
 
 .active-moths-card.is-focused {
@@ -303,15 +298,43 @@ body.launch-screen-active:not(.launch-controls-visible) .active-moths-panel {
 }
 
 .active-moths-card:hover,
-.active-moths-card:focus-visible {
+.active-moths-card:focus-within {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.28);
   outline: none;
 }
 
+.active-moths-card__focus {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: grid;
+  column-gap: 8px;
+  grid-template-columns: auto auto 1fr;
+  padding: 9px 10px;
+  row-gap: 3px;
+  width: 100%;
+}
+
+.active-moths-card__focus:focus-visible {
+  outline: 2px solid rgba(245, 241, 232, 0.5);
+  outline-offset: -2px;
+}
+
+.active-moths-card__thumb {
+  border-radius: 6px;
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  height: 40px;
+  object-fit: cover;
+  width: 40px;
+}
+
 .active-moths-card__swatch {
   border-radius: 999px;
   box-shadow: 0 0 10px currentColor;
+  grid-column: 2;
+  grid-row: 1;
   height: 9px;
   margin-top: 5px;
   width: 9px;
@@ -320,6 +343,8 @@ body.launch-screen-active:not(.launch-controls-visible) .active-moths-panel {
 .active-moths-card__name {
   font-size: 0.82rem;
   font-weight: 600;
+  grid-column: 3;
+  grid-row: 1;
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
@@ -328,8 +353,24 @@ body.launch-screen-active:not(.launch-controls-visible) .active-moths-panel {
   color: rgba(245, 241, 232, 0.58);
   font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
-  grid-column: 2;
+  grid-column: 3;
+  grid-row: 2;
   line-height: 1.2;
+}
+
+/* No thumbnail: collapse back to the original two-column (swatch | text)
+   layout instead of leaving an empty image column's gap behind. */
+.active-moths-card__focus:has(.active-moths-card__thumb[hidden]) {
+  grid-template-columns: auto 1fr;
+}
+
+.active-moths-card__focus:has(.active-moths-card__thumb[hidden]) .active-moths-card__swatch {
+  grid-column: 1;
+}
+
+.active-moths-card__focus:has(.active-moths-card__thumb[hidden]) .active-moths-card__name,
+.active-moths-card__focus:has(.active-moths-card__thumb[hidden]) .active-moths-card__time {
+  grid-column: 2;
 }
 
 .active-moths-card__meta {
@@ -337,6 +378,19 @@ body.launch-screen-active:not(.launch-controls-visible) .active-moths-panel {
   font-size: 0.68rem;
   grid-column: 2;
   line-height: 1.2;
+}
+
+.active-moths-card__link {
+  color: rgba(245, 241, 232, 0.66);
+  font-size: 0.72rem;
+  padding: 0 10px 9px;
+  text-decoration: none;
+}
+
+.active-moths-card__link:hover,
+.active-moths-card__link:focus-visible {
+  color: rgba(245, 241, 232, 0.92);
+  text-decoration: underline;
 }
 
 .sound-toggle span {

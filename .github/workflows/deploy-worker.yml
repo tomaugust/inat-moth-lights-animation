@@ -71,6 +71,19 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      - name: Wait for Cloudflare edge propagation
+        if: steps.check-secrets.outputs.configured == 'true'
+        # wrangler deploy returning success only means the new script was
+        # uploaded, not that every Cloudflare edge location is serving it
+        # yet. Without this pause, the very next step's first request can
+        # land on an edge still running the *previous* script version — its
+        # response then gets written into the Worker's own cache (including
+        # the long-lived stale-backup copy) as if it were current, silently
+        # reintroducing whatever the last deploy fixed until that cache
+        # entry's TTL expires. 15s comfortably covers Cloudflare's typical
+        # propagation window.
+        run: sleep 15
+
       - name: Verify the deployed Worker answers with a valid, non-empty contract
         if: steps.check-secrets.outputs.configured == 'true'
         run: |

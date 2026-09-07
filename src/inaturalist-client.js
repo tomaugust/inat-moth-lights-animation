@@ -41,9 +41,22 @@ export const CONNECTION_STATES = Object.freeze({
 // visitor's own country.
 export const DEFAULT_PLACE_ID = 6857;
 
+// Every query this client (or the Worker adapter) builds MUST be bounded to
+// a recent window — never "however far back per_page=200 happens to reach,"
+// which drifts with upload volume and, worse, asks iNaturalist to sort
+// through its full history on every single poll instead of a recent slice.
+// created_d1 (lower bound on created_at) is the proven mechanism: the
+// project's own Phase 0 measurement spike (scripts/inat-api-spike.ps1) used
+// exactly this param against this same v2 endpoint. This is intentionally a
+// hardcoded constant, not a Worker env var like PLACE_ID/TAXON_ID — an env
+// var could be left blank or misconfigured and silently reintroduce an
+// unbounded query, which is exactly what this exists to prevent.
+export const DEFAULT_LOOKBACK_HOURS = 24;
+
 const DEFAULT_OPTIONS = {
   taxonId: 47157,
   placeId: DEFAULT_PLACE_ID,
+  lookbackHours: DEFAULT_LOOKBACK_HOURS,
   photoLicenses: DEFAULT_PHOTO_LICENSES,
   pageSize: 200,
   pollIntervalSeconds: 60,
@@ -104,6 +117,11 @@ export function buildQueryUrl(options, cursor) {
   if (options.placeId) {
     params.set("place_id", String(options.placeId));
   }
+  // Unconditional and defensively defaulted (never skipped, never disabled
+  // by a falsy/zero/missing option) — see DEFAULT_LOOKBACK_HOURS above.
+  const lookbackHours = Number(options.lookbackHours) > 0 ? Number(options.lookbackHours) : DEFAULT_LOOKBACK_HOURS;
+  const nowMs = typeof options.now === "function" ? options.now() : Date.now();
+  params.set("created_d1", new Date(nowMs - lookbackHours * 60 * 60 * 1000).toISOString());
   params.set("photos", "true");
   params.set("photo_license", options.photoLicenses.join(","));
   params.set("per_page", String(options.pageSize));

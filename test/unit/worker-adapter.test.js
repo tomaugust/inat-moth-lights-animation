@@ -124,6 +124,18 @@ describe("worker adapter: upstream fetch, mapping and caching", () => {
     assert.doesNotMatch(fetchCalls[0].url, /swlat|swlng|nelat|nelng/);
   });
 
+  it("always bounds the upstream request with created_d1 — never a temporally unbounded query", async () => {
+    const cache = createFakeCache();
+    fetchQueue.push(upstreamJson({ total_results: 0, results: [] }));
+
+    await handleRequest(get(), ENV, cache);
+
+    assert.equal(fetchCalls.length, 1);
+    const params = new URL(fetchCalls[0].url).searchParams;
+    assert.ok(params.has("created_d1"), "expected created_d1 to always be present");
+    assert.ok(!Number.isNaN(Date.parse(params.get("created_d1"))), "created_d1 should be a valid date");
+  });
+
   it("fetches upstream, maps to the contract shape, and caches it", async () => {
     const cache = createFakeCache();
     fetchQueue.push(upstreamJson({ total_results: 1, results: [rawObservation()] }));

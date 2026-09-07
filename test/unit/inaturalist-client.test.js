@@ -134,6 +134,33 @@ describe("buildQueryUrl", () => {
     assert.match(url, /place_id=6857/);
     assert.doesNotMatch(url, /swlat|swlng|nelat|nelng/);
   });
+
+  it("always bounds the query to the last 24 hours by default (never temporally unbounded)", () => {
+    const nowMs = Date.UTC(2026, 5, 15, 12, 0, 0);
+    const url = buildQueryUrl({ ...options, now: () => nowMs }, null);
+    const params = new URL(url).searchParams;
+    assert.equal(params.get("created_d1"), new Date(nowMs - 24 * 60 * 60 * 1000).toISOString());
+  });
+
+  it("honors an explicit lookbackHours override", () => {
+    const nowMs = Date.UTC(2026, 5, 15, 12, 0, 0);
+    const url = buildQueryUrl({ ...options, now: () => nowMs, lookbackHours: 6 }, null);
+    const params = new URL(url).searchParams;
+    assert.equal(params.get("created_d1"), new Date(nowMs - 6 * 60 * 60 * 1000).toISOString());
+  });
+
+  it("falls back to the 24h default instead of going unbounded when lookbackHours is invalid", () => {
+    const nowMs = Date.UTC(2026, 5, 15, 12, 0, 0);
+    for (const badValue of [0, -5, null, undefined, "not-a-number"]) {
+      const url = buildQueryUrl({ ...options, now: () => nowMs, lookbackHours: badValue }, null);
+      const params = new URL(url).searchParams;
+      assert.equal(
+        params.get("created_d1"),
+        new Date(nowMs - 24 * 60 * 60 * 1000).toISOString(),
+        `expected the 24h default for lookbackHours=${badValue}`
+      );
+    }
+  });
 });
 
 describe("InatClient polling", () => {

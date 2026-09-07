@@ -172,14 +172,30 @@ describe("worker adapter: upstream fetch, mapping and caching", () => {
     assert.equal(fetchCalls.length, 1, "three callers within the TTL should cost exactly one upstream request");
   });
 
-  it("does not query per client cursor: always requests the freshest seed page", async () => {
+  it("does not query per client cursor: every refresh starts the window from its beginning", async () => {
     const cache = createFakeCache();
     fetchQueue.push(upstreamJson({ total_results: 0, results: [] }));
 
     await handleRequest(get(), ENV, cache);
 
-    assert.match(fetchCalls[0].url, /order_by=created_at/);
+    assert.match(fetchCalls[0].url, /order_by=id/);
+    assert.match(fetchCalls[0].url, /order=asc/);
     assert.doesNotMatch(fetchCalls[0].url, /id_above/);
+  });
+
+  it("paginates through every page of the window instead of stopping at the first page's worth", async () => {
+    const cache = createFakeCache();
+    const firstPage = Array.from({ length: 200 }, (_, index) => rawObservation({ id: 1000 + index }));
+    const secondPage = [rawObservation({ id: 5000 })];
+    fetchQueue.push(upstreamJson({ total_results: 201, results: firstPage }));
+    fetchQueue.push(upstreamJson({ total_results: 201, results: secondPage }));
+
+    const response = await handleRequest(get(), ENV, cache);
+    const body = await response.json();
+
+    assert.equal(fetchCalls.length, 2, "a full first page should trigger a second page fetch");
+    assert.match(fetchCalls[1].url, /id_above=1199/, "the second page should continue from the first page's last id");
+    assert.equal(body.observations.length, 201, "results from both pages should be combined into one contract");
   });
 
   it("coalesces concurrent cache-miss requests into a single upstream fetch", async () => {

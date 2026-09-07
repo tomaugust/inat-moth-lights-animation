@@ -2,22 +2,25 @@
 //
 // Sits between every visitor's browser and the real iNaturalist API. Instead
 // of caching per visitor cursor (which wouldn't collapse concurrent
-// requests), it always asks upstream for the freshest page of the configured
-// taxon scope and caches that response for every caller hitting the same
-// Cloudflare datacenter for a shared TTL — so N concurrent browsers served by
-// the same colo within that window cost exactly one upstream request, not N.
+// requests), it always asks upstream for every observation in the configured
+// taxon/place/24h-window scope (fetchAllObservationsInWindow paginates as
+// many pages as that takes, up to MAX_WINDOW_PAGES) and caches that response
+// for every caller hitting the same Cloudflare datacenter for a shared TTL —
+// so N concurrent browsers served by the same colo within that window cost
+// exactly one refresh (one or more upstream requests), not N refreshes.
 // caches.default is per-colo, not a single global cache: with traffic spread
 // across multiple Cloudflare datacenters, actual upstream volume is roughly
-// (requests per TTL window) PER COLO seeing traffic, not one total — see the
-// CACHE_SECONDS choice below and in wrangler.toml. Each client's own
-// ObservationQueue (see src/observation-queue.js) already deduplicates by
-// observation id, so repeatedly handing out "the latest snapshot" is exactly
-// what a shared, recently-uploaded-observations feed should do.
+// (requests per TTL window per colo) PER COLO seeing traffic, not one total
+// — see the CACHE_SECONDS choice below and in wrangler.toml. Each client's
+// own ObservationQueue (see src/observation-queue.js) already deduplicates by
+// observation id, so repeatedly handing out "everything currently in the
+// window" is exactly what a shared, recently-uploaded-observations feed
+// should do.
 //
 // Reuses the same raw-v2-to-contract mapping and query-building the Phase 3
 // direct client uses, and the same validation/normalization the frontend
 // already trusts, so the contract can't drift between the two paths.
-import { buildQueryUrl, mapRawObservationToContract } from "../../src/inaturalist-client.js";
+import { fetchAllObservationsInWindow, mapRawObservationToContract } from "../../src/inaturalist-client.js";
 import { parseObservationsResponse } from "../../src/observation-adapter.js";
 
 const DEFAULT_TAXON_ID = 47157;
@@ -85,24 +88,25 @@ async function readContract(cache, key) {
   return cached.json();
 }
 
-async function fetchUpstream(env) {
-  const options = {
+function buildUpstreamOptions(env) {
+  return {
     taxonId: Number(env.TAXON_ID) || DEFAULT_TAXON_ID,
     placeId: Number(env.PLACE_ID) || DEFAULT_PLACE_ID,
     photoLicenses: ["cc0", "cc-by", "cc-by-sa", "cc-by-nc", "cc-by-nc-sa", "cc-by-nd", "cc-by-nc-nd"],
     pageSize: Number(env.PAGE_SIZE) || DEFAULT_PAGE_SIZE
   };
-  // Always the freshest-first seed query (never id_above): the point of this
-  // adapter is one shared "latest snapshot" for every caller, not per-client
-  // incremental pagination — see the file header.
-  const upstreamUrl = buildQueryUrl(options, null);
+}
 
+// One page's fetch: its own timeout/abort and the real User-Agent a browser
+// fetch can't set (see the file header). Used as fetchAllObservationsInWindow's
+// fetchImpl so every page of a multi-page refresh gets the same treatment.
+async function fetchOnePage(url, env) {
   const controller = new AbortController();
   const timeoutMs = Number(env.UPSTREAM_TIMEOUT_MS) || DEFAULT_UPSTREAM_TIMEOUT_MS;
   const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    return await fetch(upstreamUrl, {
+    return await fetch(url, {
       headers: { Accept: "application/json", "User-Agent": USER_AGENT },
       signal: controller.signal
     });
@@ -136,40 +140,38 @@ async function staleFallback(cache, errorCode, extraHeaders) {
 let inFlightRefresh = null;
 
 async function refreshContract(env, cache) {
-  let upstreamResponse;
+  const options = buildUpstreamOptions(env);
+
+  let outcome;
   try {
-    upstreamResponse = await fetchUpstream(env);
+    outcome = await fetchAllObservationsInWindow(options, (url) => fetchOnePage(url, env));
   } catch (error) {
     log("upstream-network-error", { message: error.message });
     return { ok: false, reason: "upstream-unavailable" };
   }
 
-  if (upstreamResponse.status === 429) {
-    const retryAfter = upstreamResponse.headers.get("Retry-After") || "60";
-    log("upstream-rate-limited", { retryAfter });
-    return { ok: false, reason: "rate-limited", retryAfter };
-  }
+  if (!outcome.ok) {
+    if (outcome.reason === "http-error") {
+      if (outcome.response.status === 429) {
+        const retryAfter = outcome.response.headers.get("Retry-After") || "60";
+        log("upstream-rate-limited", { retryAfter, pagesFetched: outcome.pagesFetched });
+        return { ok: false, reason: "rate-limited", retryAfter };
+      }
+      log("upstream-error", { status: outcome.response.status, pagesFetched: outcome.pagesFetched });
+      return { ok: false, reason: "upstream-error" };
+    }
 
-  if (!upstreamResponse.ok) {
-    log("upstream-error", { status: upstreamResponse.status });
-    return { ok: false, reason: "upstream-error" };
-  }
+    if (outcome.reason === "invalid-json") {
+      log("upstream-invalid-json", { pagesFetched: outcome.pagesFetched });
+      return { ok: false, reason: "invalid-upstream-response" };
+    }
 
-  let payload;
-  try {
-    payload = await upstreamResponse.json();
-  } catch {
-    log("upstream-invalid-json");
-    return { ok: false, reason: "invalid-upstream-response" };
-  }
-
-  if (!Array.isArray(payload.results)) {
-    log("upstream-unexpected-shape");
+    log("upstream-unexpected-shape", { pagesFetched: outcome.pagesFetched });
     return { ok: false, reason: "unexpected-upstream-shape" };
   }
 
-  const mapped = payload.results.map(mapRawObservationToContract);
-  const numericIds = payload.results.map((raw) => Number(raw && raw.id)).filter((id) => Number.isFinite(id));
+  const mapped = outcome.results.map(mapRawObservationToContract);
+  const numericIds = outcome.results.map((raw) => Number(raw && raw.id)).filter((id) => Number.isFinite(id));
   const cursor = numericIds.length > 0 ? String(Math.max(...numericIds)) : "";
 
   const contract = {
@@ -187,7 +189,7 @@ async function refreshContract(env, cache) {
     cache.put(STALE_BACKUP_KEY_URL, staleBackupResponse.clone())
   ]);
 
-  log("cache-miss-refreshed", { count: contract.observations.length });
+  log("cache-miss-refreshed", { count: contract.observations.length, pagesFetched: outcome.pagesFetched });
   return { ok: true, contract, cacheSeconds };
 }
 

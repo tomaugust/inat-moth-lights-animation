@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 
-import { CONNECTION_STATES, InatClient, buildQueryUrl, mapRawObservationToContract } from "../../src/inaturalist-client.js";
+import {
+  CONNECTION_STATES,
+  InatClient,
+  MAX_WINDOW_PAGES,
+  buildQueryUrl,
+  fetchAllObservationsInWindow,
+  mapRawObservationToContract
+} from "../../src/inaturalist-client.js";
 
 function jsonResponse(body, { status = 200, headers = {} } = {}) {
   return {
@@ -160,6 +167,119 @@ describe("buildQueryUrl", () => {
         `expected the 24h default for lookbackHours=${badValue}`
       );
     }
+  });
+});
+
+describe("fetchAllObservationsInWindow", () => {
+  const options = { taxonId: 47157, placeId: 6857, photoLicenses: ["cc0"], pageSize: 2 };
+
+  function page(results) {
+    return jsonResponse({ total_results: results.length, results });
+  }
+
+  it("returns a single page's results when it's short (window exhausted)", async () => {
+    const calls = [];
+    const fetchImpl = async (url) => {
+      calls.push(url);
+      return page([{ id: 1 }]);
+    };
+
+    const outcome = await fetchAllObservationsInWindow(options, fetchImpl);
+
+    assert.equal(outcome.ok, true);
+    assert.deepEqual(outcome.results.map((r) => r.id), [1]);
+    assert.equal(outcome.pagesFetched, 1);
+    assert.equal(calls.length, 1);
+    assert.doesNotMatch(calls[0], /id_above/);
+  });
+
+  it("keeps paginating via id_above until a page is short, combining every page's results", async () => {
+    const pages = [
+      [{ id: 1 }, { id: 2 }],
+      [{ id: 3 }, { id: 4 }],
+      [{ id: 5 }]
+    ];
+    const calls = [];
+    const fetchImpl = async (url) => {
+      calls.push(url);
+      return page(pages.shift());
+    };
+
+    const outcome = await fetchAllObservationsInWindow(options, fetchImpl);
+
+    assert.equal(outcome.ok, true);
+    assert.deepEqual(outcome.results.map((r) => r.id), [1, 2, 3, 4, 5]);
+    assert.equal(outcome.pagesFetched, 3);
+    assert.equal(calls.length, 3);
+    assert.doesNotMatch(calls[0], /id_above/);
+    assert.match(calls[1], /id_above=2/);
+    assert.match(calls[2], /id_above=4/);
+    calls.forEach((url) => {
+      assert.match(url, /order_by=id/);
+      assert.match(url, /order=asc/);
+    });
+  });
+
+  it("stops at maxPages even if every page comes back full, so a single refresh can't run away", async () => {
+    let nextId = 1;
+    const fetchImpl = async () => {
+      const results = Array.from({ length: options.pageSize }, () => ({ id: nextId++ }));
+      return page(results);
+    };
+
+    const outcome = await fetchAllObservationsInWindow(options, fetchImpl, 3);
+
+    assert.equal(outcome.ok, true);
+    assert.equal(outcome.pagesFetched, 3);
+    assert.equal(outcome.results.length, 3 * options.pageSize);
+  });
+
+  it("defaults maxPages to the exported MAX_WINDOW_PAGES constant", () => {
+    assert.equal(MAX_WINDOW_PAGES, 25);
+  });
+
+  it("stops and discards accumulated results the moment a page's HTTP response fails", async () => {
+    const calls = [];
+    const fetchImpl = async (url) => {
+      calls.push(url);
+      if (calls.length === 1) {
+        return page([{ id: 1 }, { id: 2 }]);
+      }
+      return jsonResponse({}, { status: 429, headers: { "Retry-After": "30" } });
+    };
+
+    const outcome = await fetchAllObservationsInWindow(options, fetchImpl);
+
+    assert.equal(outcome.ok, false);
+    assert.equal(outcome.reason, "http-error");
+    assert.equal(outcome.response.status, 429);
+    assert.equal(outcome.response.headers.get("Retry-After"), "30");
+    assert.equal(outcome.pagesFetched, 1, "the first successful page shouldn't count the failing one");
+  });
+
+  it("reports invalid-json when a page's body doesn't parse", async () => {
+    const fetchImpl = async () => ({
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      json: async () => {
+        throw new SyntaxError("Unexpected token");
+      }
+    });
+
+    const outcome = await fetchAllObservationsInWindow(options, fetchImpl);
+
+    assert.equal(outcome.ok, false);
+    assert.equal(outcome.reason, "invalid-json");
+  });
+
+  it("reports unexpected-shape when a page has no results array", async () => {
+    const fetchImpl = async () => jsonResponse({ total_results: 0 });
+
+    const outcome = await fetchAllObservationsInWindow(options, fetchImpl);
+
+    assert.equal(outcome.ok, false);
+    assert.equal(outcome.reason, "unexpected-shape");
   });
 });
 

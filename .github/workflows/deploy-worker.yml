@@ -91,7 +91,11 @@ jobs:
           attempts=3
           for attempt in $(seq 1 "$attempts"); do
             echo "Attempt $attempt/$attempts: checking $url"
-            status=$(curl -sS --max-time 15 "$url" -o response.json -w '%{http_code}') || true
+            # A cold-cache refresh now paginates through the whole 24h
+            # window (fetchAllObservationsInWindow) rather than a single
+            # page, so it can genuinely take several seconds (~6s measured
+            # against real data) instead of the old single-request latency.
+            status=$(curl -sS --max-time 45 "$url" -o response.json -w '%{http_code}') || true
             echo "HTTP status: ${status:-<request failed>}"
             cat response.json 2>/dev/null || echo "(no response body)"
             echo

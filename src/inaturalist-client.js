@@ -108,8 +108,7 @@ export function mapRawObservationToContract(raw) {
   };
 }
 
-export function buildQueryUrl(options, cursor) {
-  const params = new URLSearchParams();
+function setSharedParams(params, options) {
   params.set("taxon_id", String(options.taxonId));
   // place_id (not a lat/lng bounding box) is the documented way to scope
   // /v1/observations to a place: "Must be observed within the place with
@@ -126,6 +125,11 @@ export function buildQueryUrl(options, cursor) {
   params.set("photo_license", options.photoLicenses.join(","));
   params.set("per_page", String(options.pageSize));
   params.set("fields", FIELDS);
+}
+
+export function buildQueryUrl(options, cursor) {
+  const params = new URLSearchParams();
+  setSharedParams(params, options);
 
   if (cursor) {
     params.set("id_above", String(cursor));
@@ -137,6 +141,86 @@ export function buildQueryUrl(options, cursor) {
   }
 
   return `${API_BASE}?${params.toString()}`;
+}
+
+// Ascending-by-id, optionally starting after afterId — the single ordering
+// used for every page of a full-window fetch (see fetchAllObservationsInWindow
+// below), never mixed with buildQueryUrl's freshest-first single-page mode,
+// so consecutive pages can never skip or re-cover the same records.
+function buildWindowPageUrl(options, afterId) {
+  const params = new URLSearchParams();
+  setSharedParams(params, options);
+  params.set("order_by", "id");
+  params.set("order", "asc");
+  if (afterId !== null && afterId !== undefined) {
+    params.set("id_above", String(afterId));
+  }
+  return `${API_BASE}?${params.toString()}`;
+}
+
+// Hard cap on how many pages a single fetchAllObservationsInWindow call will
+// walk, so a single refresh can never balloon into unbounded upstream
+// request volume even if in-window activity spikes far beyond today's
+// measured rate (~1,400 records/24h at per_page=200 → ~7 pages). 25 pages
+// (up to 5,000 records at the API's 200-per-page ceiling) comfortably covers
+// that with headroom, while still being a fixed, known worst case.
+export const MAX_WINDOW_PAGES = 25;
+
+// Walks every page of the created_d1-bounded window in ascending id order,
+// accumulating raw results, so a caller gets everything in the last
+// lookbackHours instead of just the newest per_page records. Stops once a
+// page returns fewer than a full page (the window is exhausted) or maxPages
+// is hit.
+//
+// Returns { ok: true, results, pagesFetched } on a clean run. Returns
+// { ok: false, reason, pagesFetched, response? } the moment any page fails —
+// reason is "http-error" (response.ok is false; the Response is included so
+// a caller can inspect status/headers, e.g. a 429's Retry-After),
+// "invalid-json" (the page's body didn't parse), or "unexpected-shape" (no
+// results array). A mid-pagination failure (e.g. a 429 on page 4 of 7)
+// discards what was already fetched rather than silently caching a partial
+// window as if it were complete — the caller's existing stale-fallback path
+// (a full, previously-cached window) is a safer answer than a truncated
+// new one.
+export async function fetchAllObservationsInWindow(options, fetchImpl, maxPages = MAX_WINDOW_PAGES) {
+  const allRaw = [];
+  let afterId = null;
+  let pagesFetched = 0;
+
+  for (let page = 0; page < maxPages; page += 1) {
+    const url = buildWindowPageUrl(options, afterId);
+    const response = await fetchImpl(url);
+
+    if (!response.ok) {
+      return { ok: false, reason: "http-error", response, pagesFetched };
+    }
+
+    let payload;
+    try {
+      payload = await response.json();
+    } catch {
+      return { ok: false, reason: "invalid-json", pagesFetched };
+    }
+
+    if (!Array.isArray(payload.results)) {
+      return { ok: false, reason: "unexpected-shape", pagesFetched };
+    }
+
+    pagesFetched += 1;
+    const results = payload.results;
+    if (results.length === 0) {
+      break;
+    }
+
+    allRaw.push(...results);
+    const lastId = results[results.length - 1].id;
+    if (results.length < options.pageSize || lastId === afterId) {
+      break;
+    }
+    afterId = lastId;
+  }
+
+  return { ok: true, results: allRaw, pagesFetched };
 }
 
 export class InatClient {

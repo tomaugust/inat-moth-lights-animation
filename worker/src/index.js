@@ -3,12 +3,16 @@
 // Sits between every visitor's browser and the real iNaturalist API. Instead
 // of caching per visitor cursor (which wouldn't collapse concurrent
 // requests), it always asks upstream for the freshest page of the configured
-// taxon scope and caches that ONE response for every caller for a short,
-// shared TTL — so N concurrent browsers within that window cost exactly one
-// upstream request, not N. Each client's own ObservationQueue (see
-// src/observation-queue.js) already deduplicates by observation id, so
-// repeatedly handing out "the latest snapshot" is exactly what a shared,
-// recently-uploaded-observations feed should do.
+// taxon scope and caches that response for every caller hitting the same
+// Cloudflare datacenter for a shared TTL — so N concurrent browsers served by
+// the same colo within that window cost exactly one upstream request, not N.
+// caches.default is per-colo, not a single global cache: with traffic spread
+// across multiple Cloudflare datacenters, actual upstream volume is roughly
+// (requests per TTL window) PER COLO seeing traffic, not one total — see the
+// CACHE_SECONDS choice below and in wrangler.toml. Each client's own
+// ObservationQueue (see src/observation-queue.js) already deduplicates by
+// observation id, so repeatedly handing out "the latest snapshot" is exactly
+// what a shared, recently-uploaded-observations feed should do.
 //
 // Reuses the same raw-v2-to-contract mapping and query-building the Phase 3
 // direct client uses, and the same validation/normalization the frontend
@@ -21,10 +25,15 @@ const DEFAULT_TAXON_ID = 47157;
 // against GET /v1/places/autocomplete?q=United%20Kingdom.
 const DEFAULT_PLACE_ID = 6857;
 const DEFAULT_PAGE_SIZE = 200;
-// research/phase-0.md: "A 30 to 60 second shared cache is much more
-// conservative than the approximately one-request-per-second recommended
-// maximum."
-const DEFAULT_CACHE_SECONDS = 45;
+// research/phase-0.md originally reasoned "a 30 to 60 second shared cache is
+// much more conservative than the approximately one-request-per-second
+// recommended maximum" — true only if this were one global cache. Since
+// caches.default is actually per-Cloudflare-datacenter (see the file header),
+// realistic worst-case volume is that per-window request repeated across
+// however many colos see traffic at once, not a single one worldwide. 300s
+// keeps that realistic worst case well under the ~1 req/s ceiling even
+// spread across several colos, at the cost of data being up to 5 minutes old.
+const DEFAULT_CACHE_SECONDS = 300;
 const DEFAULT_UPSTREAM_TIMEOUT_MS = 15000;
 const USER_AGENT = "inat-moth-lights-adapter/1.0 (+https://github.com/tomaugust/inat-moth-lights-animation)";
 const CACHE_KEY_URL = "https://inat-moth-lights-adapter.internal/observations";

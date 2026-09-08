@@ -1,31 +1,52 @@
 import { config, setConfig } from "./config-store.js";
-import {
-  clampAnimationTime,
-  createMoths,
-  drawScene,
-  formatClockTime,
-  normalizeAnimationTime,
-  projectMoth
-} from "./animation-engine.js";
+import { drawScene, projectMoth } from "./animation-engine.js";
 import { setupAudio } from "./audio-engine.js";
+import { ObservationQueue } from "./observation-queue.js";
+import { MothStore } from "./moth-store.js";
+import { InatClient } from "./inaturalist-client.js";
+
+// The production site's one and only data source: the deployed Cloudflare
+// Worker adapter (worker/src/index.js), never api.inaturalist.org directly —
+// that's what gives every visitor a real User-Agent and a shared cache
+// instead of N independent browsers hammering iNaturalist. The Worker is
+// currently UK-only (its PLACE_ID is a fixed deploy-time value, not
+// per-request), so this site is UK-only for now too; per-visitor country
+// (src/geolocation.js) needs the Worker to accept and cache by place_id
+// first — see README.md.
+const WORKER_OBSERVATIONS_URL = "https://inat-moth-lights-adapter.tomaugust1985.workers.dev/observations";
+
+function getStorage() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function formatObservedTime(observedAtMs) {
+  if (!Number.isFinite(observedAtMs)) {
+    return "";
+  }
+  return new Date(observedAtMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
 
 function setupOrbitAnimation(initialPresentationMode = "normal") {
   const canvas = document.getElementById("orbit-canvas");
   const context = canvas.getContext("2d");
-  const scrubber = document.getElementById("timeline-scrubber");
-  const timeReadout = document.getElementById("time-readout");
   const activeMothsToggle = document.getElementById("active-moths-toggle");
   const activeMothsPanel = document.getElementById("active-moths-panel");
   const activeMothsList = document.getElementById("active-moths-list");
-  const audio = setupAudio(config.moths);
-  let moths = [];
-  let animationTime = 0;
+  const audio = setupAudio();
+
+  const queue = new ObservationQueue({ storage: getStorage(), storageKey: "inat-moth-lights:live-queue" });
+  const store = new MothStore();
+  // A false autoplay is the one remaining kill-switch: the scene loads (just
+  // the light, in whichever presentation mode) but never admits a moth. Real
+  // network polling still runs in the background regardless — see the
+  // launch-screen note on why that's deliberate.
+  const isLive = config.animation.autoplay !== false;
+
   let lastTimestamp = null;
-  let isPlaying = config.animation.autoplay && initialPresentationMode !== "light-only";
-  let wasPlayingBeforeScrub = false;
-  let wasPlayingBeforeHover = false;
-  let isScrubbing = false;
-  let isHoverPaused = false;
   let presentationMode = initialPresentationMode;
   const canHover = window.matchMedia
     ? window.matchMedia("(hover: hover) and (pointer: fine)").matches
@@ -37,10 +58,8 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   const activeCardRecords = new Map();
   const cardExitDelay = 1600;
 
-  function updateTimelineControls() {
-    scrubber.max = String(config.animation.duration);
-    scrubber.value = String(animationTime);
-    timeReadout.textContent = formatClockTime(animationTime);
+  function nowSeconds() {
+    return performance.now() / 1000;
   }
 
   function activeProjectedKnownMoths() {
@@ -48,29 +67,34 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     const height = canvas.clientHeight;
     const cx = width / 2;
     const cy = height * config.scene.centerYRatio;
+    const t = nowSeconds();
 
-    return moths
-      .map((moth) => projectMoth(moth, animationTime, width, height, cx, cy, false))
+    return store.getActiveMoths()
+      .map((moth) => projectMoth(moth, t, width, height, cx, cy, false))
       .filter((moth) => moth && moth.species !== "unknown" && moth.opacity > 0.02)
       .sort((a, b) => a.entryTime - b.entryTime);
   }
 
-  function setFocusedMoth(mothId, pausePlayback = true) {
+  // Hovering/focusing a moth no longer pauses a global clock (there isn't
+  // one) — it uses MothStore's own focus/grace-period mechanism so the
+  // specific moth being inspected is kept alive a little past its natural
+  // exit, while every other moth (and the live feed itself) keeps moving.
+  function setFocusedMoth(mothId) {
     hoverState.hoveredMothId = mothId;
     canvas.style.cursor = mothId ? "pointer" : "default";
-
-    if (mothId && pausePlayback && !isHoverPaused && !isScrubbing) {
-      wasPlayingBeforeHover = isPlaying;
-      isPlaying = false;
-      isHoverPaused = true;
-      lastTimestamp = null;
+    if (mothId) {
+      store.focusMoth(mothId, nowSeconds());
     }
+  }
 
-    if (!mothId && isHoverPaused && !isScrubbing) {
-      isPlaying = wasPlayingBeforeHover;
-      lastTimestamp = null;
-      isHoverPaused = false;
-    }
+  function clearHover() {
+    hoverState.hoveredMothId = null;
+    canvas.style.cursor = "default";
+    store.clearFocus();
+  }
+
+  function redrawNow() {
+    drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, performance.now(), nowSeconds(), hoverState, presentationMode);
   }
 
   // The card is a wrapper around two independent controls, not one big
@@ -145,7 +169,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
       } else {
         setFocusedMoth(card.dataset.mothId);
       }
-      drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState, presentationMode);
+      redrawNow();
     });
 
     requestAnimationFrame(() => card.classList.remove("is-entering"));
@@ -172,7 +196,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
       name.textContent = displayName;
     }
     if (time) {
-      time.textContent = formatClockTime(moth.entryTime) + " - " + formatClockTime(moth.exitTime);
+      time.textContent = formatObservedTime(moth.observedAtMs);
     }
     if (swatch) {
       swatch.style.background = moth.color;
@@ -294,51 +318,56 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     canvas.width = Math.max(1, Math.floor(rect.width * scale));
     canvas.height = Math.max(1, Math.floor(rect.height * scale));
     context.setTransform(scale, 0, 0, scale, 0, 0);
-    moths = createMoths(config, rect.width, rect.height);
   }
 
-  function preloadSpeciesImages() {
-    config.species.forEach((species) => {
-      const imageURL = species.imageURL;
-      if (!imageURL || hoverState.imageCache.has(imageURL)) {
-        return;
-      }
+  // Preloads one real observation photo the first time it's admitted (rather
+  // than a fixed species list, which live taxa have no relationship to), so
+  // the canvas-drawn hover popout's thumbnail is ready by the time anyone
+  // actually hovers it. iNaturalist's photo host sends CORS headers
+  // (confirmed against inaturalist-open-data.s3.amazonaws.com), so
+  // crossOrigin="anonymous" loads it without tainting the canvas.
+  function preloadMothImage(imageURL) {
+    if (!imageURL || hoverState.imageCache.has(imageURL)) {
+      return;
+    }
 
-      const image = new Image();
-      const record = {
-        image,
-        loaded: false,
-        failed: false
-      };
-
-      hoverState.imageCache.set(imageURL, record);
-      image.crossOrigin = "anonymous";
-      image.addEventListener("load", () => {
-        record.loaded = true;
-        drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState, presentationMode);
-      });
-      image.addEventListener("error", () => {
-        record.failed = true;
-      });
-      image.src = imageURL;
+    const image = new Image();
+    const record = { image, loaded: false, failed: false };
+    hoverState.imageCache.set(imageURL, record);
+    image.crossOrigin = "anonymous";
+    image.addEventListener("load", () => {
+      record.loaded = true;
+      redrawNow();
     });
+    image.addEventListener("error", () => {
+      record.failed = true;
+    });
+    image.src = imageURL;
   }
 
   function tick(timestamp) {
     if (lastTimestamp === null) {
       lastTimestamp = timestamp;
     }
-
-    const deltaSeconds = ((timestamp - lastTimestamp) / 1000) * config.animation.playbackSpeed;
+    const deltaSeconds = (timestamp - lastTimestamp) / 1000;
     lastTimestamp = timestamp;
+    const t = nowSeconds();
 
-    if (isPlaying) {
-      animationTime = normalizeAnimationTime(animationTime + deltaSeconds);
-      audio.update(animationTime, deltaSeconds);
+    if (isLive) {
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      const due = queue.peekDue(t);
+      due.forEach((observation) => {
+        if (store.addObservation(observation, t, width, height)) {
+          queue.acknowledge(observation.id, t);
+          preloadMothImage(observation.imageUrl);
+        }
+      });
+      store.removeExpired(t);
     }
 
-    drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, timestamp, animationTime, hoverState, presentationMode);
-    updateTimelineControls();
+    drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, timestamp, t, hoverState, presentationMode);
+    audio.update(store.getActiveMoths(), deltaSeconds);
     updateActiveMothsPanel();
     requestAnimationFrame(tick);
   }
@@ -348,9 +377,10 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     const height = canvas.clientHeight;
     const cx = width / 2;
     const cy = height * config.scene.centerYRatio;
+    const t = nowSeconds();
 
-    return moths
-      .map((moth) => projectMoth(moth, animationTime, width, height, cx, cy, false))
+    return store.getActiveMoths()
+      .map((moth) => projectMoth(moth, t, width, height, cx, cy, false))
       .filter((moth) => moth && moth.species !== "unknown" && moth.opacity > 0.05)
       .map((moth) => {
         const distance = Math.hypot(pointerX - moth.x, pointerY - moth.y);
@@ -369,18 +399,6 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
 
         return b.moth.depth - a.moth.depth;
       })[0]?.moth || null;
-  }
-
-  function clearHover() {
-    hoverState.hoveredMothId = null;
-    canvas.style.cursor = "default";
-
-    if (isHoverPaused && !isScrubbing) {
-      isPlaying = wasPlayingBeforeHover;
-      lastTimestamp = null;
-    }
-
-    isHoverPaused = false;
   }
 
   function updateHover(event) {
@@ -415,55 +433,13 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
 
     if (!tappedMoth || tappedMoth.id === hoverState.hoveredMothId) {
       clearHover();
-      drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState, presentationMode);
+      redrawNow();
       return;
     }
 
     setFocusedMoth(tappedMoth.id);
-
-    drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState, presentationMode);
+    redrawNow();
   }
-
-  scrubber.addEventListener("pointerdown", () => {
-    isScrubbing = true;
-    wasPlayingBeforeScrub = isHoverPaused ? wasPlayingBeforeHover : isPlaying;
-    isPlaying = false;
-  });
-
-  scrubber.addEventListener("input", () => {
-    animationTime = clampAnimationTime(Number(scrubber.value));
-    drawScene(context, moths, canvas.clientWidth, canvas.clientHeight, performance.now(), animationTime, hoverState, presentationMode);
-    updateTimelineControls();
-  });
-
-  scrubber.addEventListener("pointerup", () => {
-    isScrubbing = false;
-    if (hoverState.hoveredMothId) {
-      wasPlayingBeforeHover = wasPlayingBeforeScrub;
-      isPlaying = false;
-      isHoverPaused = true;
-    } else {
-      isPlaying = wasPlayingBeforeScrub;
-      isHoverPaused = false;
-    }
-
-    lastTimestamp = null;
-  });
-
-  scrubber.addEventListener("change", () => {
-    animationTime = clampAnimationTime(Number(scrubber.value));
-    isScrubbing = false;
-    if (hoverState.hoveredMothId) {
-      wasPlayingBeforeHover = wasPlayingBeforeScrub;
-      isPlaying = false;
-      isHoverPaused = true;
-    } else {
-      isPlaying = wasPlayingBeforeScrub;
-      isHoverPaused = false;
-    }
-
-    lastTimestamp = null;
-  });
 
   if (activeMothsToggle && activeMothsPanel) {
     activeMothsToggle.addEventListener("click", () => {
@@ -484,17 +460,32 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   canvas.addEventListener("pointerdown", handleTapFocus);
   window.addEventListener("resize", resizeCanvas);
   resizeCanvas();
-  preloadSpeciesImages();
-  updateTimelineControls();
+
+  // Real network polling starts as soon as the scene is constructed —
+  // including during the brief light-only preview before the launch screen
+  // finishes fading — so there's already a backlog of real observations
+  // ready to render the instant presentationMode flips to "normal", rather
+  // than starting the fetch only after that reveal completes.
+  const client = new InatClient({
+    buildUrl: () => WORKER_OBSERVATIONS_URL,
+    upstreamShape: "adapter-contract",
+    getCursor: () => queue.cursor || null,
+    onStateChange: (state) => {
+      if (state === "fatal-schema-error") {
+        console.error("iNaturalist adapter returned an unexpected response shape; live updates have stopped.");
+      }
+    },
+    onBatch: (payload) => {
+      queue.enqueue(payload.observations, payload.cursor);
+    }
+  });
+  client.start();
+
   requestAnimationFrame(tick);
 
   return {
     setPresentationMode(mode) {
       presentationMode = mode;
-      if (mode !== "light-only" && !isScrubbing && !isHoverPaused) {
-        isPlaying = config.animation.autoplay;
-        lastTimestamp = null;
-      }
     }
   };
 }

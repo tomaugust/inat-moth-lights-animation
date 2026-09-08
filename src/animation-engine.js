@@ -656,6 +656,20 @@ function drawCoverImage(context, image, x, y, width, height) {
   context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
 }
 
+// entryTime/exitTime are seconds on the animation's own clock — a monotonic
+// performance.now()-based clock for live moths, with no fixed relationship
+// to a calendar time, so formatClockTime(entryTime) would print a
+// meaningless value for them. observedAtMs (a real epoch timestamp,
+// carried through by moth-store.js) is used when present; the old
+// entryTime/exitTime range remains the fallback for moths that don't carry
+// it (e.g. the static demo config's fixed timeline).
+function formatActiveRange(moth) {
+  if (Number.isFinite(moth.observedAtMs)) {
+    return new Date(moth.observedAtMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+  return formatClockTime(moth.entryTime) + " - " + formatClockTime(moth.exitTime);
+}
+
 function drawHoverPopout(context, moth, width, height, animationTime, imageCache) {
   if (!moth) {
     return;
@@ -665,7 +679,7 @@ function drawHoverPopout(context, moth, width, height, animationTime, imageCache
   const descriptionStyle = descriptionElement ? window.getComputedStyle(descriptionElement) : null;
   const fontSize = descriptionStyle ? parseFloat(descriptionStyle.fontSize) : 15;
   const speciesName = moth.speciesName || moth.label || moth.species || moth.id;
-  const activeRange = formatClockTime(moth.entryTime) + " - " + formatClockTime(moth.exitTime);
+  const activeRange = formatActiveRange(moth);
   const paddingX = 12;
   const paddingY = 9;
   const gap = 7;

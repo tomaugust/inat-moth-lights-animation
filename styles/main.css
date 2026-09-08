@@ -67,6 +67,14 @@ canvas {
   z-index: 2;
 }
 
+/* The side panel (width 286px, its own opaque background) visually
+   overlaps the top-right heading when both are on screen at once — hide
+   the heading while the panel is open rather than let text collide with
+   it. */
+.canvas-shell:has(.active-moths-panel.is-open) .animation-heading {
+  opacity: 0;
+}
+
 .animation-heading h1 {
   color: #f5f1e8;
   font-size: clamp(1.25rem, 2.4vw, 2.35rem);
@@ -81,38 +89,6 @@ canvas {
   line-height: 1.35;
   margin: 0;
   opacity: 0.76;
-}
-
-.timeline-control {
-  align-items: stretch;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(14px, 2.4vw, 28px));
-  display: grid;
-  gap: 6px;
-  grid-template-columns: 1fr;
-  left: 50%;
-  max-width: calc(100vw - 32px);
-  position: fixed;
-  transform: translateX(-50%);
-  transition: opacity 620ms ease;
-  width: min(620px, calc(100vw - 32px));
-  z-index: 10;
-}
-
-.time-readout {
-  font-size: clamp(1rem, 1.7vw, 1.45rem);
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  letter-spacing: 0;
-  opacity: 0.82;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.timeline-control input[type="range"] {
-  accent-color: #f5f1e8;
-  cursor: pointer;
-  height: 24px;
-  width: 100%;
 }
 
 .sound-toggle {
@@ -143,7 +119,6 @@ body.launch-screen-active.launch-light-visible canvas {
 }
 
 body.launch-screen-active:not(.launch-controls-visible) .animation-heading,
-body.launch-screen-active:not(.launch-controls-visible) .timeline-control,
 body.launch-screen-active:not(.launch-controls-visible) .sound-toggle,
 body.launch-screen-active:not(.launch-controls-visible) .active-moths-toggle,
 body.launch-screen-active:not(.launch-controls-visible) .active-moths-panel {
@@ -549,13 +524,5 @@ body.launch-screen-active:not(.launch-controls-visible) .active-moths-panel {
     max-width: calc(100vw - 32px);
     right: 16px;
     top: 16px;
-  }
-
-  .timeline-control {
-    gap: 4px;
-  }
-
-  .time-readout {
-    text-align: center;
   }
 }

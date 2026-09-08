@@ -15,7 +15,7 @@ function noteToFrequency(note) {
   return 440 * Math.pow(2, (midi - 69) / 12);
 }
 
-function setupAudio(moths) {
+function setupAudio() {
   const button = document.getElementById("sound-toggle");
   const settings = config.audio || {};
   const enabledByConfig = settings.enabled !== false;
@@ -244,10 +244,10 @@ function setupAudio(moths) {
     noise.stop(now + noiseDuration);
   }
 
-  function pickSpeciesNote(species) {
-    const notes = Array.isArray(species.chimeNotes) && species.chimeNotes.length > 0
-      ? species.chimeNotes
-      : species.chimeNote ? [species.chimeNote] : [];
+  function pickMothNote(moth) {
+    const notes = Array.isArray(moth.chimeNotes) && moth.chimeNotes.length > 0
+      ? moth.chimeNotes
+      : moth.chimeNote ? [moth.chimeNote] : [];
 
     if (notes.length < 1) {
       return "";
@@ -256,34 +256,44 @@ function setupAudio(moths) {
     return notes[Math.floor(Math.random() * notes.length)];
   }
 
-  function activeSpeciesCountsAt(animationTime) {
-    const activeSpeciesCounts = new Map();
-    moths.forEach((moth) => {
-      if (animationTime >= moth.entryTime && animationTime <= moth.exitTime) {
-        activeSpeciesCounts.set(moth.species, (activeSpeciesCounts.get(moth.species) || 0) + 1);
-      }
+  function countBySpecies(activeMoths) {
+    const counts = new Map();
+    activeMoths.forEach((moth) => {
+      counts.set(moth.species, (counts.get(moth.species) || 0) + 1);
     });
-    return activeSpeciesCounts;
+    return counts;
   }
 
-  function update(animationTime, deltaSeconds) {
+  // Driven by whatever moths are actually active right now (each one already
+  // carries its own chimeNote(s), assigned deterministically per taxon by
+  // species-style.js) rather than a fixed species list cross-referenced by
+  // id — a live feed's taxa are unbounded, so there is no fixed list to
+  // cross-reference against.
+  function update(activeMoths, deltaSeconds) {
     if (!isEnabled || !audioContext || audioContext.state !== "running") {
       return;
     }
 
-    const activeSpeciesCounts = activeSpeciesCountsAt(animationTime);
+    const counts = countBySpecies(activeMoths);
     const probability = Math.max(0, settings.chimeProbability ?? 0.3);
     const minInterval = Math.max(0.05, settings.minInterval ?? 0.85);
+    const consideredSpecies = new Set();
 
-    config.species.forEach((species) => {
-      const note = pickSpeciesNote(species);
-      const activeCount = activeSpeciesCounts.get(species.id) || 0;
+    activeMoths.forEach((moth) => {
+      // One chime roll per distinct species per tick, not one per moth.
+      if (consideredSpecies.has(moth.species)) {
+        return;
+      }
+      consideredSpecies.add(moth.species);
+
+      const note = pickMothNote(moth);
+      const activeCount = counts.get(moth.species) || 0;
       if (activeCount < 1 || !note) {
         return;
       }
 
       const audioTime = audioContext.currentTime;
-      const earliest = nextChimeAt.get(species.id) || 0;
+      const earliest = nextChimeAt.get(moth.species) || 0;
       if (audioTime < earliest) {
         return;
       }
@@ -291,10 +301,10 @@ function setupAudio(moths) {
       const countMultiplier = Math.min(12, activeCount);
       const chance = 1 - Math.exp(-probability * countMultiplier * Math.max(0, deltaSeconds));
       if (Math.random() < chance) {
-        const size = Math.max(1, species.size || 6);
+        const size = Math.max(1, moth.size || 6);
         const intensity = Math.max(0.35, Math.min(1, 8 / size));
         playChime(note, intensity);
-        nextChimeAt.set(species.id, audioTime + minInterval + Math.random() * minInterval * 2.2);
+        nextChimeAt.set(moth.species, audioTime + minInterval + Math.random() * minInterval * 2.2);
       }
     });
   }

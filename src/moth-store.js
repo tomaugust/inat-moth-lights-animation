@@ -77,6 +77,11 @@ function buildLiveMoth(observation, style, isUnknown, entryTimeSeconds, canvasWi
     nodeDriftSpeed: style.nodeDriftSpeed,
     noiseSeed: seed,
     observationUrl: observation.observationUrl,
+    // Real wall-clock time the observation was uploaded/observed — entryTime/
+    // exitTime are monotonic seconds on the animation's own clock (no fixed
+    // relationship to a calendar time), so UI showing an actual time to the
+    // visitor (e.g. the active-moths card) needs this instead.
+    observedAtMs: observation.observedAtMs ?? observation.createdAtMs ?? null,
     orbitDirection: seededUnit(seed, 131) < 0.5 ? -1 : 1,
     place: observation.place,
     qualityGrade: observation.qualityGrade,

@@ -16,7 +16,7 @@ Phase 1 extracted the previous single-file, PowerShell-generated `index.html` in
 - `src/app.js` — DOM wiring, canvas controller, launch screen, and the bootstrap that fetches `config/site-config.json` and starts the animation.
 - `config/site-config.json` — the real animation/species/moth data currently shown on the site.
 
-`index.html` itself still has no live iNaturalist data behind it — it is the same static, fixed-timeline animation as before, just as source files instead of one generated file. The pieces below run alongside it, unused by the production page, in preparation for Phase 3+ swapping in a real API poller.
+**Update:** `index.html`/`src/app.js` no longer runs the static, fixed-timeline animation described below — see "Phase 5: production goes live" further down. The rest of this section (Phases 2-4) still accurately describes the components that live wiring is built from.
 
 Phase 2 added the live-data engine components, proven against the recorded fixtures from Phase 0 rather than a real API call:
 
@@ -38,9 +38,20 @@ Phase 4 adds the shared cache/API adapter — a Cloudflare Worker sitting betwee
 - `worker/wrangler.toml` — Cloudflare Worker config: allow-listed CORS origins, taxon scope, place scope (`PLACE_ID`, default `6857` = United Kingdom — an iNaturalist `place_id`, not a lat/lng bounding box), page size, cache TTL, upstream timeout, all as `[vars]` you can tune per-deployment.
 - `src/inaturalist-client.js` gained a `buildUrl`/`upstreamShape: "adapter-contract"` option so the exact same `InatClient` (state machine, backoff, overlap prevention — all unchanged) can point at a deployed adapter instead of iNaturalist directly, treating the response as the already-normalized contract instead of a raw v2 page.
 
-**Not yet deployed.** Deploying a Cloudflare Worker needs a real Cloudflare account/credentials, which this environment doesn't have — the code, tests and config are ready, but nobody has run `wrangler deploy` yet.
+**Deployed** at `https://inat-moth-lights-adapter.tomaugust1985.workers.dev` (see `.github/workflows/deploy-worker.yml`, which redeploys on every push to `main` touching `worker/**` or the shared client/adapter modules). `ALLOWED_ORIGINS` in `wrangler.toml` includes the site's real GitHub Pages origin (`https://tomaugust.github.io`) and `http://localhost:8080` for local dev.
 
-Update `ALLOWED_ORIGINS` in `wrangler.toml` first if your GitHub Pages URL or local dev port differ from the defaults. Once deployed, the production frontend can be pointed at it by constructing an `InatClient` with `buildUrl: () => "<your-worker-url>/observations"` and `upstreamShape: "adapter-contract"` — that wiring (and any production `index.html` changes) is intentionally not done yet, since pointing the live site at a URL that doesn't exist would break it.
+## Phase 5: production goes live
+
+`index.html`/`src/app.js` now runs the live pipeline instead of the old static, fixed-timeline animation: `InatClient` (in `upstreamShape: "adapter-contract"` mode, pointed at the deployed Worker above) feeds `ObservationQueue` feeds `MothStore`, driven by a real monotonic clock (`performance.now()/1000`) instead of the old looping `animationTime` — the same components Phase 2/3 already proved, just wired into the production page instead of the dev-only `live-demo.html`.
+
+What changed to make that work:
+- **The timeline scrubber is gone** — a live feed has no fixed length to scrub into. The active-moths side panel, hover popout, sound toggle and launch screen are unchanged.
+- **Hovering a moth no longer pauses a global clock** (there wasn't one to pause) — it uses `MothStore.focusMoth()`'s existing grace-period mechanism, so the inspected moth is kept alive a little past its natural exit while everything else, including the live feed, keeps moving.
+- **`src/audio-engine.js`** no longer cross-references a fixed `config.species` list (live taxa are unbounded); it now triggers chimes directly from whichever moths are actually active, using each one's own `chimeNote`/`chimeNotes` (already assigned deterministically per taxon by `species-style.js`).
+- **The active-moths card and canvas hover popout show the observation's real observed time** (`moth.observedAtMs`, carried through by `moth-store.js`) instead of a fictional entry/exit range on a clock that no longer exists.
+- **Real network polling starts as soon as the scene is constructed**, including during the brief light-only preview before the launch screen finishes fading, so there's already a backlog of real observations ready to render the instant the reveal completes.
+- **UK-only for now.** The Worker is a single shared cache hard-set to one `PLACE_ID` — it doesn't read anything from the client's request, so per-visitor country (`src/geolocation.js`, built earlier but not wired into `app.js`) can't do anything useful until the Worker accepts and caches by a `place_id` the client sends. That's a separate follow-up, not done here.
+- **`config/site-config.json`'s `species`/`moths` arrays are no longer read by `app.js`** (real per-taxon styling comes from `species-style.js`'s deterministic hash, not a curated list) but haven't been deleted from the file — left as a deliberate, separate cleanup decision rather than bundled into this change.
 
 There are two ways to deploy:
 
@@ -97,11 +108,11 @@ Unit tests (`test/unit/`) cover:
 No DOM or browser — and no real network request — is involved in any of the above.
 
 End-to-end tests (`test/e2e/`) spin up the zero-dependency static server in `scripts/dev-server.mjs` and drive the real pages with Playwright:
-- `site.test.js` — the production page: launch screen → animation start, the active-moths side panel populating, the sound toggle, and a check that nothing lands in the browser console or throws;
+- `site.test.js` — the production page, with the deployed Worker's URL intercepted (`page.route`) and answered with a canned adapter-contract response (never the real Worker or the real iNaturalist API): launch screen → live moth rendering, the active-moths side panel populating with a real thumbnail/observation link, the sound toggle, a check that nothing lands in the browser console or throws, and that the scene degrades gracefully (still renders, no thrown errors) when the adapter is unreachable;
 - `fixtures-demo.test.js` — the Phase 2 demo: the fixture loads and moths are admitted and drawn, and the active count both stays within `maxActiveMoths` and comes back down (proving expired moths are actually removed, not just capped);
 - `live-demo.test.js` — the Phase 3 demo with the real `api.inaturalist.org` request intercepted (`page.route`) and answered with a canned response: a normal poll renders moths with a `live` connection state, and a mocked 429 recovers without throwing.
 - `geolocation-country.test.js` — the same page's location resolution, with `navigator.geolocation` replaced by a deterministic fake (`test/helpers/geolocation.mjs`) and `places/nearby` mocked: a granted position resolves to and displays the matching country, and a denied one falls back to and displays the United Kingdom default.
-- `species-card-observation-link.test.js` — an active moth card shows the observation's thumbnail and a working `target="_blank"` link when the moth carries `imageURL`/`observationUrl`, and hides both for the default (data-less) demo config.
+- `species-card-observation-link.test.js` — the regression case `site.test.js`'s live-moth test doesn't cover: an observation with no photo/license data hides the card's thumbnail while still showing its (always-present, real) observation link, rather than a broken image or hiding both.
 
 Playwright needs a Chromium build. `npm ci && npx playwright install --with-deps chromium` (as CI does) downloads one; in an environment that already provides a compatible browser binary, point at it instead with `PLAYWRIGHT_CHROMIUM_PATH=/path/to/chromium npm run test:e2e` to skip the download.
 

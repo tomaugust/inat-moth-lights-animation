@@ -14,14 +14,30 @@
 //   the same batch, recovering safely if storage is unavailable or corrupt.
 import { hashString, seededUnit } from "./animation-engine.js";
 
+// Compresses the ~24h created_at span the Worker now fetches in full (see
+// fetchAllObservationsInWindow in inaturalist-client.js) into about one
+// minute of animation time: a real day plays out as a one-minute time-lapse
+// rather than at 1:1 real-time pace, which at today's ~1,300-1,400
+// records/24h would otherwise take the better part of a day to fully drain.
+// 1/1440 = 60 animation-seconds / 86400 real-seconds-per-day.
+export const DEFAULT_SOURCE_TIME_SCALE = 1 / 1440;
+
 const DEFAULT_OPTIONS = {
   seenIdCapacity: 2000,
   maxQueuedObservations: 500,
-  minReleaseIntervalSeconds: 0.75,
-  maxReleaseIntervalSeconds: 30,
+  // Absolute floor/ceiling on the *compressed* gap, after sourceTimeScale
+  // and jitter are applied. These must scale down together with
+  // DEFAULT_SOURCE_TIME_SCALE — the previous 1:1-real-time defaults (0.75s
+  // floor, 30s ceiling) were sized for un-scaled real-time gaps; left as-is
+  // they would swallow almost every compressed gap into the 0.75s floor
+  // (a typical real ~30s gap compresses to ~0.02s) and stretch a nominal
+  // one-minute replay back out to 15-20+ minutes, defeating the scale-down
+  // above entirely.
+  minReleaseIntervalSeconds: 0.05,
+  maxReleaseIntervalSeconds: 3,
   releaseJitterMin: 0.65,
   releaseJitterMax: 1.35,
-  sourceTimeScale: 1,
+  sourceTimeScale: DEFAULT_SOURCE_TIME_SCALE,
   maxCatchUpObservations: 50,
   storage: null,
   storageKey: "inat-moth-lights:observation-queue"

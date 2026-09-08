@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { ObservationQueue } from "../../src/observation-queue.js";
+import { DEFAULT_SOURCE_TIME_SCALE, ObservationQueue } from "../../src/observation-queue.js";
 
 function observation(id, createdAtMs) {
   return { id, createdAtMs, taxonId: null, place: "", imageUrl: "" };
@@ -104,6 +104,41 @@ describe("ObservationQueue.peekDue / acknowledge", () => {
 
     const secondPeek = queue.peekDue(0);
     assert.equal(secondPeek.length, 1, "it is offered again on the next call");
+  });
+});
+
+describe("ObservationQueue default pacing (one-minute-per-day time-lapse)", () => {
+  it("compresses a full real day's gap exactly to the release-interval ceiling", () => {
+    // 86400s (24h) * DEFAULT_SOURCE_TIME_SCALE (1/1440) = 60 pre-jitter —
+    // still far above the 3s ceiling even after the widest jitter (x0.65),
+    // so the clamped result is deterministically exactly 3s regardless of
+    // which observation id lands on which jitter value.
+    assert.equal(DEFAULT_SOURCE_TIME_SCALE * 86400, 60);
+
+    const queue = new ObservationQueue();
+    queue.enqueue([observation("a", 0), observation("b", 24 * 60 * 60 * 1000)]);
+
+    const firstDue = queue.peekDue(0);
+    assert.deepEqual(firstDue.map((item) => item.id), ["a"], "the first-ever release has no gap to pace");
+    queue.acknowledge("a", 0);
+
+    assert.deepEqual(queue.peekDue(2.99), [], "a full day's gap should not release before the 3s ceiling");
+    assert.deepEqual(queue.peekDue(3).map((item) => item.id), ["b"]);
+  });
+
+  it("compresses a small real gap up to the release-interval floor", () => {
+    // 10s * 1/1440 ≈ 0.0069s pre-jitter — still far below the 0.05s floor
+    // even after the narrowest jitter (x1.35), so the clamped result is
+    // deterministically exactly 0.05s regardless of jitter.
+    const queue = new ObservationQueue();
+    queue.enqueue([observation("a", 0), observation("b", 10000)]);
+
+    const firstDue = queue.peekDue(0);
+    assert.deepEqual(firstDue.map((item) => item.id), ["a"]);
+    queue.acknowledge("a", 0);
+
+    assert.deepEqual(queue.peekDue(0.049), [], "a 10s real gap should not release before the 0.05s floor");
+    assert.deepEqual(queue.peekDue(0.05).map((item) => item.id), ["b"]);
   });
 });
 

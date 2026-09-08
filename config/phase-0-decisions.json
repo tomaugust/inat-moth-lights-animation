@@ -37,11 +37,12 @@
     "minMothDurationSeconds": 4,
     "maxMothDurationSeconds": 10,
     "releaseMode": "source-time",
-    "sourceTimeScale": 1.0,
+    "sourceTimeScale": 0.0006944444444444445,
+    "sourceTimeScaleNote": "1/1440: compresses the ~24h created_at window fetchAllObservationsInWindow now fetches in full into about one minute of animation time, rather than 1:1 real-time pace.",
     "releaseJitterMin": 0.65,
     "releaseJitterMax": 1.35,
-    "minReleaseIntervalSeconds": 0.75,
-    "maxReleaseIntervalSeconds": 30,
+    "minReleaseIntervalSeconds": 0.05,
+    "maxReleaseIntervalSeconds": 3,
     "maxCatchUpObservations": 50,
     "burstPolicy": "sample-oldest-on-overflow-and-cap-catch-up"
   }

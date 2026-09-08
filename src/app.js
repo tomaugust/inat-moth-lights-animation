@@ -3,7 +3,7 @@ import { drawScene, projectMoth } from "./animation-engine.js";
 import { setupAudio } from "./audio-engine.js";
 import { ObservationQueue } from "./observation-queue.js";
 import { MothStore } from "./moth-store.js";
-import { InatClient } from "./inaturalist-client.js";
+import { CONNECTION_STATES, InatClient } from "./inaturalist-client.js";
 
 // The production site's one and only data source: the deployed Cloudflare
 // Worker adapter (worker/src/index.js), never api.inaturalist.org directly —
@@ -36,6 +36,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   const activeMothsToggle = document.getElementById("active-moths-toggle");
   const activeMothsPanel = document.getElementById("active-moths-panel");
   const activeMothsList = document.getElementById("active-moths-list");
+  const loadingStatus = document.getElementById("loading-status");
   const audio = setupAudio();
 
   const queue = new ObservationQueue({ storage: getStorage(), storageKey: "inat-moth-lights:live-queue" });
@@ -471,7 +472,14 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     upstreamShape: "adapter-contract",
     getCursor: () => queue.cursor || null,
     onStateChange: (state) => {
-      if (state === "fatal-schema-error") {
+      // STARTING is the synchronous initial state set the instant
+      // client.start() runs, before any network activity — only a later,
+      // real state (success or failure) means the first fetch has actually
+      // resolved, which is what "no longer loading" should mean here.
+      if (loadingStatus && state !== CONNECTION_STATES.STARTING) {
+        loadingStatus.classList.add("is-hidden");
+      }
+      if (state === CONNECTION_STATES.FATAL_SCHEMA_ERROR) {
         console.error("iNaturalist adapter returned an unexpected response shape; live updates have stopped.");
       }
     },

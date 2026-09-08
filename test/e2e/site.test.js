@@ -121,6 +121,38 @@ describe("UK Moths site", () => {
     await page.close();
   });
 
+  it("shows a loading indicator until the first real response arrives, then hides it", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    // A slow connection can take several seconds to fetch the full 24h
+    // window — this reproduces exactly that: the scene must not look
+    // silently broken (just the light, no feedback) while that's in flight.
+    await page.route(WORKER_URL, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ fetchedAt: new Date().toISOString(), stale: false, cursor: "999", observations: [liveObservation()] })
+      });
+    });
+
+    await page.goto(site.url, { waitUntil: "networkidle" });
+    await page.click("#launch-switch");
+    await page.waitForTimeout(1700);
+
+    const loading = page.locator("#loading-status");
+    assert.equal(await loading.isVisible(), true, "should still show loading before the delayed response arrives");
+    assert.match(await loading.textContent(), /loading/i);
+
+    await page.waitForTimeout(1000);
+    assert.equal(
+      await loading.evaluate((el) => el.classList.contains("is-hidden")),
+      true,
+      "should hide once the connection reports a real state"
+    );
+
+    await page.close();
+  });
+
   it("toggles sound without throwing", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     const errors = [];

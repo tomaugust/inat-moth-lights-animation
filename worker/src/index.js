@@ -33,10 +33,12 @@ const DEFAULT_PAGE_SIZE = 200;
 // recommended maximum" — true only if this were one global cache. Since
 // caches.default is actually per-Cloudflare-datacenter (see the file header),
 // realistic worst-case volume is that per-window request repeated across
-// however many colos see traffic at once, not a single one worldwide. 300s
-// keeps that realistic worst case well under the ~1 req/s ceiling even
-// spread across several colos, at the cost of data being up to 5 minutes old.
-const DEFAULT_CACHE_SECONDS = 300;
+// however many colos see traffic at once, not a single one worldwide. 1800s
+// (30 min) keeps that realistic worst case well under the ~1 req/s ceiling
+// even spread across several colos, at the cost of data being up to 30
+// minutes old — an acceptable trade given the site already frames itself as
+// "recently shared", not real-time.
+const DEFAULT_CACHE_SECONDS = 1800;
 const DEFAULT_UPSTREAM_TIMEOUT_MS = 15000;
 // The window now regularly needs 7-10+ pages (see fetchAllObservationsInWindow's
 // header comment) — firing all of them back to back is a burst pattern that

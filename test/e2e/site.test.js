@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { Buffer } from "node:buffer";
 import { after, before, describe, it } from "node:test";
 import { chromium } from "playwright";
 
@@ -23,11 +24,28 @@ after(async () => {
   await site.close();
 });
 
+// A 1x1 transparent PNG, so a mocked observation's photo has something real
+// to load instead of depending on the actual photo existing on iNaturalist's
+// real CDN (photo id "1" doesn't) — that only surfaced as a genuine 404 in
+// CI, which has real internet access; this sandbox's own inability to reach
+// external domains at all had been masking it entirely.
+const FAKE_IMAGE_BYTES = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+  "base64"
+);
+
+async function mockPhotoHost(page) {
+  await page.route("https://inaturalist-open-data.s3.amazonaws.com/**", (route) =>
+    route.fulfill({ status: 200, contentType: "image/png", body: FAKE_IMAGE_BYTES })
+  );
+}
+
 // The production site talks only to the deployed Worker adapter, never
 // api.inaturalist.org directly — every test here intercepts that exact URL
 // and answers with a canned adapter-contract response, so nothing ever
 // reaches the real Worker or the real iNaturalist API from CI.
 async function mockWorkerAdapter(page, { observations = [], stale = false, status = 200 } = {}) {
+  await mockPhotoHost(page);
   await page.route(WORKER_URL, (route) =>
     route.fulfill({
       status,
@@ -157,6 +175,7 @@ describe("UK Moths site", () => {
 
   it("shows a loading indicator until the first real response arrives, then hides it", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await mockPhotoHost(page);
     // A slow connection can take several seconds to fetch the full 24h
     // window — this reproduces exactly that: the scene must not look
     // silently broken (just the light, no feedback) while that's in flight.

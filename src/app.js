@@ -491,6 +491,15 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     buildUrl: () => WORKER_OBSERVATIONS_URL,
     upstreamShape: "adapter-contract",
     getCursor: () => queue.cursor || null,
+    // InatClient's own default (15s) is too tight for this adapter: a
+    // cold-cache Worker refresh now paces up to 4 sequential upstream pages
+    // a second apart (see PAGE_DELAY_MS in worker/src/index.js) before
+    // returning a ~300-400KB response, measured at ~7-8s even from a fast
+    // connection — a real mobile connection can easily push that past 15s,
+    // aborting the fetch and leaving the scene empty until the next
+    // ~60s-backed-off retry. 45s mirrors the same margin already used for
+    // this exact scenario in .github/workflows/deploy-worker.yml's smoke test.
+    requestTimeoutSeconds: 45,
     onStateChange: (state) => {
       // STARTING is the synchronous initial state set the instant
       // client.start() runs, before any network activity — only a later,

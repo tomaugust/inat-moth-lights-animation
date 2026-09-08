@@ -172,6 +172,14 @@ export const MAX_WINDOW_PAGES = 25;
 // page returns fewer than a full page (the window is exhausted) or maxPages
 // is hit.
 //
+// delayMs paces consecutive requests (no delay before the first page) so a
+// window that takes several pages doesn't fire them at iNaturalist back to
+// back — its guidance caps sustained traffic at roughly one request per
+// second, and a burst of 7-10+ unpaced requests from one refresh is exactly
+// the kind of pattern that gets a client rate-limited. Defaults to 0 (no
+// delay) so existing callers/tests run at full speed; the Worker passes a
+// real delay (see worker/src/index.js).
+//
 // Returns { ok: true, results, pagesFetched } on a clean run. Returns
 // { ok: false, reason, pagesFetched, response? } the moment any page fails —
 // reason is "http-error" (response.ok is false; the Response is included so
@@ -182,12 +190,22 @@ export const MAX_WINDOW_PAGES = 25;
 // window as if it were complete — the caller's existing stale-fallback path
 // (a full, previously-cached window) is a safer answer than a truncated
 // new one.
-export async function fetchAllObservationsInWindow(options, fetchImpl, maxPages = MAX_WINDOW_PAGES) {
+export async function fetchAllObservationsInWindow(
+  options,
+  fetchImpl,
+  maxPages = MAX_WINDOW_PAGES,
+  delayMs = 0,
+  sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+) {
   const allRaw = [];
   let afterId = null;
   let pagesFetched = 0;
 
   for (let page = 0; page < maxPages; page += 1) {
+    if (page > 0 && delayMs > 0) {
+      await sleepImpl(delayMs);
+    }
+
     const url = buildWindowPageUrl(options, afterId);
     const response = await fetchImpl(url);
 

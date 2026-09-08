@@ -281,6 +281,40 @@ describe("fetchAllObservationsInWindow", () => {
     assert.equal(outcome.ok, false);
     assert.equal(outcome.reason, "unexpected-shape");
   });
+
+  it("paces pages with delayMs between requests, but never before the first page", async () => {
+    const pages = [
+      [{ id: 1 }, { id: 2 }],
+      [{ id: 3 }, { id: 4 }],
+      [{ id: 5 }]
+    ];
+    const fetchImpl = async () => page(pages.shift());
+    const sleeps = [];
+    const sleepImpl = async (ms) => sleeps.push(ms);
+
+    const outcome = await fetchAllObservationsInWindow(options, fetchImpl, MAX_WINDOW_PAGES, 1000, sleepImpl);
+
+    assert.equal(outcome.ok, true);
+    assert.equal(outcome.pagesFetched, 3);
+    assert.deepEqual(sleeps, [1000, 1000], "one delay before each page after the first, none before it");
+  });
+
+  it("defaults delayMs to 0, so it never sleeps unless a caller opts in", async () => {
+    const pages = [
+      [{ id: 1 }, { id: 2 }],
+      [{ id: 3 }]
+    ];
+    const fetchImpl = async () => page(pages.shift());
+    let sleepCalls = 0;
+    const sleepImpl = async () => {
+      sleepCalls += 1;
+    };
+
+    const outcome = await fetchAllObservationsInWindow(options, fetchImpl, MAX_WINDOW_PAGES, undefined, sleepImpl);
+
+    assert.equal(outcome.ok, true);
+    assert.equal(sleepCalls, 0);
+  });
 });
 
 describe("InatClient polling", () => {

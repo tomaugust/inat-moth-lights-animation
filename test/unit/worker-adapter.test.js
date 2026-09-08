@@ -9,7 +9,10 @@ const ENV = {
   PLACE_ID: "6857",
   PAGE_SIZE: "200",
   CACHE_SECONDS: "45",
-  UPSTREAM_TIMEOUT_MS: "15000"
+  UPSTREAM_TIMEOUT_MS: "15000",
+  // Real inter-page pacing is a production concern (see worker/src/index.js);
+  // tests exercise multi-page accumulation and should run at full speed.
+  PAGE_DELAY_MS: "0"
 };
 
 // Mirrors just enough of the real Cache API for these tests: entries expire

@@ -38,6 +38,14 @@ const DEFAULT_PAGE_SIZE = 200;
 // spread across several colos, at the cost of data being up to 5 minutes old.
 const DEFAULT_CACHE_SECONDS = 300;
 const DEFAULT_UPSTREAM_TIMEOUT_MS = 15000;
+// The window now regularly needs 7-10+ pages (see fetchAllObservationsInWindow's
+// header comment) — firing all of them back to back is a burst pattern that
+// gets a client rate-limited by iNaturalist, which is exactly what started
+// happening: refreshes started coming back 429, and once a colo's stale
+// backup also aged out, that colo had nothing left to serve visitors but an
+// empty list. Pacing pages ~1/second keeps every refresh under the ~1 req/s
+// ceiling the rest of this file's comments already assume.
+const DEFAULT_PAGE_DELAY_MS = 1000;
 const USER_AGENT = "inat-moth-lights-adapter/1.0 (+https://github.com/tomaugust/inat-moth-lights-animation)";
 const CACHE_KEY_URL = "https://inat-moth-lights-adapter.internal/observations";
 // A second, much longer-lived copy of the last good response, written
@@ -142,9 +150,11 @@ let inFlightRefresh = null;
 async function refreshContract(env, cache) {
   const options = buildUpstreamOptions(env);
 
+  const pageDelayMs = Number(env.PAGE_DELAY_MS) || DEFAULT_PAGE_DELAY_MS;
+
   let outcome;
   try {
-    outcome = await fetchAllObservationsInWindow(options, (url) => fetchOnePage(url, env));
+    outcome = await fetchAllObservationsInWindow(options, (url) => fetchOnePage(url, env), undefined, pageDelayMs);
   } catch (error) {
     log("upstream-network-error", { message: error.message });
     return { ok: false, reason: "upstream-unavailable" };

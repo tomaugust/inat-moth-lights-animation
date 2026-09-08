@@ -18,3 +18,7 @@ PLACE_ID = "6857"
 PAGE_SIZE = "200"
 CACHE_SECONDS = "300"
 UPSTREAM_TIMEOUT_MS = "15000"
+# Delay between consecutive pages within a single window refresh. The window
+# now regularly takes 7-10+ pages, so this keeps a refresh from bursting past
+# iNaturalist's ~1 req/s recommended ceiling in one go.
+PAGE_DELAY_MS = "1000"

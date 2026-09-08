@@ -235,7 +235,7 @@ describe("fetchAllObservationsInWindow", () => {
   });
 
   it("defaults maxPages to the exported MAX_WINDOW_PAGES constant", () => {
-    assert.equal(MAX_WINDOW_PAGES, 25);
+    assert.equal(MAX_WINDOW_PAGES, 5);
   });
 
   it("stops and discards accumulated results the moment a page's HTTP response fails", async () => {

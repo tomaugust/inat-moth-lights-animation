@@ -160,11 +160,14 @@ function buildWindowPageUrl(options, afterId) {
 
 // Hard cap on how many pages a single fetchAllObservationsInWindow call will
 // walk, so a single refresh can never balloon into unbounded upstream
-// request volume even if in-window activity spikes far beyond today's
-// measured rate (~1,400 records/24h at per_page=200 → ~7 pages). 25 pages
-// (up to 5,000 records at the API's 200-per-page ceiling) comfortably covers
-// that with headroom, while still being a fixed, known worst case.
-export const MAX_WINDOW_PAGES = 25;
+// request volume. Deliberately set below today's measured real volume
+// (window has ranged 745-1,997 records, ~4-10 pages) as a safety valve on
+// request burst size, not a "stay above real volume" ceiling — on a
+// busier-than-1,000-records window it truncates and silently misses
+// whatever falls past page 5, an accepted trade for a tighter worst-case
+// burst against iNaturalist's rate limiter (see PAGE_DELAY_MS in
+// worker/src/index.js for the other half of that mitigation).
+export const MAX_WINDOW_PAGES = 5;
 
 // Walks every page of the created_d1-bounded window in ascending id order,
 // accumulating raw results, so a caller gets everything in the last

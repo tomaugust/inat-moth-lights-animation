@@ -122,7 +122,8 @@ body.launch-screen-active:not(.launch-controls-visible) .animation-heading,
 body.launch-screen-active:not(.launch-controls-visible) .sound-toggle,
 body.launch-screen-active:not(.launch-controls-visible) .active-moths-toggle,
 body.launch-screen-active:not(.launch-controls-visible) .active-moths-panel,
-body.launch-screen-active:not(.launch-controls-visible) .loading-status {
+body.launch-screen-active:not(.launch-controls-visible) .loading-status,
+body.launch-screen-active:not(.launch-controls-visible) .debug-status {
   opacity: 0;
   pointer-events: none;
 }
@@ -148,6 +149,32 @@ body.launch-screen-active:not(.launch-controls-visible) .loading-status {
 
 .loading-status.is-hidden {
   opacity: 0;
+}
+
+/* A small, always-on live-state readout (connection state, request/observation
+   counts, queue/store sizes) so a real-device bug report can include exact
+   diagnostic state without needing devtools access on a phone. Deliberately
+   plain and out of the way rather than polished chrome. */
+.debug-status {
+  background: rgba(10, 10, 12, 0.5);
+  border-radius: 6px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(16px, 2.4vw, 30px) + 22px);
+  color: rgba(245, 241, 232, 0.55);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.68rem;
+  left: 50%;
+  margin: 0;
+  padding: 3px 8px;
+  pointer-events: none;
+  position: fixed;
+  text-align: center;
+  transform: translateX(-50%);
+  white-space: pre;
+  z-index: 10;
+}
+
+.debug-status:empty {
+  display: none;
 }
 
 .active-moths-toggle {

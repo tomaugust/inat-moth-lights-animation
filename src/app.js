@@ -15,14 +15,6 @@ import { CONNECTION_STATES, InatClient } from "./inaturalist-client.js";
 // first — see README.md.
 const WORKER_OBSERVATIONS_URL = "https://inat-moth-lights-adapter.tomaugust1985.workers.dev/observations";
 
-function getStorage() {
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
-}
-
 function formatObservedTime(observedAtMs) {
   if (!Number.isFinite(observedAtMs)) {
     return "";
@@ -37,9 +29,22 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   const activeMothsPanel = document.getElementById("active-moths-panel");
   const activeMothsList = document.getElementById("active-moths-list");
   const loadingStatus = document.getElementById("loading-status");
+  const debugStatus = document.getElementById("debug-status");
   const audio = setupAudio();
 
-  const queue = new ObservationQueue({ storage: getStorage(), storageKey: "inat-moth-lights:live-queue" });
+  // Deliberately in-memory only (no storage option) — the Worker adapter is
+  // stateless and returns the *entire* current 24h window on every poll,
+  // never an incremental delta. ObservationQueue's seen-ID dedup already
+  // (correctly) prevents re-enqueuing the same observation across polls
+  // within this one page's lifetime; persisting that dedup to localStorage
+  // across page loads (the option other callers use for a resumable
+  // cursor-based feed) would instead permanently blacklist every
+  // observation this browser has ever been shown, since the rolling 24h
+  // window mostly re-returns the same IDs on a later visit — silently
+  // starving a returning visitor of almost everything. A fresh load should
+  // replay the current window from scratch, matching the intended
+  // "living view" experience.
+  const queue = new ObservationQueue();
   const store = new MothStore();
   // A false autoplay is the one remaining kill-switch: the scene loads (just
   // the light, in whichever presentation mode) but never admits a moth. Real
@@ -346,6 +351,20 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     image.src = imageURL;
   }
 
+  let lastDebugUpdateSeconds = 0;
+
+  function updateDebugStatus(t) {
+    if (!debugStatus || t - lastDebugUpdateSeconds < 0.5) {
+      return;
+    }
+    lastDebugUpdateSeconds = t;
+
+    const stats = client.getStats();
+    debugStatus.textContent =
+      `state=${client.state} reqs=${stats.requestCount} obs=${stats.observationsReceived} ` +
+      `pending=${queue.pendingCount} seen=${queue.seenIds.size} active=${store.getActiveMoths().length}`;
+  }
+
   function tick(timestamp) {
     if (lastTimestamp === null) {
       lastTimestamp = timestamp;
@@ -370,6 +389,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, timestamp, t, hoverState, presentationMode);
     audio.update(store.getActiveMoths(), deltaSeconds);
     updateActiveMothsPanel();
+    updateDebugStatus(t);
     requestAnimationFrame(tick);
   }
 

@@ -121,6 +121,40 @@ describe("UK Moths site", () => {
     await page.close();
   });
 
+  it("still shows moths after a reload, even though the Worker always returns the same full-window batch", async () => {
+    // Regression test: the Worker adapter is stateless and returns the
+    // *entire* current 24h window on every request, never an incremental
+    // delta (see mockWorkerAdapter's comment above). ObservationQueue used to
+    // persist its seen-ID dedup to localStorage across page loads, which
+    // meant a real visitor reloading (or simply revisiting) the site got
+    // zero new observations on the second load — every ID had already been
+    // marked "seen" on the first. The queue must not persist that dedup
+    // across a real page reload for this Worker-backed page, or a returning
+    // visitor sees nothing.
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await mockWorkerAdapter(page, { observations: [liveObservation()] });
+
+    await page.goto(site.url, { waitUntil: "networkidle" });
+    await page.click("#launch-switch");
+    await page.waitForTimeout(2000);
+
+    await page.click("#active-moths-toggle");
+    await page.waitForSelector(".active-moths-card", { timeout: 5000 });
+    assert.ok((await page.locator(".active-moths-card").count()) > 0, "expected a moth on the first load");
+
+    // Same page context (same origin, same localStorage), same mocked
+    // response — reproducing a real reload with the Worker's real behavior.
+    await page.reload({ waitUntil: "networkidle" });
+    await page.click("#launch-switch");
+    await page.waitForTimeout(2000);
+
+    await page.click("#active-moths-toggle");
+    await page.waitForSelector(".active-moths-card", { timeout: 5000 });
+    assert.ok((await page.locator(".active-moths-card").count()) > 0, "expected a moth again after reload");
+
+    await page.close();
+  });
+
   it("shows a loading indicator until the first real response arrives, then hides it", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     // A slow connection can take several seconds to fetch the full 24h

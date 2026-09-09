@@ -261,6 +261,12 @@ export class InatClient {
     this.backoffSeconds = 0;
     this.timeoutHandle = null;
     this.stats = { requestCount: 0, observationsReceived: 0, startedAtMs: null };
+    // Why the most recent poll failed, or null after a success. A bare
+    // connection state can't distinguish an HTTP error status from a CORS
+    // rejection from a blocked/failed network request — they all land on
+    // "stale" — which is exactly the distinction needed to debug a failure
+    // that only reproduces on someone else's real device.
+    this.lastError = null;
 
     this._handleVisibilityChange = this._handleVisibilityChange.bind(this);
     this._handleOnline = this._handleOnline.bind(this);
@@ -406,12 +412,14 @@ export class InatClient {
         const retryAfter = response.headers && typeof response.headers.get === "function"
           ? Number(response.headers.get("Retry-After"))
           : NaN;
+        this.lastError = "http-429";
         this._setState(CONNECTION_STATES.RATE_LIMITED);
         this._advanceBackoff(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null);
         return;
       }
 
       if (!response.ok) {
+        this.lastError = `http-${response.status}`;
         this._setState(CONNECTION_STATES.STALE);
         this._advanceBackoff(null);
         return;
@@ -451,6 +459,7 @@ export class InatClient {
 
       this.stats.observationsReceived += observations.length;
       this.backoffSeconds = 0;
+      this.lastError = null;
       this._setState(observations.length > 0 ? CONNECTION_STATES.LIVE : CONNECTION_STATES.QUIET);
 
       this.options.onBatch({
@@ -461,7 +470,12 @@ export class InatClient {
       });
 
       this._scheduleNext(this.options.pollIntervalSeconds);
-    } catch {
+    } catch (error) {
+      // A browser reports a CORS rejection, a DNS/network block and a genuine
+      // connection failure identically here, as an opaque TypeError — the
+      // name/message is still the only signal separating those from an
+      // AbortError (our own request timeout firing), so keep it.
+      this.lastError = `${error.name}: ${error.message}`;
       // An in-flight fetch that fails because we've since gone offline
       // (_handleOffline aborts it) should leave the client waiting for the
       // 'online' event, not re-arm a backoff timer that fires while still

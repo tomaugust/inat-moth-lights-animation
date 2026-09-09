@@ -317,6 +317,53 @@ describe("fetchAllObservationsInWindow", () => {
   });
 });
 
+describe("InatClient failure reporting", () => {
+  it("records the HTTP status when a poll gets a non-2xx response", async () => {
+    const { client } = createClient({ responses: [jsonResponse({}, { status: 502 })] });
+
+    client.isRunning = true;
+    await client._pollNow();
+
+    assert.equal(client.state, CONNECTION_STATES.STALE);
+    assert.equal(client.lastError, "http-502");
+  });
+
+  it("records the thrown error's name and message when the fetch itself fails", async () => {
+    // A browser surfaces a CORS rejection, a DNS/filter block and a refused
+    // connection all as an opaque TypeError here — keeping the name/message
+    // is what makes those distinguishable from our own abort on timeout.
+    const { client } = createClient({
+      options: {
+        fetchImpl: async () => {
+          throw new TypeError("Failed to fetch");
+        }
+      }
+    });
+
+    client.isRunning = true;
+    await client._pollNow();
+
+    assert.equal(client.state, CONNECTION_STATES.STALE);
+    assert.equal(client.lastError, "TypeError: Failed to fetch");
+  });
+
+  it("clears the last error once a poll succeeds again", async () => {
+    const { client } = createClient({
+      responses: [
+        jsonResponse({}, { status: 502 }),
+        jsonResponse({ total_results: 1, results: [rawObservation()] })
+      ]
+    });
+
+    client.isRunning = true;
+    await client._pollNow();
+    assert.equal(client.lastError, "http-502");
+
+    await client._pollNow();
+    assert.equal(client.lastError, null);
+  });
+});
+
 describe("InatClient polling", () => {
   it("fetches, maps and delivers a batch, then schedules the next poll", async () => {
     const { client, batches, states, scheduler } = createClient({

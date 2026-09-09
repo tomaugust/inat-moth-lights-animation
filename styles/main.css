@@ -166,10 +166,12 @@ body.launch-screen-active:not(.launch-controls-visible) .debug-status {
   margin: 0;
   padding: 3px 8px;
   pointer-events: none;
+  max-width: 94vw;
   position: fixed;
   text-align: center;
   transform: translateX(-50%);
-  white-space: pre;
+  white-space: pre-wrap;
+  word-break: break-word;
   z-index: 10;
 }
 

@@ -15,6 +15,28 @@ import { CONNECTION_STATES, InatClient } from "./inaturalist-client.js";
 // first — see README.md.
 const WORKER_OBSERVATIONS_URL = "https://inat-moth-lights-adapter.tomaugust1985.workers.dev/observations";
 
+// Shown in #debug-status purely so a screenshot from a real device proves
+// which deployed build that browser is actually running, rather than leaving
+// it ambiguous whether a cached older bundle is being served.
+const BUILD_ID = "2026-09-09a";
+
+// A failing fetch tells a browser page almost nothing: a CORS rejection, a
+// DNS/filter block and a refused connection are all the same opaque
+// TypeError. A no-cors request does distinguish them — it resolves (with an
+// unreadable opaque response) whenever the request actually reached the
+// server, and only rejects when the network itself couldn't. So: normal
+// fetch fails + this succeeds => CORS; both fail => the host is unreachable
+// from that device/network (worker.dev subdomains are a common target for
+// DNS-level filtering). Read only through #debug-status.
+async function probeAdapterReachability() {
+  try {
+    await fetch(WORKER_OBSERVATIONS_URL, { mode: "no-cors", cache: "no-store" });
+    return "reachable-so-cors-blocked";
+  } catch (error) {
+    return `unreachable-${error.name}`;
+  }
+}
+
 function formatObservedTime(observedAtMs) {
   if (!Number.isFinite(observedAtMs)) {
     return "";
@@ -352,6 +374,8 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   }
 
   let lastDebugUpdateSeconds = 0;
+  let probeResult = null;
+  let probeStarted = false;
 
   function updateDebugStatus(t) {
     if (!debugStatus || t - lastDebugUpdateSeconds < 0.5) {
@@ -360,9 +384,29 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     lastDebugUpdateSeconds = t;
 
     const stats = client.getStats();
-    debugStatus.textContent =
-      `state=${client.state} reqs=${stats.requestCount} obs=${stats.observationsReceived} ` +
-      `pending=${queue.pendingCount} seen=${queue.seenIds.size} active=${store.getActiveMoths().length}`;
+    const lines = [
+      `build=${BUILD_ID} state=${client.state} reqs=${stats.requestCount} obs=${stats.observationsReceived}`,
+      `pending=${queue.pendingCount} seen=${queue.seenIds.size} active=${store.getActiveMoths().length}`
+    ];
+    if (client.lastError) {
+      lines.push(`err=${client.lastError}`);
+    }
+    if (probeResult) {
+      lines.push(`probe=${probeResult}`);
+    }
+    debugStatus.textContent = lines.join("\n");
+  }
+
+  // Run the reachability probe once, the first time a poll actually fails —
+  // never on the happy path, so a working page makes no extra request.
+  function runReachabilityProbeOnce() {
+    if (probeStarted) {
+      return;
+    }
+    probeStarted = true;
+    probeAdapterReachability().then((result) => {
+      probeResult = result;
+    });
   }
 
   function tick(timestamp) {
@@ -507,6 +551,9 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
       // resolved, which is what "no longer loading" should mean here.
       if (loadingStatus && state !== CONNECTION_STATES.STARTING) {
         loadingStatus.classList.add("is-hidden");
+      }
+      if (state === CONNECTION_STATES.STALE || state === CONNECTION_STATES.OFFLINE) {
+        runReachabilityProbeOnce();
       }
       if (state === CONNECTION_STATES.FATAL_SCHEMA_ERROR) {
         console.error("iNaturalist adapter returned an unexpected response shape; live updates have stopped.");

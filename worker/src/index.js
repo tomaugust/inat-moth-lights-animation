@@ -5,17 +5,24 @@
 // requests), it always asks upstream for every observation in the configured
 // taxon/place/24h-window scope (fetchAllObservationsInWindow paginates as
 // many pages as that takes, up to MAX_WINDOW_PAGES) and caches that response
-// for every caller hitting the same Cloudflare datacenter for a shared TTL —
-// so N concurrent browsers served by the same colo within that window cost
-// exactly one refresh (one or more upstream requests), not N refreshes.
-// caches.default is per-colo, not a single global cache: with traffic spread
-// across multiple Cloudflare datacenters, actual upstream volume is roughly
-// (requests per TTL window per colo) PER COLO seeing traffic, not one total
-// — see the CACHE_SECONDS choice below and in wrangler.toml. Each client's
-// own ObservationQueue (see src/observation-queue.js) already deduplicates by
-// observation id, so repeatedly handing out "everything currently in the
-// window" is exactly what a shared, recently-uploaded-observations feed
-// should do.
+// for every caller sharing the same place_id, for a shared TTL — so N
+// concurrent browsers cost exactly one refresh (one or more upstream
+// requests), not N refreshes. Each client's own ObservationQueue (see
+// src/observation-queue.js) already deduplicates by observation id, so
+// repeatedly handing out "everything currently in the window" is exactly
+// what a shared, recently-uploaded-observations feed should do.
+//
+// The shared cache lives in Workers KV (env.OBSERVATIONS_KV), not
+// caches.default. caches.default is per-Cloudflare-datacenter, not global:
+// a real incident showed this in production — a UK colo's own refresh hit
+// iNaturalist's rate limit, its stale-backup entry had also expired, and
+// every visitor routed to that one colo got a hard 502 while every other
+// colo (and every check run from elsewhere) looked completely healthy. KV
+// is globally replicated: one successful refresh from any colo populates a
+// value every colo reads, so no single colo's bad luck can strand its own
+// visitors — the tradeoff is KV's own eventual-consistency propagation
+// (up to ~60s), which only ever means "a colo briefly sees the previous
+// still-valid entry", never "sees nothing".
 //
 // Reuses the same raw-v2-to-contract mapping and query-building the Phase 3
 // direct client uses, and the same validation/normalization the frontend
@@ -28,16 +35,12 @@ const DEFAULT_TAXON_ID = 47157;
 // against GET /v1/places/autocomplete?q=United%20Kingdom.
 const DEFAULT_PLACE_ID = 6857;
 const DEFAULT_PAGE_SIZE = 200;
-// research/phase-0.md originally reasoned "a 30 to 60 second shared cache is
-// much more conservative than the approximately one-request-per-second
-// recommended maximum" — true only if this were one global cache. Since
-// caches.default is actually per-Cloudflare-datacenter (see the file header),
-// realistic worst-case volume is that per-window request repeated across
-// however many colos see traffic at once, not a single one worldwide. 1800s
-// (30 min) keeps that realistic worst case well under the ~1 req/s ceiling
-// even spread across several colos, at the cost of data being up to 30
-// minutes old — an acceptable trade given the site already frames itself as
-// "recently shared", not real-time.
+// Kept comfortably under iNaturalist's ~1 req/s recommended ceiling: this is
+// now genuinely one shared refresh per TTL window globally (KV, not per
+// colo), so 1800s (30 min) is conservative rather than merely hoped-to-be —
+// see the file header. Cost: data can be up to 30 minutes old, an accepted
+// trade given the site already frames itself as "recently shared", not
+// real-time.
 const DEFAULT_CACHE_SECONDS = 1800;
 const DEFAULT_UPSTREAM_TIMEOUT_MS = 15000;
 // The window now regularly needs 7-10+ pages (see fetchAllObservationsInWindow's
@@ -49,14 +52,25 @@ const DEFAULT_UPSTREAM_TIMEOUT_MS = 15000;
 // ceiling the rest of this file's comments already assume.
 const DEFAULT_PAGE_DELAY_MS = 1000;
 const USER_AGENT = "inat-moth-lights-adapter/1.0 (+https://github.com/tomaugust/inat-moth-lights-animation)";
-const CACHE_KEY_URL = "https://inat-moth-lights-adapter.internal/observations";
+// Cache keys are scoped by place_id so a future per-visitor country (see
+// src/geolocation.js, not wired in yet) is additive — each country gets its
+// own independently-refreshed KV entry, mirroring how the upstream query
+// itself is already scoped per place_id, rather than one unscoped worldwide
+// fetch (which would blow past MAX_WINDOW_PAGES and defeat the point of
+// scoping by country at all).
+function contractKey(placeId) {
+  return `observations:${placeId}`;
+}
+
 // A second, much longer-lived copy of the last good response, written
 // alongside the short-TTL entry above on every successful upstream fetch.
 // The short entry alone can't serve stale-on-error once it has expired (a
-// Cache API match on an expired entry is just a miss) — this backup is what
-// lets the adapter keep answering with real data through an outage instead
-// of an empty list, until this copy itself finally goes stale too.
-const STALE_BACKUP_KEY_URL = "https://inat-moth-lights-adapter.internal/observations?stale-backup";
+// KV read past its expirationTtl is just a miss) — this backup is what lets
+// the adapter keep answering with real data through an outage instead of an
+// empty list, until this copy itself finally goes stale too.
+function staleBackupKey(placeId) {
+  return `observations:${placeId}:stale-backup`;
+}
 const STALE_BACKUP_SECONDS = 6 * 60 * 60;
 
 function parseAllowedOrigins(envValue) {
@@ -90,12 +104,8 @@ function log(event, fields = {}) {
   console.log(JSON.stringify({ event, ...fields }));
 }
 
-async function readContract(cache, key) {
-  const cached = await cache.match(key);
-  if (!cached) {
-    return null;
-  }
-  return cached.json();
+async function readContract(kv, key) {
+  return kv.get(key, "json");
 }
 
 function buildUpstreamOptions(env) {
@@ -130,8 +140,8 @@ async function fetchOnePage(url, env) {
 // This is what keeps a caller usable through an upstream outage: it always
 // gets a well-shaped contract response, never a hard failure it has to
 // special-case.
-async function staleFallback(cache, errorCode, extraHeaders) {
-  const cachedContract = await readContract(cache, STALE_BACKUP_KEY_URL);
+async function staleFallback(kv, placeId, errorCode, extraHeaders) {
+  const cachedContract = await readContract(kv, staleBackupKey(placeId));
   if (cachedContract) {
     return jsonResponse({ ...cachedContract, stale: true, error: errorCode }, { headers: extraHeaders });
   }
@@ -149,7 +159,7 @@ async function staleFallback(cache, errorCode, extraHeaders) {
 // response (its own CORS headers) without re-fetching.
 let inFlightRefresh = null;
 
-async function refreshContract(env, cache) {
+async function refreshContract(env, kv, placeId) {
   const options = buildUpstreamOptions(env);
 
   const pageDelayMs = Number(env.PAGE_DELAY_MS) || DEFAULT_PAGE_DELAY_MS;
@@ -194,21 +204,20 @@ async function refreshContract(env, cache) {
   };
 
   const cacheSeconds = Number(env.CACHE_SECONDS) || DEFAULT_CACHE_SECONDS;
-  const cacheableResponse = jsonResponse(contract, { headers: { "Cache-Control": `public, max-age=${cacheSeconds}` } });
-  const staleBackupResponse = jsonResponse(contract, { headers: { "Cache-Control": `public, max-age=${STALE_BACKUP_SECONDS}` } });
+  const serialized = JSON.stringify(contract);
   await Promise.all([
-    cache.put(CACHE_KEY_URL, cacheableResponse.clone()),
-    cache.put(STALE_BACKUP_KEY_URL, staleBackupResponse.clone())
+    kv.put(contractKey(placeId), serialized, { expirationTtl: cacheSeconds }),
+    kv.put(staleBackupKey(placeId), serialized, { expirationTtl: STALE_BACKUP_SECONDS })
   ]);
 
   log("cache-miss-refreshed", { count: contract.observations.length, pagesFetched: outcome.pagesFetched });
   return { ok: true, contract, cacheSeconds };
 }
 
-// The testable core: takes the cache instance explicitly instead of reading
-// the Workers-global `caches`, so tests can pass a fake in-memory cache
-// without needing the real Workers runtime.
-export async function handleRequest(request, env, cache) {
+// The testable core: takes the KV instance explicitly instead of reading the
+// Workers-global env.OBSERVATIONS_KV binding, so tests can pass a fake
+// in-memory store without needing the real Workers runtime.
+export async function handleRequest(request, env, kv) {
   const allowedOrigins = parseAllowedOrigins(env.ALLOWED_ORIGINS);
   const requestOrigin = request.headers.get("Origin");
   const cors = corsHeaders(requestOrigin, allowedOrigins);
@@ -221,14 +230,16 @@ export async function handleRequest(request, env, cache) {
     return jsonResponse({ error: "method-not-allowed" }, { status: 405, headers: cors });
   }
 
-  const cached = await readContract(cache, CACHE_KEY_URL);
+  const placeId = buildUpstreamOptions(env).placeId;
+
+  const cached = await readContract(kv, contractKey(placeId));
   if (cached) {
     log("cache-hit");
     return jsonResponse(cached, { headers: { ...cors, "Cache-Control": `public, max-age=${Number(env.CACHE_SECONDS) || DEFAULT_CACHE_SECONDS}` } });
   }
 
   if (!inFlightRefresh) {
-    inFlightRefresh = refreshContract(env, cache).finally(() => {
+    inFlightRefresh = refreshContract(env, kv, placeId).finally(() => {
       inFlightRefresh = null;
     });
   }
@@ -236,7 +247,7 @@ export async function handleRequest(request, env, cache) {
 
   if (!result.ok) {
     const extraHeaders = result.retryAfter ? { ...cors, "Retry-After": result.retryAfter } : cors;
-    return staleFallback(cache, result.reason, extraHeaders);
+    return staleFallback(kv, placeId, result.reason, extraHeaders);
   }
 
   return jsonResponse(result.contract, { headers: { ...cors, "Cache-Control": `public, max-age=${result.cacheSeconds}` } });
@@ -244,6 +255,6 @@ export async function handleRequest(request, env, cache) {
 
 export default {
   async fetch(request, env) {
-    return handleRequest(request, env, caches.default);
+    return handleRequest(request, env, env.OBSERVATIONS_KV);
   }
 };

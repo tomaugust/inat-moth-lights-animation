@@ -15,23 +15,26 @@ const ENV = {
   PAGE_DELAY_MS: "0"
 };
 
-// Mirrors just enough of the real Cache API for these tests: entries expire
-// according to the Cache-Control: max-age header on the stored response,
-// against an injectable clock (so tests don't need to wait on real time).
-function createFakeCache({ now = () => Date.now() } = {}) {
+// Mirrors just enough of the real Workers KV binding for these tests: get/put
+// with expirationTtl, against an injectable clock (so tests don't need to
+// wait on real time). Real KV is eventually consistent across locations —
+// deliberately not modeled here, since this fake represents a single
+// location's view, which is all handleRequest's own logic needs to be
+// correct about; the cross-location replication behavior isn't code this
+// project owns.
+function createFakeKv({ now = () => Date.now() } = {}) {
   const store = new Map();
   return {
-    async match(key) {
+    async get(key, type) {
       const entry = store.get(String(key));
       if (!entry || now() >= entry.expiresAtMs) {
-        return undefined;
+        return null;
       }
-      return entry.response.clone();
+      return type === "json" ? JSON.parse(entry.value) : entry.value;
     },
-    async put(key, response) {
-      const match = /max-age=(\d+)/.exec(response.headers.get("Cache-Control") || "");
-      const maxAgeMs = match ? Number(match[1]) * 1000 : 0;
-      store.set(String(key), { response, expiresAtMs: now() + maxAgeMs });
+    async put(key, value, { expirationTtl } = {}) {
+      const ttlMs = Number(expirationTtl) > 0 ? Number(expirationTtl) * 1000 : Infinity;
+      store.set(String(key), { value, expiresAtMs: now() + ttlMs });
     },
     size() {
       return store.size;
@@ -85,42 +88,42 @@ function get(path = "/observations", init = {}) {
 
 describe("worker adapter: CORS and method handling", () => {
   it("answers OPTIONS with the CORS headers and no body", async () => {
-    const cache = createFakeCache();
+    const kv = createFakeKv();
     const response = await handleRequest(
       get("/observations", { method: "OPTIONS", headers: { Origin: "https://tomaugust.github.io" } }),
       ENV,
-      cache
+      kv
     );
     assert.equal(response.status, 204);
     assert.equal(response.headers.get("Access-Control-Allow-Origin"), "https://tomaugust.github.io");
   });
 
   it("rejects non-GET/OPTIONS methods", async () => {
-    const cache = createFakeCache();
-    const response = await handleRequest(get("/observations", { method: "POST" }), ENV, cache);
+    const kv = createFakeKv();
+    const response = await handleRequest(get("/observations", { method: "POST" }), ENV, kv);
     assert.equal(response.status, 405);
   });
 
   it("only reflects an allow-listed origin in Access-Control-Allow-Origin", async () => {
-    const cache = createFakeCache();
+    const kv = createFakeKv();
     fetchQueue.push(upstreamJson({ total_results: 0, results: [] }));
 
-    const allowed = await handleRequest(get("/observations", { headers: { Origin: "https://tomaugust.github.io" } }), ENV, cache);
+    const allowed = await handleRequest(get("/observations", { headers: { Origin: "https://tomaugust.github.io" } }), ENV, kv);
     assert.equal(allowed.headers.get("Access-Control-Allow-Origin"), "https://tomaugust.github.io");
 
-    const cache2 = createFakeCache();
+    const kv2 = createFakeKv();
     fetchQueue.push(upstreamJson({ total_results: 0, results: [] }));
-    const notAllowed = await handleRequest(get("/observations", { headers: { Origin: "https://evil.example" } }), ENV, cache2);
+    const notAllowed = await handleRequest(get("/observations", { headers: { Origin: "https://evil.example" } }), ENV, kv2);
     assert.equal(notAllowed.headers.get("Access-Control-Allow-Origin"), null);
   });
 });
 
 describe("worker adapter: upstream fetch, mapping and caching", () => {
   it("scopes the upstream request to PLACE_ID via place_id, not a lat/lng bounding box", async () => {
-    const cache = createFakeCache();
+    const kv = createFakeKv();
     fetchQueue.push(upstreamJson({ total_results: 0, results: [] }));
 
-    await handleRequest(get(), ENV, cache);
+    await handleRequest(get(), ENV, kv);
 
     assert.equal(fetchCalls.length, 1);
     assert.match(fetchCalls[0].url, /place_id=6857/);
@@ -128,10 +131,10 @@ describe("worker adapter: upstream fetch, mapping and caching", () => {
   });
 
   it("always bounds the upstream request with created_d1 — never a temporally unbounded query", async () => {
-    const cache = createFakeCache();
+    const kv = createFakeKv();
     fetchQueue.push(upstreamJson({ total_results: 0, results: [] }));
 
-    await handleRequest(get(), ENV, cache);
+    await handleRequest(get(), ENV, kv);
 
     assert.equal(fetchCalls.length, 1);
     const params = new URL(fetchCalls[0].url).searchParams;
@@ -140,10 +143,10 @@ describe("worker adapter: upstream fetch, mapping and caching", () => {
   });
 
   it("fetches upstream, maps to the contract shape, and caches it", async () => {
-    const cache = createFakeCache();
+    const kv = createFakeKv();
     fetchQueue.push(upstreamJson({ total_results: 1, results: [rawObservation()] }));
 
-    const response = await handleRequest(get(), ENV, cache);
+    const response = await handleRequest(get(), ENV, kv);
     const body = await response.json();
 
     assert.equal(response.status, 200);
@@ -151,35 +154,46 @@ describe("worker adapter: upstream fetch, mapping and caching", () => {
     assert.equal(body.observations[0].id, "inat-123");
     assert.equal(body.stale, false);
     assert.match(response.headers.get("Cache-Control"), /max-age=45/);
-    assert.equal(cache.size(), 2, "the short-TTL entry plus the longer-lived stale-fallback backup");
+    assert.equal(kv.size(), 2, "the short-TTL entry plus the longer-lived stale-fallback backup");
+  });
+
+  it("caches under a place_id-scoped key, so different countries never collide", async () => {
+    const kv = createFakeKv();
+    fetchQueue.push(upstreamJson({ total_results: 1, results: [rawObservation()] }));
+
+    await handleRequest(get(), ENV, kv);
+
+    const cached = await kv.get("observations:6857", "json");
+    assert.ok(cached, "expected the contract cached under a key scoped by PLACE_ID");
+    assert.equal(cached.observations.length, 1);
   });
 
   it("sets a descriptive User-Agent and never a custom header a browser fetch could set", async () => {
-    const cache = createFakeCache();
+    const kv = createFakeKv();
     fetchQueue.push(upstreamJson({ total_results: 0, results: [] }));
 
-    await handleRequest(get(), ENV, cache);
+    await handleRequest(get(), ENV, kv);
 
     assert.equal(fetchCalls.length, 1);
     assert.match(fetchCalls[0].init.headers["User-Agent"], /inat-moth-lights-adapter/);
   });
 
   it("serves every caller within the cache window from one shared cached response", async () => {
-    const cache = createFakeCache();
+    const kv = createFakeKv();
     fetchQueue.push(upstreamJson({ total_results: 1, results: [rawObservation()] }));
 
-    await handleRequest(get(), ENV, cache);
-    await handleRequest(get(), ENV, cache);
-    await handleRequest(get(), ENV, cache);
+    await handleRequest(get(), ENV, kv);
+    await handleRequest(get(), ENV, kv);
+    await handleRequest(get(), ENV, kv);
 
     assert.equal(fetchCalls.length, 1, "three callers within the TTL should cost exactly one upstream request");
   });
 
   it("does not query per client cursor: every refresh starts the window from its beginning", async () => {
-    const cache = createFakeCache();
+    const kv = createFakeKv();
     fetchQueue.push(upstreamJson({ total_results: 0, results: [] }));
 
-    await handleRequest(get(), ENV, cache);
+    await handleRequest(get(), ENV, kv);
 
     assert.match(fetchCalls[0].url, /order_by=id/);
     assert.match(fetchCalls[0].url, /order=asc/);
@@ -187,13 +201,13 @@ describe("worker adapter: upstream fetch, mapping and caching", () => {
   });
 
   it("paginates through every page of the window instead of stopping at the first page's worth", async () => {
-    const cache = createFakeCache();
+    const kv = createFakeKv();
     const firstPage = Array.from({ length: 200 }, (_, index) => rawObservation({ id: 1000 + index }));
     const secondPage = [rawObservation({ id: 5000 })];
     fetchQueue.push(upstreamJson({ total_results: 201, results: firstPage }));
     fetchQueue.push(upstreamJson({ total_results: 201, results: secondPage }));
 
-    const response = await handleRequest(get(), ENV, cache);
+    const response = await handleRequest(get(), ENV, kv);
     const body = await response.json();
 
     assert.equal(fetchCalls.length, 2, "a full first page should trigger a second page fetch");
@@ -202,13 +216,13 @@ describe("worker adapter: upstream fetch, mapping and caching", () => {
   });
 
   it("coalesces concurrent cache-miss requests into a single upstream fetch", async () => {
-    const cache = createFakeCache();
+    const kv = createFakeKv();
     fetchQueue.push(upstreamJson({ total_results: 1, results: [rawObservation()] }));
 
     const responses = await Promise.all([
-      handleRequest(get(), ENV, cache),
-      handleRequest(get(), ENV, cache),
-      handleRequest(get(), ENV, cache)
+      handleRequest(get(), ENV, kv),
+      handleRequest(get(), ENV, kv),
+      handleRequest(get(), ENV, kv)
     ]);
 
     assert.equal(fetchCalls.length, 1, "concurrent callers hitting a cache miss together should share one upstream fetch");
@@ -221,13 +235,13 @@ describe("worker adapter: upstream fetch, mapping and caching", () => {
 describe("worker adapter: upstream failure handling", () => {
   it("falls back to the last good cached contract, marked stale, once the cache expires and upstream then fails", async () => {
     let currentMs = 0;
-    const cache = createFakeCache({ now: () => currentMs });
+    const kv = createFakeKv({ now: () => currentMs });
     fetchQueue.push(upstreamJson({ total_results: 1, results: [rawObservation()] }));
-    await handleRequest(get(), ENV, cache); // populates the cache with a good response
+    await handleRequest(get(), ENV, kv); // populates the cache with a good response
 
-    currentMs += 46000; // past the 45s Cache-Control: max-age
+    currentMs += 46000; // past the 45s CACHE_SECONDS TTL
     fetchQueue.push(new Response(null, { status: 503 }));
-    const response = await handleRequest(get(), ENV, cache);
+    const response = await handleRequest(get(), ENV, kv);
     const body = await response.json();
 
     assert.equal(response.status, 200, "a stale-but-real fallback should not read as a hard failure");
@@ -237,9 +251,9 @@ describe("worker adapter: upstream failure handling", () => {
   });
 
   it("returns a stale 429 fallback with Retry-After when nothing has ever been cached yet", async () => {
-    const cache = createFakeCache();
+    const kv = createFakeKv();
     fetchQueue.push(new Response(null, { status: 429, headers: { "Retry-After": "30" } }));
-    const response = await handleRequest(get(), ENV, cache);
+    const response = await handleRequest(get(), ENV, kv);
     const body = await response.json();
 
     assert.equal(response.status, 502);
@@ -249,12 +263,12 @@ describe("worker adapter: upstream failure handling", () => {
   });
 
   it("returns a stale 502 with an empty (never fabricated) list when upstream is down and nothing is cached", async () => {
-    const cache = createFakeCache();
+    const kv = createFakeKv();
     fetchQueue.push(() => {
       throw new Error("network unreachable");
     });
 
-    const response = await handleRequest(get(), ENV, cache);
+    const response = await handleRequest(get(), ENV, kv);
     const body = await response.json();
 
     assert.equal(response.status, 502);
@@ -264,10 +278,10 @@ describe("worker adapter: upstream failure handling", () => {
   });
 
   it("falls back to stale instead of throwing on an unexpected upstream shape", async () => {
-    const cache = createFakeCache();
+    const kv = createFakeKv();
     fetchQueue.push(upstreamJson({ unexpected: "shape" }));
 
-    const response = await handleRequest(get(), ENV, cache);
+    const response = await handleRequest(get(), ENV, kv);
     const body = await response.json();
 
     assert.equal(body.stale, true);

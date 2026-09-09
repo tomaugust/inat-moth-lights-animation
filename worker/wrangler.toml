@@ -2,6 +2,24 @@ name = "inat-moth-lights-adapter"
 main = "src/index.js"
 compatibility_date = "2024-01-01"
 
+# Shared cache for the fetched observation window, keyed per place_id (see
+# contractKey() in src/index.js). Globally replicated, unlike caches.default
+# (per-Cloudflare-colo) — see src/index.js's file header for the production
+# incident that made that distinction matter: a single unlucky colo could
+# get stuck serving every one of its visitors a hard error while every other
+# colo looked completely healthy.
+#
+# `id` is filled in by .github/workflows/deploy-worker.yml, which
+# find-or-creates the namespace via `wrangler kv namespace create` using the
+# same CLOUDFLARE_API_TOKEN already required to deploy — nothing to do here
+# for that path. Deploying from your own machine (README's "Option A")
+# instead: run `npx wrangler kv namespace create OBSERVATIONS_KV` once from
+# this directory and paste the id it prints in place of the placeholder
+# below.
+[[kv_namespaces]]
+binding = "OBSERVATIONS_KV"
+id = "__OBSERVATIONS_KV_ID__"
+
 # CORS origins allowed to call this adapter, comma-separated. Update
 # ALLOWED_ORIGINS if the production site moves to a custom domain, and add
 # whatever local dev port you actually use.
@@ -10,12 +28,10 @@ ALLOWED_ORIGINS = "https://tomaugust.github.io,http://localhost:8080"
 TAXON_ID = "47157"
 # iNaturalist place_id 6857 = United Kingdom (admin_level 0).
 PLACE_ID = "6857"
-# caches.default is a per-Cloudflare-datacenter cache, not one global cache —
-# actual upstream request volume is roughly (this many requests per
-# CACHE_SECONDS) PER COLO receiving traffic, not one total. 1800s (30 min)
-# keeps the realistic worst case (traffic spread across several colos) well
-# under iNaturalist's ~1 req/s recommended ceiling with a comfortable margin
-# on top of the PAGE_DELAY_MS pacing below — see worker/src/index.js. The
+# The shared cache above is now genuinely global (Workers KV), so this is a
+# real worldwide ceiling, not a per-colo hope — see src/index.js. 1800s
+# (30 min) keeps that comfortably under iNaturalist's ~1 req/s recommended
+# ceiling with a large margin on top of the PAGE_DELAY_MS pacing below. The
 # site already frames itself as "recently shared", not real-time, so up to
 # 30 minutes of staleness is an acceptable trade for that headroom.
 PAGE_SIZE = "200"

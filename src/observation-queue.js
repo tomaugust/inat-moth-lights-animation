@@ -8,11 +8,68 @@
 // - cap how many overdue observations are released in a single call so a
 //   backlog (a pause, a large upload batch) catches up gradually instead of
 //   dumping everything into one frame;
-// - keep the oldest observations and drop newer ones first when the pending
-//   queue itself overflows;
+// - when the pending queue holds more than a comfortably displayable amount,
+//   thin it down with a species-diversity-aware sample rather than a plain
+//   oldest-first truncation (see selectDiverseSample below) — an abundant
+//   window's raw volume can vastly exceed what MothStore can ever display,
+//   and simply keeping the oldest N would let one common species crowd out
+//   everything else;
 // - persist the cursor and seen-ID window so a page refresh does not replay
 //   the same batch, recovering safely if storage is unavailable or corrupt.
 import { hashString, seededUnit } from "./animation-engine.js";
+
+// A taxon id alone isn't enough for a meaningful diversity bucket: iNaturalist
+// observations are routinely identified only to genus, family or coarser.
+// Mirrors moth-store.js's own isIdentifiedToSpecies — anything short of
+// species level is bucketed together as "unknown", the same generic group
+// MothStore itself already treats those observations as.
+function speciesBucketKey(observation) {
+  return observation.taxonId !== null && observation.taxonRank === "species"
+    ? `taxon-${observation.taxonId}`
+    : "unknown";
+}
+
+// Thins a chronologically-sorted list down to targetSize by round-robining
+// one observation per distinct species per pass, so a sample of an abundant
+// window represents as many different species as are actually available
+// rather than however many of whichever species happened to be uploaded
+// most that day. Each species' own observations stay in their original
+// (chronological) relative order; the final result is re-sorted
+// chronologically since round-robining interleaves species arrival order.
+// A no-op (returns the input as-is) whenever there's nothing to thin.
+export function selectDiverseSample(observations, targetSize) {
+  if (observations.length <= targetSize) {
+    return observations;
+  }
+
+  const buckets = new Map();
+  observations.forEach((observation) => {
+    const key = speciesBucketKey(observation);
+    if (!buckets.has(key)) {
+      buckets.set(key, []);
+    }
+    buckets.get(key).push(observation);
+  });
+
+  const bucketArrays = [...buckets.values()];
+  const selected = [];
+  for (let round = 0; selected.length < targetSize; round += 1) {
+    const before = selected.length;
+    for (const bucket of bucketArrays) {
+      if (selected.length >= targetSize) {
+        break;
+      }
+      if (bucket[round]) {
+        selected.push(bucket[round]);
+      }
+    }
+    if (selected.length === before) {
+      break; // every bucket exhausted
+    }
+  }
+
+  return selected.sort((a, b) => a.createdAtMs - b.createdAtMs || (a.id < b.id ? -1 : 1));
+}
 
 // Compresses the ~24h created_at span the Worker now fetches in full (see
 // fetchAllObservationsInWindow in inaturalist-client.js) into about one
@@ -24,7 +81,14 @@ export const DEFAULT_SOURCE_TIME_SCALE = 1 / 1440;
 
 const DEFAULT_OPTIONS = {
   seenIdCapacity: 2000,
-  maxQueuedObservations: 500,
+  // Sized against moth-store.js's maxActiveMoths (10) and its 8-20s duration
+  // range (avg 14s): sustainable throughput is roughly maxActiveMoths /
+  // averageDurationSeconds ≈ 0.71/s, so a comfortable ~60s cycle drains
+  // about 43 observations — 45 keeps a small, deliberate buffer rather than
+  // ever running the display dry. Must be updated together with those two
+  // moth-store.js values if either changes, or an abundant window's backlog
+  // will again take far longer than the intended cycle time to fully drain.
+  targetSampleSize: 45,
   // Absolute floor/ceiling on the *compressed* gap, after sourceTimeScale
   // and jitter are applied. These must scale down together with
   // DEFAULT_SOURCE_TIME_SCALE — the previous 1:1-real-time defaults (0.75s
@@ -100,12 +164,7 @@ export class ObservationQueue {
     });
 
     this.pending.sort((a, b) => a.createdAtMs - b.createdAtMs || (a.id < b.id ? -1 : 1));
-
-    if (this.pending.length > this.options.maxQueuedObservations) {
-      // Keep the oldest (soonest-due) observations; drop the newest excess
-      // rather than favoring any one species or location.
-      this.pending.length = this.options.maxQueuedObservations;
-    }
+    this.pending = selectDiverseSample(this.pending, this.options.targetSampleSize);
 
     if (cursor) {
       this.cursor = cursor;

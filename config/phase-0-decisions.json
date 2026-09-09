@@ -31,11 +31,14 @@
     "maxBackoffSeconds": 900
   },
   "live": {
-    "maxActiveMoths": 50,
-    "maxQueuedObservations": 500,
+    "maxActiveMoths": 10,
+    "maxActiveMothsNote": "Lowered from 50 after a real abundant-data review: 50 concurrent moths lasting only 4-10s each meant species cards flew by too fast to read. 10 is a legibility choice, sized together with targetSampleSize below so an abundant window's backlog still drains in roughly the intended cycle time.",
+    "targetSampleSize": 45,
+    "targetSampleSizeNote": "Replaces the old maxQueuedObservations overflow cap. Derived from maxActiveMoths/averageDurationSeconds (10/14 ≈ 0.71 admissions/sec sustainable) × a ~60s target cycle ≈ 43, plus a small buffer. Selection is species-diversity-aware (round-robin across distinct species, see selectDiverseSample in observation-queue.js), not oldest-first truncation, so one common species can't crowd out everything else in an abundant window.",
     "seenIdCapacity": 2000,
-    "minMothDurationSeconds": 4,
-    "maxMothDurationSeconds": 10,
+    "minMothDurationSeconds": 8,
+    "maxMothDurationSeconds": 20,
+    "durationNote": "Doubled from 4-10s (avg 7s → 14s) for the same legibility reason as maxActiveMoths above.",
     "releaseMode": "source-time",
     "sourceTimeScale": 0.0006944444444444445,
     "sourceTimeScaleNote": "1/1440: compresses the ~24h created_at window fetchAllObservationsInWindow now fetches in full into about one minute of animation time, rather than 1:1 real-time pace.",
@@ -44,6 +47,12 @@
     "minReleaseIntervalSeconds": 0.05,
     "maxReleaseIntervalSeconds": 3,
     "maxCatchUpObservations": 50,
-    "burstPolicy": "sample-oldest-on-overflow-and-cap-catch-up"
+    "burstPolicy": "diversity-sample-on-overflow-and-cap-catch-up",
+    "hoverBehavior": "freezes the whole scene at the instant focus began (canvas or side-panel card), resuming once focus clears — see app.js's currentSceneSeconds()/currentRenderTimestamp()",
+    "sparseWindowWidening": {
+      "sparseObservationThreshold": 30,
+      "sparseLookbackHours": 168,
+      "note": "Worker-side (worker/src/index.js): if the default 24h window returns fewer than sparseObservationThreshold observations, retries with a 7-day window and uses it if it actually returns more. Never fires for the UK's current volume; exists for a future lower-volume place_id."
+    }
   }
 }

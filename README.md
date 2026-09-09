@@ -95,6 +95,15 @@ npm run serve
 
 Any static file server works equally well (`python3 -m http.server`, `npx serve`, etc.).
 
+## Phase 6: pacing for real-world data density
+
+A real abundant-data review (the UK regularly has 700-2,700+ observations in its 24h window) found two compounding problems, addressed together since a fix to one changes the pressure on the other:
+
+- **Too busy, too fast.** `MothStore`'s original 50 concurrent moths at 4-10s each meant species cards flew by too fast to actually read. Lowered to `maxActiveMoths: 10` with duration doubled to `minMothDurationSeconds: 8` / `maxMothDurationSeconds: 20` (avg 7s → 14s) — a deliberate legibility choice, not a technical limit.
+- **Abundant windows overwhelm the store's own throughput.** With 10 slots and a ~14s average lifetime, sustainable admission is only ~0.71/sec — comfortably showing everything in an abundant window (over 1,000 distinct observations isn't unusual) would take 20+ minutes instead of the intended ~60s cycle. `ObservationQueue` now thins an overflowing pending queue with `selectDiverseSample()` (round-robining across distinct species) instead of a plain oldest-first truncation, down to `targetSampleSize: 45` — derived from `maxActiveMoths` and the duration range above (see the comment in `observation-queue.js`; the two must be updated together). Round-robining means a common species can't crowd out everything else in the sample, the way keeping-the-oldest-N could.
+- **Sparse windows have the opposite problem — not enough data exists, no pacing math fixes that.** `worker/src/index.js` now retries with a 7-day window (`SPARSE_LOOKBACK_HOURS`) whenever the default 24h window returns fewer than `SPARSE_OBSERVATION_THRESHOLD` (30) observations, using the wider result only if it actually has more. This never fires for the UK's current volume — it's there for a future lower-volume `place_id`, since per-country caching (see the KV section above) is only one piece of what multi-country support needs.
+- **Hovering/focusing a moth (canvas or side-panel card) freezes the whole scene** at the instant focus began, resuming exactly where it left off once focus clears — see the Phase 5 section above for the implementation.
+
 ## Testing
 
 ```sh

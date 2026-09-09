@@ -51,6 +51,16 @@ const DEFAULT_UPSTREAM_TIMEOUT_MS = 15000;
 // empty list. Pacing pages ~1/second keeps every refresh under the ~1 req/s
 // ceiling the rest of this file's comments already assume.
 const DEFAULT_PAGE_DELAY_MS = 1000;
+// A window this thin gives the client too little to display no matter how
+// the pacing is tuned — no amount of clever pacing conjures moths that don't
+// exist. When the default 24h window comes back below this count, widen the
+// lookback to DEFAULT_SPARSE_LOOKBACK_HOURS (7 days) and use that instead,
+// if it actually returns more. This never fires for the UK's current real
+// volume (in the hundreds to low thousands per 24h) — it exists for a
+// future lower-volume place_id, so per-country caching (see contractKey)
+// isn't the only piece of multi-country support still to land.
+const DEFAULT_SPARSE_OBSERVATION_THRESHOLD = 30;
+const DEFAULT_SPARSE_LOOKBACK_HOURS = 24 * 7;
 const USER_AGENT = "inat-moth-lights-adapter/1.0 (+https://github.com/tomaugust/inat-moth-lights-animation)";
 // Cache keys are scoped by place_id so a future per-visitor country (see
 // src/geolocation.js, not wired in yet) is additive — each country gets its
@@ -190,6 +200,34 @@ async function refreshContract(env, kv, placeId) {
 
     log("upstream-unexpected-shape", { pagesFetched: outcome.pagesFetched });
     return { ok: false, reason: "unexpected-upstream-shape" };
+  }
+
+  // Unlike this file's other `Number(env.X) || DEFAULT` reads, 0 is a
+  // legitimate real value here (explicitly disables widening) rather than
+  // "unset" — `||` would treat it as falsy and silently fall back to the
+  // default instead, so this checks finiteness explicitly.
+  const rawSparseThreshold = Number(env.SPARSE_OBSERVATION_THRESHOLD);
+  const sparseThreshold = Number.isFinite(rawSparseThreshold) ? rawSparseThreshold : DEFAULT_SPARSE_OBSERVATION_THRESHOLD;
+  if (outcome.results.length < sparseThreshold) {
+    const sparseLookbackHours = Number(env.SPARSE_LOOKBACK_HOURS) || DEFAULT_SPARSE_LOOKBACK_HOURS;
+    const widenedOptions = { ...options, lookbackHours: sparseLookbackHours };
+    try {
+      const widenedOutcome = await fetchAllObservationsInWindow(widenedOptions, (url) => fetchOnePage(url, env), undefined, pageDelayMs);
+      // Widening is an enhancement attempt, never a requirement: if it fails
+      // or (implausibly, since it's a superset window) doesn't actually
+      // return more, silently keep the narrower result that already
+      // succeeded rather than failing or truncating a working response.
+      if (widenedOutcome.ok && widenedOutcome.results.length > outcome.results.length) {
+        log("sparse-window-widened", {
+          narrowCount: outcome.results.length,
+          widenedCount: widenedOutcome.results.length,
+          sparseLookbackHours
+        });
+        outcome = widenedOutcome;
+      }
+    } catch (error) {
+      log("sparse-widen-network-error", { message: error.message });
+    }
   }
 
   const mapped = outcome.results.map(mapRawObservationToContract);

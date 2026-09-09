@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { DEFAULT_SOURCE_TIME_SCALE, ObservationQueue } from "../../src/observation-queue.js";
+import { DEFAULT_SOURCE_TIME_SCALE, ObservationQueue, selectDiverseSample } from "../../src/observation-queue.js";
 
-function observation(id, createdAtMs) {
-  return { id, createdAtMs, taxonId: null, place: "", imageUrl: "" };
+function observation(id, createdAtMs, overrides = {}) {
+  return { id, createdAtMs, taxonId: null, taxonRank: null, place: "", imageUrl: "", ...overrides };
+}
+
+function speciesObservation(id, createdAtMs, taxonId) {
+  return observation(id, createdAtMs, { taxonId, taxonRank: "species" });
 }
 
 function createFakeStorage() {
@@ -32,8 +36,10 @@ describe("ObservationQueue.enqueue", () => {
     );
   });
 
-  it("keeps the oldest observations and drops the newest excess on overflow", () => {
-    const queue = new ObservationQueue({ maxQueuedObservations: 3 });
+  it("keeps the oldest observations and drops the newest excess on overflow, when everything is the same species", () => {
+    // A single (or unidentified) species has only one diversity bucket, so
+    // selectDiverseSample degrades to plain oldest-first truncation here.
+    const queue = new ObservationQueue({ targetSampleSize: 3 });
     queue.enqueue([
       observation("a", 1),
       observation("b", 2),
@@ -45,6 +51,66 @@ describe("ObservationQueue.enqueue", () => {
       queue.pending.map((item) => item.id),
       ["a", "b", "c"]
     );
+  });
+
+  it("thins an overflowing multi-species batch to a diverse sample instead of favoring whichever species has the most records", () => {
+    const queue = new ObservationQueue({ targetSampleSize: 3 });
+    // Species A dominates (5 records); species B and C have one each. A
+    // plain oldest-first truncation would show only species A.
+    queue.enqueue([
+      speciesObservation("a1", 1, 100),
+      speciesObservation("a2", 2, 100),
+      speciesObservation("b1", 3, 200),
+      speciesObservation("a3", 4, 100),
+      speciesObservation("c1", 5, 300),
+      speciesObservation("a4", 6, 100),
+      speciesObservation("a5", 7, 100)
+    ]);
+
+    const keptTaxonIds = new Set(queue.pending.map((item) => item.taxonId));
+    assert.deepEqual([...keptTaxonIds].sort(), [100, 200, 300], "expected all three species represented");
+    assert.equal(queue.pendingCount, 3);
+  });
+});
+
+describe("selectDiverseSample", () => {
+  it("is a no-op when the input is already at or under the target size", () => {
+    const input = [observation("a", 1), observation("b", 2)];
+    assert.equal(selectDiverseSample(input, 5), input);
+  });
+
+  it("round-robins across species buckets, then re-sorts chronologically", () => {
+    const sample = selectDiverseSample(
+      [
+        speciesObservation("a1", 1, 100),
+        speciesObservation("a2", 2, 100),
+        speciesObservation("b1", 3, 200),
+        speciesObservation("a3", 4, 100)
+      ],
+      2
+    );
+
+    // Round 0 takes the first available from each bucket in encounter order
+    // (taxon 100 then taxon 200): a1, b1 — already chronological.
+    assert.deepEqual(sample.map((item) => item.id), ["a1", "b1"]);
+  });
+
+  it("buckets anything short of species-level identification together as unknown, matching MothStore's own definition", () => {
+    const sample = selectDiverseSample(
+      [
+        observation("genus1", 1, { taxonId: 999, taxonRank: "genus" }),
+        speciesObservation("species1", 2, 100),
+        observation("unidentified1", 3, { taxonId: null, taxonRank: null })
+      ],
+      2
+    );
+
+    // A genus-level record and a fully unidentified one collapse into the
+    // same "unknown" bucket as each other (not two separate buckets), so a
+    // target of 2 takes one from "unknown" and one from "taxon-100" rather
+    // than treating this as three distinct species worth spreading across.
+    const taxonKeys = sample.map((item) => (item.taxonRank === "species" ? `taxon-${item.taxonId}` : "unknown"));
+    assert.deepEqual(taxonKeys.sort(), ["taxon-100", "unknown"]);
   });
 });
 

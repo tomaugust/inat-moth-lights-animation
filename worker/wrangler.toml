@@ -41,3 +41,9 @@ UPSTREAM_TIMEOUT_MS = "15000"
 # now regularly takes 7-10+ pages, so this keeps a refresh from bursting past
 # iNaturalist's ~1 req/s recommended ceiling in one go.
 PAGE_DELAY_MS = "1000"
+# If the default 24h window comes back below this many observations, retry
+# with a SPARSE_LOOKBACK_HOURS window instead (used if it actually returns
+# more) — see src/index.js. Never fires for the UK's current volume; exists
+# for a future lower-volume place_id.
+SPARSE_OBSERVATION_THRESHOLD = "30"
+SPARSE_LOOKBACK_HOURS = "168"

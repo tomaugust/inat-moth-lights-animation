@@ -12,7 +12,12 @@ const ENV = {
   UPSTREAM_TIMEOUT_MS: "15000",
   // Real inter-page pacing is a production concern (see worker/src/index.js);
   // tests exercise multi-page accumulation and should run at full speed.
-  PAGE_DELAY_MS: "0"
+  PAGE_DELAY_MS: "0",
+  // Disabled by default (0 observations is never < 0) so ordinary tests'
+  // small mock result sets don't unexpectedly trigger a second "widening"
+  // fetch the test didn't queue a response for. The "sparse-window
+  // widening" describe block below re-enables it with its own env override.
+  SPARSE_OBSERVATION_THRESHOLD: "0"
 };
 
 // Mirrors just enough of the real Workers KV binding for these tests: get/put
@@ -286,5 +291,66 @@ describe("worker adapter: upstream failure handling", () => {
 
     assert.equal(body.stale, true);
     assert.equal(body.error, "unexpected-upstream-shape");
+  });
+});
+
+describe("worker adapter: sparse-window widening", () => {
+  const SPARSE_ENV = { ...ENV, SPARSE_OBSERVATION_THRESHOLD: "30" };
+
+  it("widens the window when the narrow result is below the sparse threshold, and uses it if it has more", async () => {
+    const kv = createFakeKv();
+    fetchQueue.push(upstreamJson({ total_results: 2, results: [rawObservation({ id: 1 }), rawObservation({ id: 2 })] }));
+    fetchQueue.push(
+      upstreamJson({ total_results: 5, results: [1, 2, 3, 4, 5].map((id) => rawObservation({ id })) })
+    );
+
+    const response = await handleRequest(get(), SPARSE_ENV, kv);
+    const body = await response.json();
+
+    assert.equal(fetchCalls.length, 2, "expected a narrow fetch, then a widened one");
+    const narrowCreatedD1 = new URL(fetchCalls[0].url).searchParams.get("created_d1");
+    const widenedCreatedD1 = new URL(fetchCalls[1].url).searchParams.get("created_d1");
+    assert.ok(
+      Date.parse(widenedCreatedD1) < Date.parse(narrowCreatedD1),
+      "the widened fetch should reach further back in time than the narrow one"
+    );
+    assert.equal(response.status, 200);
+    assert.equal(body.stale, false);
+    assert.equal(body.observations.length, 5, "expected the widened (larger) result set to be used");
+  });
+
+  it("keeps the narrow result if the widening attempt itself fails", async () => {
+    const kv = createFakeKv();
+    fetchQueue.push(upstreamJson({ total_results: 2, results: [rawObservation({ id: 1 }), rawObservation({ id: 2 })] }));
+    fetchQueue.push(() => {
+      throw new Error("network unreachable");
+    });
+
+    const response = await handleRequest(get(), SPARSE_ENV, kv);
+    const body = await response.json();
+
+    assert.equal(fetchCalls.length, 2, "expected the widening attempt to actually be made (and then fail)");
+    assert.equal(response.status, 200, "a failed widening attempt should not fail an otherwise-successful request");
+    assert.equal(body.stale, false);
+    assert.equal(body.observations.length, 2, "should fall back to the narrow result that already succeeded");
+  });
+
+  it("does not attempt widening when the narrow result already meets the threshold", async () => {
+    const kv = createFakeKv();
+    const results = Array.from({ length: 30 }, (_, index) => rawObservation({ id: index + 1 }));
+    fetchQueue.push(upstreamJson({ total_results: 30, results }));
+
+    await handleRequest(get(), SPARSE_ENV, kv);
+
+    assert.equal(fetchCalls.length, 1, "30 already meets the configured threshold — no widening fetch should happen");
+  });
+
+  it("does not widen at all when the threshold is disabled (0), even for a tiny result", async () => {
+    const kv = createFakeKv();
+    fetchQueue.push(upstreamJson({ total_results: 1, results: [rawObservation({ id: 1 })] }));
+
+    await handleRequest(get(), ENV, kv);
+
+    assert.equal(fetchCalls.length, 1, "the shared test ENV disables widening by default");
   });
 });

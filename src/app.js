@@ -75,6 +75,15 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   const isLive = config.animation.autoplay !== false;
 
   let lastTimestamp = null;
+  // Set while a moth is hovered/focused (canvas or side-panel card — both
+  // funnel through hoverState.hoveredMothId), holding the render clock at
+  // the instant focus began so the whole scene visibly stops rather than
+  // just keeping the focused moth alive a little longer past its exit.
+  // Real data ingestion (the network poll, ObservationQueue) is untouched —
+  // only rendering and moth admission/expiry pause; anything that arrives
+  // while frozen is simply admitted the moment focus clears.
+  let frozenTimestamp = null;
+  let frozenSeconds = null;
   let presentationMode = initialPresentationMode;
   const canHover = window.matchMedia
     ? window.matchMedia("(hover: hover) and (pointer: fine)").matches
@@ -90,12 +99,26 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     return performance.now() / 1000;
   }
 
+  // The single source of truth for "what instant is the scene showing right
+  // now" — every reader of scene state (rendering, hit-testing, the side
+  // panel list) must agree on this, or a frozen canvas would visibly
+  // disagree with hover hit-testing or the panel list still reordering
+  // underneath it. Live time whenever nothing is focused; held at the
+  // instant focus began for as long as it stays focused (see tick()).
+  function currentSceneSeconds() {
+    return frozenSeconds !== null ? frozenSeconds : nowSeconds();
+  }
+
+  function currentRenderTimestamp() {
+    return frozenTimestamp !== null ? frozenTimestamp : performance.now();
+  }
+
   function activeProjectedKnownMoths() {
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
     const cx = width / 2;
     const cy = height * config.scene.centerYRatio;
-    const t = nowSeconds();
+    const t = currentSceneSeconds();
 
     return store.getActiveMoths()
       .map((moth) => projectMoth(moth, t, width, height, cx, cy, false))
@@ -103,10 +126,11 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
       .sort((a, b) => a.entryTime - b.entryTime);
   }
 
-  // Hovering/focusing a moth no longer pauses a global clock (there isn't
-  // one) — it uses MothStore's own focus/grace-period mechanism so the
-  // specific moth being inspected is kept alive a little past its natural
-  // exit, while every other moth (and the live feed itself) keeps moving.
+  // Hovering/focusing a moth (canvas or side-panel card) freezes the whole
+  // scene at the instant focus began — see tick()'s isFrozen handling and
+  // currentSceneSeconds() above, which every other reader of "now" (hit-
+  // testing, the side panel list, this redraw) also goes through so nothing
+  // visibly disagrees with what's actually frozen on screen.
   function setFocusedMoth(mothId) {
     hoverState.hoveredMothId = mothId;
     canvas.style.cursor = mothId ? "pointer" : "default";
@@ -122,7 +146,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   }
 
   function redrawNow() {
-    drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, performance.now(), nowSeconds(), hoverState, presentationMode);
+    drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, currentRenderTimestamp(), currentSceneSeconds(), hoverState, presentationMode);
   }
 
   // The card is a wrapper around two independent controls, not one big
@@ -413,11 +437,22 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     if (lastTimestamp === null) {
       lastTimestamp = timestamp;
     }
-    const deltaSeconds = (timestamp - lastTimestamp) / 1000;
+    const realDeltaSeconds = (timestamp - lastTimestamp) / 1000;
     lastTimestamp = timestamp;
-    const t = nowSeconds();
 
-    if (isLive) {
+    const isFrozen = hoverState.hoveredMothId !== null;
+    if (isFrozen && frozenTimestamp === null) {
+      frozenTimestamp = timestamp;
+      frozenSeconds = nowSeconds();
+    } else if (!isFrozen) {
+      frozenTimestamp = null;
+      frozenSeconds = null;
+    }
+    const renderTimestamp = currentRenderTimestamp();
+    const t = currentSceneSeconds();
+    const deltaSeconds = isFrozen ? 0 : realDeltaSeconds;
+
+    if (isLive && !isFrozen) {
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
       const due = queue.peekDue(t);
@@ -430,7 +465,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
       store.removeExpired(t);
     }
 
-    drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, timestamp, t, hoverState, presentationMode);
+    drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, renderTimestamp, t, hoverState, presentationMode);
     audio.update(store.getActiveMoths(), deltaSeconds);
     updateActiveMothsPanel();
     updateDebugStatus(t);
@@ -442,7 +477,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     const height = canvas.clientHeight;
     const cx = width / 2;
     const cy = height * config.scene.centerYRatio;
-    const t = nowSeconds();
+    const t = currentSceneSeconds();
 
     return store.getActiveMoths()
       .map((moth) => projectMoth(moth, t, width, height, cx, cy, false))

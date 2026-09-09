@@ -139,6 +139,38 @@ describe("UK Moths site", () => {
     await page.close();
   });
 
+  it("freezes the whole scene while a moth is hovered/focused, and resumes once hover ends", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await mockWorkerAdapter(page, { observations: [liveObservation()] });
+
+    await page.goto(site.url, { waitUntil: "networkidle" });
+    await page.click("#launch-switch");
+    await page.waitForTimeout(2000);
+
+    await page.click("#active-moths-toggle");
+    await page.waitForSelector(".active-moths-card", { timeout: 5000 });
+
+    function canvasSnapshot() {
+      return page.evaluate(() => document.getElementById("orbit-canvas").toDataURL());
+    }
+
+    await page.locator(".active-moths-card").first().hover();
+    await page.waitForTimeout(300);
+    const frozenA = await canvasSnapshot();
+    await page.waitForTimeout(700);
+    const frozenB = await canvasSnapshot();
+    assert.equal(frozenA, frozenB, "the scene should not change at all while a moth is hovered");
+
+    await page.mouse.move(5, 5); // outside the side panel — clears hover
+    await page.waitForTimeout(300);
+    const resumedA = await canvasSnapshot();
+    await page.waitForTimeout(700);
+    const resumedB = await canvasSnapshot();
+    assert.notEqual(resumedA, resumedB, "the scene should resume moving once hover ends");
+
+    await page.close();
+  });
+
   it("still shows moths after a reload, even though the Worker always returns the same full-window batch", async () => {
     // Regression test: the Worker adapter is stateless and returns the
     // *entire* current 24h window on every request, never an incremental

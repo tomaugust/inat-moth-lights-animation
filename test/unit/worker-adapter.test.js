@@ -354,3 +354,69 @@ describe("worker adapter: sparse-window widening", () => {
     assert.equal(fetchCalls.length, 1, "the shared test ENV disables widening by default");
   });
 });
+
+describe("worker adapter: multi-country place_id support", () => {
+  it("uses the client-supplied place_id instead of the env default when provided", async () => {
+    const kv = createFakeKv();
+    fetchQueue.push(upstreamJson({ total_results: 1, results: [rawObservation({ id: 1 })] }));
+
+    await handleRequest(get("/observations?place_id=6448"), ENV, kv);
+
+    assert.equal(fetchCalls.length, 1);
+    assert.match(fetchCalls[0].url, /place_id=6448/);
+    const cached = await kv.get("observations:6448", "json");
+    assert.ok(cached, "expected the contract cached under the client-supplied place_id, not the env default (6857)");
+  });
+
+  it("falls back to the env default when place_id is missing or not a valid positive integer", async () => {
+    for (const badValue of [null, "abc", "-5", "0", "3.5"]) {
+      const kv = createFakeKv();
+      fetchQueue.push(upstreamJson({ total_results: 0, results: [] }));
+      const path = badValue === null ? "/observations" : `/observations?place_id=${badValue}`;
+
+      await handleRequest(get(path), ENV, kv);
+
+      assert.match(fetchCalls.at(-1).url, /place_id=6857/, `expected the env default for place_id=${badValue}`);
+    }
+  });
+
+  it("caches different place_ids independently, with no cross-country collision", async () => {
+    const kv = createFakeKv();
+    fetchQueue.push(upstreamJson({ total_results: 1, results: [rawObservation({ id: 1 })] })); // UK
+    fetchQueue.push(upstreamJson({ total_results: 1, results: [rawObservation({ id: 2 })] })); // France
+
+    const ukResponse = await handleRequest(get("/observations?place_id=6857"), ENV, kv);
+    const frResponse = await handleRequest(get("/observations?place_id=6753"), ENV, kv);
+
+    const ukBody = await ukResponse.json();
+    const frBody = await frResponse.json();
+    assert.equal(ukBody.observations[0].id, "inat-1");
+    assert.equal(frBody.observations[0].id, "inat-2");
+    assert.equal(fetchCalls.length, 2, "each place_id should trigger its own upstream fetch");
+  });
+
+  it("does not let a concurrent cache-miss for one place_id wait on (and receive) another place_id's in-flight refresh", async () => {
+    const kv = createFakeKv();
+    // Responds based on the requested URL's own place_id rather than queue
+    // order, since two concurrent refreshes interleave their page requests
+    // unpredictably — this is the scenario the old single shared
+    // inFlightRefresh variable would have gotten wrong.
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+      const placeId = new URL(String(url)).searchParams.get("place_id");
+      return placeId === "6857"
+        ? upstreamJson({ total_results: 1, results: [rawObservation({ id: 100 })] })
+        : upstreamJson({ total_results: 1, results: [rawObservation({ id: 200 })] });
+    };
+
+    const [ukResponse, frResponse] = await Promise.all([
+      handleRequest(get("/observations?place_id=6857"), ENV, kv),
+      handleRequest(get("/observations?place_id=6753"), ENV, kv)
+    ]);
+
+    const ukBody = await ukResponse.json();
+    const frBody = await frResponse.json();
+    assert.equal(ukBody.observations[0].id, "inat-100", "the UK request should get UK data, not France's");
+    assert.equal(frBody.observations[0].id, "inat-200", "the France request should get France's data, not the UK's");
+  });
+});

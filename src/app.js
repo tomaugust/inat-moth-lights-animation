@@ -3,17 +3,26 @@ import { drawScene, projectMoth } from "./animation-engine.js";
 import { setupAudio } from "./audio-engine.js";
 import { ObservationQueue } from "./observation-queue.js";
 import { MothStore } from "./moth-store.js";
-import { CONNECTION_STATES, InatClient } from "./inaturalist-client.js";
+import { CONNECTION_STATES, DEFAULT_PLACE_ID, InatClient } from "./inaturalist-client.js";
+import { FALLBACK_COUNTRY_NAME, resolveUserPlace } from "./geolocation.js";
 
 // The production site's one and only data source: the deployed Cloudflare
 // Worker adapter (worker/src/index.js), never api.inaturalist.org directly —
 // that's what gives every visitor a real User-Agent and a shared cache
-// instead of N independent browsers hammering iNaturalist. The Worker is
-// currently UK-only (its PLACE_ID is a fixed deploy-time value, not
-// per-request), so this site is UK-only for now too; per-visitor country
-// (src/geolocation.js) needs the Worker to accept and cache by place_id
-// first — see README.md.
+// instead of N independent browsers hammering iNaturalist. The Worker
+// caches per place_id (see contractKey() in worker/src/index.js), so each
+// visitor's own resolved country (resolveUserPlace(), below) is its own
+// independently-refreshed entry, not a redesign.
 const WORKER_OBSERVATIONS_URL = "https://inat-moth-lights-adapter.tomaugust1985.workers.dev/observations";
+
+function countryHeading(countryName) {
+  return countryName === FALLBACK_COUNTRY_NAME ? "UK Moths" : `${countryName} Moths`;
+}
+
+function countryDescription(countryName) {
+  const place = countryName === FALLBACK_COUNTRY_NAME ? "the United Kingdom" : countryName;
+  return `A living view of moth and butterfly sightings recently shared on iNaturalist across ${place} — recently shared records, not real-time abundance or movement.`;
+}
 
 // Shown in #debug-status purely so a screenshot from a real device proves
 // which deployed build that browser is actually running, rather than leaving
@@ -52,6 +61,8 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   const activeMothsList = document.getElementById("active-moths-list");
   const loadingStatus = document.getElementById("loading-status");
   const debugStatus = document.getElementById("debug-status");
+  const animationTitle = document.getElementById("animation-title");
+  const animationDescription = document.getElementById("animation-description");
   const audio = setupAudio();
 
   // Deliberately in-memory only (no storage option) — the Worker adapter is
@@ -66,8 +77,13 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   // starving a returning visitor of almost everything. A fresh load should
   // replay the current window from scratch, matching the intended
   // "living view" experience.
-  const queue = new ObservationQueue();
-  const store = new MothStore();
+  // Reassigned (not just mutated) if resolveUserPlace() later swaps to a
+  // different country than the default this starts with — see below. `let`
+  // rather than `const` because every downstream reader (tick, the side
+  // panel, hit-testing) closes over this binding, so reassigning it here is
+  // what makes them all pick up the fresh queue/store on their next call.
+  let queue = new ObservationQueue();
+  let store = new MothStore();
   // A false autoplay is the one remaining kill-switch: the scene loads (just
   // the light, in whichever presentation mode) but never admits a moth. Real
   // network polling still runs in the background regardless — see the
@@ -400,9 +416,13 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   let lastDebugUpdateSeconds = 0;
   let probeResult = null;
   let probeStarted = false;
+  // Assigned synchronously by startClientForPlace() below (called
+  // immediately, before tick()/updateDebugStatus() ever run) and reassigned
+  // if resolveUserPlace() later swaps to a different country.
+  let client = null;
 
   function updateDebugStatus(t) {
-    if (!debugStatus || t - lastDebugUpdateSeconds < 0.5) {
+    if (!debugStatus || !client || t - lastDebugUpdateSeconds < 0.5) {
       return;
     }
     lastDebugUpdateSeconds = t;
@@ -561,44 +581,90 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   window.addEventListener("resize", resizeCanvas);
   resizeCanvas();
 
-  // Real network polling starts as soon as the scene is constructed —
-  // including during the brief light-only preview before the launch screen
-  // finishes fading — so there's already a backlog of real observations
-  // ready to render the instant presentationMode flips to "normal", rather
-  // than starting the fetch only after that reveal completes.
-  const client = new InatClient({
-    buildUrl: () => WORKER_OBSERVATIONS_URL,
-    upstreamShape: "adapter-contract",
-    getCursor: () => queue.cursor || null,
-    // InatClient's own default (15s) is too tight for this adapter: a
-    // cold-cache Worker refresh now paces up to 4 sequential upstream pages
-    // a second apart (see PAGE_DELAY_MS in worker/src/index.js) before
-    // returning a ~300-400KB response, measured at ~7-8s even from a fast
-    // connection — a real mobile connection can easily push that past 15s,
-    // aborting the fetch and leaving the scene empty until the next
-    // ~60s-backed-off retry. 45s mirrors the same margin already used for
-    // this exact scenario in .github/workflows/deploy-worker.yml's smoke test.
-    requestTimeoutSeconds: 45,
-    onStateChange: (state) => {
-      // STARTING is the synchronous initial state set the instant
-      // client.start() runs, before any network activity — only a later,
-      // real state (success or failure) means the first fetch has actually
-      // resolved, which is what "no longer loading" should mean here.
-      if (loadingStatus && state !== CONNECTION_STATES.STARTING) {
-        loadingStatus.classList.add("is-hidden");
+  // Constructs and starts the InatClient for a given place_id. Called once
+  // immediately below (the UK default — matching this page's behavior
+  // before per-country support existed, so a real visitor's very first
+  // paint and first fetch are exactly as fast as they always were) and
+  // again later if resolveUserPlace() finds a different country (see the
+  // IIFE below) — never awaited before starting, since real geolocation
+  // permission prompts a visitor doesn't respond to make resolveUserPlace()
+  // take its full ~8s fallback timeout, and most first-time visitors never
+  // interact with that prompt at all. Blocking the initial start on it
+  // would turn an instant start into an ~8s wait for most visitors, not an
+  // edge case — confirmed by this exact symptom during testing (a real,
+  // unanswered permission prompt in a real browser).
+  function startClientForPlace(placeId) {
+    client = new InatClient({
+      buildUrl: () => `${WORKER_OBSERVATIONS_URL}?place_id=${placeId}`,
+      upstreamShape: "adapter-contract",
+      getCursor: () => queue.cursor || null,
+      // InatClient's own default (15s) is too tight for this adapter: a
+      // cold-cache Worker refresh now paces up to 4 sequential upstream pages
+      // a second apart (see PAGE_DELAY_MS in worker/src/index.js) before
+      // returning a ~300-400KB response, measured at ~7-8s even from a fast
+      // connection — a real mobile connection can easily push that past 15s,
+      // aborting the fetch and leaving the scene empty until the next
+      // ~60s-backed-off retry. 45s mirrors the same margin already used for
+      // this exact scenario in .github/workflows/deploy-worker.yml's smoke test.
+      requestTimeoutSeconds: 45,
+      onStateChange: (state) => {
+        // STARTING is the synchronous initial state set the instant
+        // client.start() runs, before any network activity — only a later,
+        // real state (success or failure) means the first fetch has actually
+        // resolved, which is what "no longer loading" should mean here.
+        if (loadingStatus && state !== CONNECTION_STATES.STARTING) {
+          loadingStatus.classList.add("is-hidden");
+        }
+        if (state === CONNECTION_STATES.STALE || state === CONNECTION_STATES.OFFLINE) {
+          runReachabilityProbeOnce();
+        }
+        if (state === CONNECTION_STATES.FATAL_SCHEMA_ERROR) {
+          console.error("iNaturalist adapter returned an unexpected response shape; live updates have stopped.");
+        }
+      },
+      onBatch: (payload) => {
+        queue.enqueue(payload.observations, payload.cursor);
       }
-      if (state === CONNECTION_STATES.STALE || state === CONNECTION_STATES.OFFLINE) {
-        runReachabilityProbeOnce();
-      }
-      if (state === CONNECTION_STATES.FATAL_SCHEMA_ERROR) {
-        console.error("iNaturalist adapter returned an unexpected response shape; live updates have stopped.");
-      }
-    },
-    onBatch: (payload) => {
-      queue.enqueue(payload.observations, payload.cursor);
+    });
+    client.start();
+  }
+
+  startClientForPlace(DEFAULT_PLACE_ID);
+
+  // Resolves the visitor's real country in the background; if it turns out
+  // to be somewhere other than the UK default just started above, cut over
+  // to it — a fresh queue/store (a different country is a different feed,
+  // not a continuation) and the loading indicator reappears until the new
+  // client's first real fetch resolves. If it resolves to the UK anyway
+  // (a real UK visitor, or any failure's fallback — both already showing
+  // exactly this), there's nothing to switch and no visible change at all.
+  // client.stop() doesn't abort an in-flight request (InatClient has no
+  // abort-on-stop), so a UK response already in flight at the moment of a
+  // switch can still land afterward and enqueue a handful of real UK
+  // observations alongside the new country's — a minor, self-limited,
+  // accepted edge case rather than deeper surgery on InatClient itself.
+  (async () => {
+    const { placeId, countryName } = await resolveUserPlace();
+    if (placeId === DEFAULT_PLACE_ID) {
+      return;
     }
-  });
-  client.start();
+
+    if (animationTitle) {
+      animationTitle.textContent = countryHeading(countryName);
+    }
+    if (animationDescription) {
+      animationDescription.textContent = countryDescription(countryName);
+    }
+    document.title = countryHeading(countryName);
+
+    client.stop();
+    queue = new ObservationQueue();
+    store = new MothStore();
+    if (loadingStatus) {
+      loadingStatus.classList.remove("is-hidden");
+    }
+    startClientForPlace(placeId);
+  })();
 
   requestAnimationFrame(tick);
 

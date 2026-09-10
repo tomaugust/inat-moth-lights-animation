@@ -4,8 +4,13 @@ import { after, before, describe, it } from "node:test";
 import { chromium } from "playwright";
 
 import { startStaticServer } from "../helpers/static-server.mjs";
+import { stubGeolocation } from "../helpers/geolocation.mjs";
 
 const WORKER_URL = "https://inat-moth-lights-adapter.tomaugust1985.workers.dev/observations";
+// The real client now appends ?place_id=<resolved country> (see app.js's
+// resolveUserPlace() wiring) — a glob suffix matches that query string
+// regardless of which country a given test's browser resolves to.
+const WORKER_URL_PATTERN = `${WORKER_URL}*`;
 
 let site;
 let browser;
@@ -46,7 +51,7 @@ async function mockPhotoHost(page) {
 // reaches the real Worker or the real iNaturalist API from CI.
 async function mockWorkerAdapter(page, { observations = [], stale = false, status = 200 } = {}) {
   await mockPhotoHost(page);
-  await page.route(WORKER_URL, (route) =>
+  await page.route(WORKER_URL_PATTERN, (route) =>
     route.fulfill({
       status,
       contentType: "application/json",
@@ -87,7 +92,7 @@ describe("UK Moths site", () => {
     });
     page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
     page.on("response", (response) => {
-      if (!response.ok() && !response.url().endsWith("/favicon.ico") && response.url() !== WORKER_URL) {
+      if (!response.ok() && !response.url().endsWith("/favicon.ico") && !response.url().startsWith(WORKER_URL)) {
         unexpectedResponses.push(`${response.status()} ${response.url()}`);
       }
     });
@@ -205,13 +210,74 @@ describe("UK Moths site", () => {
     await page.close();
   });
 
+  it("starts with the UK default instantly, then switches to the visitor's real resolved country", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await mockPhotoHost(page);
+    await stubGeolocation(page, { latitude: 48.8566, longitude: 2.3522 });
+    // Delayed so there's a reliable window to observe the UK default before
+    // the switch — resolveUserPlace() normally resolves fast enough (real
+    // permission already granted, or mocked as here) that the two states
+    // would otherwise race within a single test assertion.
+    await page.route("https://api.inaturalist.org/v1/places/nearby**", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          total_results: 1,
+          results: { standard: [{ id: 424242, name: "Testland", admin_level: 0 }], community: [] }
+        })
+      });
+    });
+    // One handler, keyed by the request's own place_id — the UK default
+    // starts immediately (before geolocation resolves) and must see UK data;
+    // the switch that follows must see Testland's, never a mix of the two.
+    await page.route(WORKER_URL_PATTERN, (route) => {
+      const placeId = new URL(route.request().url()).searchParams.get("place_id");
+      const observation =
+        placeId === "424242"
+          ? liveObservation({ id: "inat-testland", commonName: "Testland Moth", observationUrl: "https://www.inaturalist.org/observations/111" })
+          : liveObservation();
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ fetchedAt: new Date().toISOString(), stale: false, cursor: "1", observations: [observation] })
+      });
+    });
+
+    await page.goto(site.url, { waitUntil: "networkidle" });
+    await page.click("#launch-switch");
+    // Comfortably before the delayed places/nearby response resolves (see
+    // above), even after the panel-open interaction below spends its own
+    // real wall-clock time — so this reliably observes the pre-switch UK
+    // default rather than racing the switch.
+    await page.waitForTimeout(1200);
+
+    assert.equal(await page.textContent("#animation-title"), "UK Moths", "should start with the UK default immediately");
+    await page.click("#active-moths-toggle");
+    await page.waitForSelector(".active-moths-card", { timeout: 5000 });
+    assert.equal(await page.locator(".active-moths-card__name").first().textContent(), "Test Moth");
+
+    await page.waitForFunction(() => document.getElementById("animation-title")?.textContent === "Testland Moths", {
+      timeout: 5000
+    });
+    await page.waitForFunction(
+      () => document.querySelector(".active-moths-card__name")?.textContent === "Testland Moth",
+      { timeout: 5000 }
+    );
+    const cardNames = await page.locator(".active-moths-card__name").allTextContents();
+    assert.deepEqual(cardNames, ["Testland Moth"], "the UK moth should be gone after switching, not left alongside Testland's");
+
+    await page.close();
+  });
+
   it("shows a loading indicator until the first real response arrives, then hides it", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     await mockPhotoHost(page);
     // A slow connection can take several seconds to fetch the full 24h
     // window — this reproduces exactly that: the scene must not look
     // silently broken (just the light, no feedback) while that's in flight.
-    await page.route(WORKER_URL, async (route) => {
+    await page.route(WORKER_URL_PATTERN, async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       await route.fulfill({
         status: 200,

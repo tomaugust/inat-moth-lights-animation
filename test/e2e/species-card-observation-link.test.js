@@ -5,6 +5,9 @@ import { chromium } from "playwright";
 import { startStaticServer } from "../helpers/static-server.mjs";
 
 const WORKER_URL = "https://inat-moth-lights-adapter.tomaugust1985.workers.dev/observations";
+// The real client now appends ?place_id=<resolved country> — see app.js's
+// resolveUserPlace() wiring.
+const WORKER_URL_PATTERN = `${WORKER_URL}*`;
 
 let site;
 let browser;
@@ -32,7 +35,7 @@ describe("active moth cards: hides the thumbnail (only) when an observation has 
   it("hides the thumbnail but still shows the observation link for a moth with no image/license data", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     const now = Date.now();
-    await page.route(WORKER_URL, (route) =>
+    await page.route(WORKER_URL_PATTERN, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",

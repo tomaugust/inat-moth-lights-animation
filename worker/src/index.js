@@ -118,10 +118,34 @@ async function readContract(kv, key) {
   return kv.get(key, "json");
 }
 
-function buildUpstreamOptions(env) {
+// A client-supplied place_id (?place_id=) overrides the env default so a
+// visitor's own resolved country (see src/geolocation.js) can be served
+// instead of always the fixed UK default — the KV cache key and every
+// upstream query are already scoped by whichever placeId this resolves to
+// (see contractKey/staleBackupKey), so a new country is just a new,
+// independently-cached entry, not a redesign.
+//
+// Deliberately just a sanity bound (a positive integer, no absurd upper
+// bound), not a curated allowlist of real iNaturalist place ids: this is a
+// public, unauthenticated endpoint, so any caller can already request any
+// placeId directly (CORS only restricts which origins a *browser* will let
+// read the response, not who can request it at all) — an allowlist would
+// need to be kept in sync with every country resolveUserPlace() might ever
+// return, for a protection this validation already gives most of the
+// practical benefit of (rejecting garbage that would otherwise waste an
+// upstream request on a nonsense query). Revisit if real abuse shows up.
+function resolvePlaceId(request, env) {
+  const requested = Number(new URL(request.url).searchParams.get("place_id"));
+  if (Number.isInteger(requested) && requested > 0) {
+    return requested;
+  }
+  return Number(env.PLACE_ID) || DEFAULT_PLACE_ID;
+}
+
+function buildUpstreamOptions(env, placeId) {
   return {
     taxonId: Number(env.TAXON_ID) || DEFAULT_TAXON_ID,
-    placeId: Number(env.PLACE_ID) || DEFAULT_PLACE_ID,
+    placeId,
     photoLicenses: ["cc0", "cc-by", "cc-by-sa", "cc-by-nc", "cc-by-nc-sa", "cc-by-nd", "cc-by-nc-nd"],
     pageSize: Number(env.PAGE_SIZE) || DEFAULT_PAGE_SIZE
   };
@@ -166,11 +190,14 @@ async function staleFallback(kv, placeId, errorCode, extraHeaders) {
 // upstream fetch instead of N — otherwise every one of them would race to
 // refill the cache independently (see the file header). Never throws: it
 // resolves to a discriminated result so every waiter can build its own
-// response (its own CORS headers) without re-fetching.
-let inFlightRefresh = null;
+// response (its own CORS headers) without re-fetching. Keyed by placeId —
+// now that a request can ask for any country, a single shared variable
+// would let a concurrent miss for one country incorrectly wait on (and
+// receive) another country's in-flight refresh.
+const inFlightRefreshes = new Map();
 
 async function refreshContract(env, kv, placeId) {
-  const options = buildUpstreamOptions(env);
+  const options = buildUpstreamOptions(env, placeId);
 
   const pageDelayMs = Number(env.PAGE_DELAY_MS) || DEFAULT_PAGE_DELAY_MS;
 
@@ -268,20 +295,22 @@ export async function handleRequest(request, env, kv) {
     return jsonResponse({ error: "method-not-allowed" }, { status: 405, headers: cors });
   }
 
-  const placeId = buildUpstreamOptions(env).placeId;
+  const placeId = resolvePlaceId(request, env);
 
   const cached = await readContract(kv, contractKey(placeId));
   if (cached) {
-    log("cache-hit");
+    log("cache-hit", { placeId });
     return jsonResponse(cached, { headers: { ...cors, "Cache-Control": `public, max-age=${Number(env.CACHE_SECONDS) || DEFAULT_CACHE_SECONDS}` } });
   }
 
-  if (!inFlightRefresh) {
-    inFlightRefresh = refreshContract(env, kv, placeId).finally(() => {
-      inFlightRefresh = null;
+  let inFlight = inFlightRefreshes.get(placeId);
+  if (!inFlight) {
+    inFlight = refreshContract(env, kv, placeId).finally(() => {
+      inFlightRefreshes.delete(placeId);
     });
+    inFlightRefreshes.set(placeId, inFlight);
   }
-  const result = await inFlightRefresh;
+  const result = await inFlight;
 
   if (!result.ok) {
     const extraHeaders = result.retryAfter ? { ...cors, "Retry-After": result.retryAfter } : cors;

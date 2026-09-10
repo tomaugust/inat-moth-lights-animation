@@ -26,7 +26,8 @@ id = "__OBSERVATIONS_KV_ID__"
 [vars]
 ALLOWED_ORIGINS = "https://tomaugust.github.io,http://localhost:8080"
 TAXON_ID = "47157"
-# iNaturalist place_id 6857 = United Kingdom (admin_level 0).
+# Default place_id when a request doesn't supply its own (?place_id=) — see
+# resolvePlaceId() in src/index.js. 6857 = United Kingdom (admin_level 0).
 PLACE_ID = "6857"
 # The shared cache above is now genuinely global (Workers KV), so this is a
 # real worldwide ceiling, not a per-colo hope — see src/index.js. 1800s

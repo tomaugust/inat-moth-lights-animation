@@ -78,10 +78,21 @@ function contractKey(placeId) {
 // KV read past its expirationTtl is just a miss) — this backup is what lets
 // the adapter keep answering with real data through an outage instead of an
 // empty list, until this copy itself finally goes stale too.
+//
+// A week (not the original 6 hours) because the failure this exists for —
+// iNaturalist rate-limiting or an extended upstream outage — has no promised
+// recovery time; 6 hours meant a bad enough incident still ended in the
+// empty-list 502 (staleFallback's other branch) well before anyone could
+// investigate. A week trades staleness (a visitor could, in the worst case,
+// see week-old "recent" sightings) for never falling all the way back to
+// nothing, which is the more visible and more confusing failure mode of the
+// two. src/fallback-observations.js is the next line of defense after this
+// one — for a visitor whose very first load has no cache to fall back on at
+// all (a brand new place_id, or an outage that outlasts even this).
 function staleBackupKey(placeId) {
   return `observations:${placeId}:stale-backup`;
 }
-const STALE_BACKUP_SECONDS = 6 * 60 * 60;
+const STALE_BACKUP_SECONDS = 7 * 24 * 60 * 60;
 
 function parseAllowedOrigins(envValue) {
   return (envValue || "")

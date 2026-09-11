@@ -54,5 +54,15 @@
       "sparseLookbackHours": 168,
       "note": "Worker-side (worker/src/index.js): if the default 24h window returns fewer than sparseObservationThreshold observations, retries with a 7-day window and uses it if it actually returns more. Never fires for the UK's current volume; exists for a future lower-volume place_id."
     }
+  },
+  "resilience": {
+    "staleBackupSeconds": 604800,
+    "staleBackupNote": "Worker-side (worker/src/index.js). Raised from 6 hours to 7 days so a sustained iNaturalist outage or rate-limit window still serves real (if aging) data instead of falling all the way back to the empty 502.",
+    "appLevelFallback": {
+      "source": "src/fallback-observations.js",
+      "country": "Colombia",
+      "observationCount": 53,
+      "note": "Last-resort static dataset shown only when a fresh page load gets no live data from anywhere (not the short cache, not the 7-day backup either). Real, research-grade, individually-licensed iNaturalist observations, one per species. Fed through the same ObservationQueue/MothStore pipeline as live data; cleared the moment a real batch (even an empty/quiet one) arrives."
+    }
   }
 }

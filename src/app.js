@@ -5,6 +5,8 @@ import { ObservationQueue } from "./observation-queue.js";
 import { MothStore } from "./moth-store.js";
 import { CONNECTION_STATES, DEFAULT_PLACE_ID, InatClient } from "./inaturalist-client.js";
 import { FALLBACK_COUNTRY_NAME, resolveUserPlace } from "./geolocation.js";
+import { parseObservationsResponse } from "./observation-adapter.js";
+import { FALLBACK_COUNTRY_NAME as FALLBACK_DATASET_COUNTRY, FALLBACK_OBSERVATIONS } from "./fallback-observations.js";
 
 // The production site's one and only data source: the deployed Cloudflare
 // Worker adapter (worker/src/index.js), never api.inaturalist.org directly —
@@ -14,6 +16,13 @@ import { FALLBACK_COUNTRY_NAME, resolveUserPlace } from "./geolocation.js";
 // visitor's own resolved country (resolveUserPlace(), below) is its own
 // independently-refreshed entry, not a redesign.
 const WORKER_OBSERVATIONS_URL = "https://inat-moth-lights-adapter.tomaugust1985.workers.dev/observations";
+
+// The last line of defense: a small, bundled-in-the-app dataset of real
+// iNaturalist observations (see fallback-observations.js), shown only when a
+// fresh page load can't get live data from anywhere — not the Worker's short
+// cache, not its 7-day stale-backup either (worker/src/index.js). Normalized
+// once here (module load), not per fallback trigger, since it never changes.
+const FALLBACK_NORMALIZED_OBSERVATIONS = parseObservationsResponse({ observations: FALLBACK_OBSERVATIONS }).observations;
 
 function countryHeading(countryName) {
   return countryName === FALLBACK_COUNTRY_NAME ? "UK Moths" : `${countryName} Moths`;
@@ -60,6 +69,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   const activeMothsPanel = document.getElementById("active-moths-panel");
   const activeMothsList = document.getElementById("active-moths-list");
   const loadingStatus = document.getElementById("loading-status");
+  const fallbackStatus = document.getElementById("fallback-status");
   // Hidden by default — this diagnostic readout was added to debug a real
   // production incident and was never meant for every visitor to see. Opt
   // in with ?debug on the URL for troubleshooting a future report.
@@ -608,6 +618,26 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   // edge case — confirmed by this exact symptom during testing (a real,
   // unanswered permission prompt in a real browser).
   function startClientForPlace(placeId) {
+    // Scoped to this client generation, not module/outer state — a country
+    // switch below starts a fresh client (and a fresh queue/store) that must
+    // get its own fresh chance at live data, never inherit an earlier
+    // client's already-tripped fallback.
+    let hasReceivedLiveData = false;
+    let fallbackActive = false;
+
+    function enterFallbackModeIfNeeded() {
+      if (hasReceivedLiveData || fallbackActive) {
+        return;
+      }
+      fallbackActive = true;
+      queue.enqueue(FALLBACK_NORMALIZED_OBSERVATIONS);
+      if (fallbackStatus) {
+        fallbackStatus.textContent =
+          `It looks like live data is temporarily unavailable. While we wait, here's a look at ${FALLBACK_DATASET_COUNTRY} — one of the most Lepidoptera-rich countries on Earth.`;
+        fallbackStatus.classList.remove("is-hidden");
+      }
+    }
+
     client = new InatClient({
       buildUrl: () => `${WORKER_OBSERVATIONS_URL}?place_id=${placeId}`,
       upstreamShape: "adapter-contract",
@@ -635,8 +665,37 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
         if (state === CONNECTION_STATES.FATAL_SCHEMA_ERROR) {
           console.error("iNaturalist adapter returned an unexpected response shape; live updates have stopped.");
         }
+        // Every failure state, not just STALE/OFFLINE above (RATE_LIMITED and
+        // FATAL_SCHEMA_ERROR are just as much "no live data" from this
+        // visitor's point of view) — but only while this client has never
+        // once succeeded. Once real data has ever arrived, later failures
+        // fall back to the Worker's own stale-cache (worker/src/index.js),
+        // which is real (if aging) data rather than a static substitute.
+        if (
+          state === CONNECTION_STATES.STALE ||
+          state === CONNECTION_STATES.OFFLINE ||
+          state === CONNECTION_STATES.RATE_LIMITED ||
+          state === CONNECTION_STATES.FATAL_SCHEMA_ERROR
+        ) {
+          enterFallbackModeIfNeeded();
+        }
       },
       onBatch: (payload) => {
+        hasReceivedLiveData = true;
+        // A real batch just arrived — even an empty (QUIET) one is real data
+        // from a working adapter, unlike the substitute fallback set. Swap
+        // back to a clean queue/store rather than mixing static Colombia
+        // moths in with live ones, which would be confusing (a card claiming
+        // to be a UK sighting sitting right next to one that was posted years
+        // ago in Colombia).
+        if (fallbackActive) {
+          fallbackActive = false;
+          queue = new ObservationQueue();
+          store = new MothStore();
+          if (fallbackStatus) {
+            fallbackStatus.classList.add("is-hidden");
+          }
+        }
         queue.enqueue(payload.observations, payload.cursor);
       }
     });
@@ -676,6 +735,13 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     store = new MothStore();
     if (loadingStatus) {
       loadingStatus.classList.remove("is-hidden");
+    }
+    // The default client's own fallback banner (if it had tripped one before
+    // this resolved) belongs to a client generation that's being replaced —
+    // the new one gets its own fresh attempt at live data, per
+    // startClientForPlace's fallbackActive being scoped to each call.
+    if (fallbackStatus) {
+      fallbackStatus.classList.add("is-hidden");
     }
     startClientForPlace(placeId);
   })();

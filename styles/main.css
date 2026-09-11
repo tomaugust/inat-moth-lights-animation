@@ -123,6 +123,7 @@ body.launch-screen-active:not(.launch-controls-visible) .sound-toggle,
 body.launch-screen-active:not(.launch-controls-visible) .active-moths-toggle,
 body.launch-screen-active:not(.launch-controls-visible) .active-moths-panel,
 body.launch-screen-active:not(.launch-controls-visible) .loading-status,
+body.launch-screen-active:not(.launch-controls-visible) .fallback-status,
 body.launch-screen-active:not(.launch-controls-visible) .debug-status {
   opacity: 0;
   pointer-events: none;
@@ -166,6 +167,39 @@ body.launch-screen-active:not(.launch-controls-visible) .debug-status {
   50% {
     opacity: 0.45;
   }
+}
+
+/* Shown only when the live feed has failed before ever delivering a real
+   batch (see app.js's fallback-mode wiring) — the app.js-set text names
+   where the substitute moths are actually from, rather than this file
+   guessing at copy. Deliberately steady rather than pulsing like
+   .loading-status: this isn't "still loading", it's a settled (if
+   unwanted) state that can persist for a while. Sits just above
+   .loading-status so the two can never overlap during the brief instant
+   both are visible (fallback mode begins the moment the first poll fails,
+   right as the loading text is fading out). */
+.fallback-status {
+  background: rgba(10, 10, 12, 0.45);
+  border: 1px solid rgba(255, 214, 130, 0.32);
+  border-radius: 10px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(16px, 2.4vw, 30px) + 40px);
+  color: rgba(245, 241, 232, 0.85);
+  font-size: clamp(0.78rem, 2.6vw, 0.92rem);
+  left: 50%;
+  line-height: 1.4;
+  margin: 0;
+  max-width: min(480px, calc(100vw - 40px));
+  padding: 8px 16px;
+  pointer-events: none;
+  position: fixed;
+  text-align: center;
+  transform: translateX(-50%);
+  transition: opacity 620ms ease;
+  z-index: 10;
+}
+
+.fallback-status.is-hidden {
+  opacity: 0;
 }
 
 /* A small, always-on live-state readout (connection state, request/observation

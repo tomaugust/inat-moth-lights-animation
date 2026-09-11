@@ -433,4 +433,85 @@ describe("UK Moths site", () => {
     assert.deepEqual(errors, []);
     await page.close();
   });
+
+  it("shows the Colombia fallback set with an explanatory banner when the very first load can't get live data at all", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+
+    await stubGeolocation(page); // keeps this on the UK default, so nothing switches mid-test
+    await mockWorkerAdapter(page, { status: 502 });
+
+    await page.goto(site.url, { waitUntil: "networkidle" });
+    await page.click("#launch-switch");
+
+    const fallbackStatus = page.locator("#fallback-status");
+    await page.waitForFunction(
+      () => !document.getElementById("fallback-status")?.classList.contains("is-hidden"),
+      { timeout: 5000 }
+    );
+    assert.match(await fallbackStatus.textContent(), /Colombia/, "expected the banner to name where the substitute moths are from");
+
+    await page.click("#active-moths-toggle");
+    await page.waitForSelector(".active-moths-card", { timeout: 5000 });
+    const card = page.locator(".active-moths-card").first();
+    const link = await card.locator(".active-moths-card__link:not([hidden])").getAttribute("href");
+    assert.match(link, /^https:\/\/www\.inaturalist\.org\/observations\/\d+$/, "expected a real fallback observation link, not a live one");
+
+    assert.deepEqual(errors, []);
+    await page.close();
+  });
+
+  it("clears the fallback set and its banner the moment real data actually arrives", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await stubGeolocation(page);
+
+    let callCount = 0;
+    await mockPhotoHost(page);
+    await page.route(WORKER_URL_PATTERN, (route) => {
+      callCount += 1;
+      // First poll fails outright (trips fallback mode); the retry that
+      // follows the client's own backoff succeeds with one real observation.
+      if (callCount === 1) {
+        return route.fulfill({ status: 502, contentType: "application/json", body: JSON.stringify({ error: "upstream-error" }) });
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ fetchedAt: new Date().toISOString(), stale: false, cursor: "999", observations: [liveObservation()] })
+      });
+    });
+
+    await page.goto(site.url, { waitUntil: "networkidle" });
+    await page.click("#launch-switch");
+
+    await page.waitForFunction(
+      () => !document.getElementById("fallback-status")?.classList.contains("is-hidden"),
+      { timeout: 5000 }
+    );
+
+    // The client's real retry sits behind a ~60s backoff after a failure —
+    // far too slow for a test. A real visitor's browser regaining
+    // connectivity fires exactly this event, and InatClient already reacts
+    // to it by polling immediately regardless of any pending backoff (see
+    // its 'online' handler) — using it here is exercising real client
+    // behavior, not a test-only shortcut.
+    await page.evaluate(() => window.dispatchEvent(new Event("online")));
+
+    await page.waitForFunction(
+      () => document.getElementById("fallback-status")?.classList.contains("is-hidden"),
+      { timeout: 5000 }
+    );
+
+    await page.click("#active-moths-toggle");
+    await page.waitForSelector(".active-moths-card", { timeout: 10000 });
+    const links = await page.locator(".active-moths-card__link:not([hidden])").evaluateAll((elements) => elements.map((el) => el.getAttribute("href")));
+    assert.ok(links.includes("https://www.inaturalist.org/observations/999"), "expected the real live observation to be showing");
+    assert.ok(
+      links.every((href) => !href.match(/inaturalist\.org\/observations\/\d+$/) || href === "https://www.inaturalist.org/observations/999"),
+      "expected no leftover fallback moths once real data arrived"
+    );
+
+    await page.close();
+  });
 });

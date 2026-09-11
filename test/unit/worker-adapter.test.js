@@ -255,6 +255,38 @@ describe("worker adapter: upstream failure handling", () => {
     assert.equal(body.observations.length, 1, "should reuse the previously cached observation, not fabricate an empty one");
   });
 
+  it("still serves the stale-backup contract just under a week after it was cached (the long-lived outage guard)", async () => {
+    let currentMs = 0;
+    const kv = createFakeKv({ now: () => currentMs });
+    fetchQueue.push(upstreamJson({ total_results: 1, results: [rawObservation()] }));
+    await handleRequest(get(), ENV, kv); // populates the cache with a good response
+
+    currentMs += 46000; // past the 45s CACHE_SECONDS TTL, so the short entry is gone
+    currentMs += 6 * 24 * 60 * 60 * 1000 + 23 * 60 * 60 * 1000; // ~6 days 23 hours later — just under the 7-day backup TTL
+    fetchQueue.push(new Response(null, { status: 503 }));
+    const response = await handleRequest(get(), ENV, kv);
+    const body = await response.json();
+
+    assert.equal(response.status, 200, "the week-old backup should still answer with real data, not the empty 502 fallback");
+    assert.equal(body.stale, true);
+    assert.equal(body.observations.length, 1);
+  });
+
+  it("finally falls through to the empty 502 fallback once the 7-day backup itself expires", async () => {
+    let currentMs = 0;
+    const kv = createFakeKv({ now: () => currentMs });
+    fetchQueue.push(upstreamJson({ total_results: 1, results: [rawObservation()] }));
+    await handleRequest(get(), ENV, kv);
+
+    currentMs += 46000 + 8 * 24 * 60 * 60 * 1000; // past both the short TTL and the 7-day backup TTL
+    fetchQueue.push(new Response(null, { status: 503 }));
+    const response = await handleRequest(get(), ENV, kv);
+    const body = await response.json();
+
+    assert.equal(response.status, 502);
+    assert.deepEqual(body.observations, []);
+  });
+
   it("returns a stale 429 fallback with Retry-After when nothing has ever been cached yet", async () => {
     const kv = createFakeKv();
     fetchQueue.push(new Response(null, { status: 429, headers: { "Retry-After": "30" } }));

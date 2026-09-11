@@ -11,7 +11,8 @@ const browserGlobals = {
   clearTimeout: "readonly",
   URL: "readonly",
   URLSearchParams: "readonly",
-  AbortController: "readonly"
+  AbortController: "readonly",
+  Event: "readonly"
 };
 
 const nodeGlobals = {

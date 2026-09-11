@@ -131,16 +131,23 @@ body.launch-screen-active:not(.launch-controls-visible) .debug-status {
 /* Real observations can take a few seconds to arrive on a slow connection —
    without this, that window looks identical to a broken/empty page (just
    the light, nothing else) instead of "still loading". Fades out once the
-   feed reports any real state (see app.js). */
+   feed reports any real state (see app.js). Paired with the light itself
+   sputtering (see drawScene's isLoading in animation-engine.js) — this text
+   pulses along with it rather than sitting there static, so the two read as
+   one deliberate "still warming up" moment instead of two unrelated things. */
 .loading-status {
+  animation: loading-status-pulse 1.8s ease-in-out infinite;
   bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(16px, 2.4vw, 30px));
-  color: rgba(245, 241, 232, 0.62);
-  font-size: 0.82rem;
+  color: rgba(245, 241, 232, 0.85);
+  font-size: clamp(0.95rem, 3vw, 1.15rem);
+  font-weight: 500;
   left: 50%;
+  letter-spacing: 0.01em;
   margin: 0;
   pointer-events: none;
   position: fixed;
   text-align: center;
+  text-shadow: 0 0 18px rgba(255, 214, 130, 0.35);
   transform: translateX(-50%);
   transition: opacity 620ms ease;
   white-space: nowrap;
@@ -148,7 +155,17 @@ body.launch-screen-active:not(.launch-controls-visible) .debug-status {
 }
 
 .loading-status.is-hidden {
+  animation: none;
   opacity: 0;
+}
+
+@keyframes loading-status-pulse {
+  0%, 100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.45;
+  }
 }
 
 /* A small, always-on live-state readout (connection state, request/observation

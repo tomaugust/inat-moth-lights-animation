@@ -60,7 +60,12 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   const activeMothsPanel = document.getElementById("active-moths-panel");
   const activeMothsList = document.getElementById("active-moths-list");
   const loadingStatus = document.getElementById("loading-status");
-  const debugStatus = document.getElementById("debug-status");
+  // Hidden by default — this diagnostic readout was added to debug a real
+  // production incident and was never meant for every visitor to see. Opt
+  // in with ?debug on the URL for troubleshooting a future report.
+  const debugStatus = new URLSearchParams(window.location.search).has("debug")
+    ? document.getElementById("debug-status")
+    : null;
   const animationTitle = document.getElementById("animation-title");
   const animationDescription = document.getElementById("animation-description");
   const audio = setupAudio();
@@ -115,6 +120,15 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     return performance.now() / 1000;
   }
 
+  // Derived from loadingStatus's own visibility rather than a separate flag,
+  // so the light's flicker (see drawScene's isLoading) can never drift out
+  // of sync with the loading text — both a country switch showing it again
+  // and the initial load before any client exists (no "is-hidden" class yet)
+  // are naturally "loading" by this same definition.
+  function isLoadingData() {
+    return Boolean(loadingStatus && !loadingStatus.classList.contains("is-hidden"));
+  }
+
   // The single source of truth for "what instant is the scene showing right
   // now" — every reader of scene state (rendering, hit-testing, the side
   // panel list) must agree on this, or a frozen canvas would visibly
@@ -162,7 +176,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   }
 
   function redrawNow() {
-    drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, currentRenderTimestamp(), currentSceneSeconds(), hoverState, presentationMode);
+    drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, currentRenderTimestamp(), currentSceneSeconds(), hoverState, presentationMode, isLoadingData());
   }
 
   // The card is a wrapper around two independent controls, not one big
@@ -485,7 +499,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
       store.removeExpired(t);
     }
 
-    drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, renderTimestamp, t, hoverState, presentationMode);
+    drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, renderTimestamp, t, hoverState, presentationMode, isLoadingData());
     audio.update(store.getActiveMoths(), deltaSeconds);
     updateActiveMothsPanel();
     updateDebugStatus(t);

@@ -304,6 +304,88 @@ describe("UK Moths site", () => {
     await page.close();
   });
 
+  it("flickers the light dramatically while loading, then holds steady once data arrives", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await mockPhotoHost(page);
+    await page.route(WORKER_URL_PATTERN, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ fetchedAt: new Date().toISOString(), stale: false, cursor: "999", observations: [] })
+      });
+    });
+
+    await page.goto(site.url, { waitUntil: "networkidle" });
+    await page.click("#launch-switch");
+    await page.waitForTimeout(1200); // comfortably inside the 2500ms delay
+
+    // Sampled at the light's own center pixel (not the surrounding glow),
+    // which the always-on ambient shimmer never touches (see drawLight) —
+    // any real swing here can only be the loading-only broken-bulb effect.
+    function lightBrightness() {
+      return page.evaluate(() => {
+        const canvas = document.getElementById("orbit-canvas");
+        const context = canvas.getContext("2d");
+        const cx = Math.round(canvas.width / 2);
+        const cy = Math.round(canvas.height * 0.56);
+        const [r, g, b] = context.getImageData(cx, cy, 1, 1).data;
+        return r + g + b;
+      });
+    }
+
+    const loadingSamples = [];
+    for (let i = 0; i < 5; i += 1) {
+      loadingSamples.push(await lightBrightness());
+      await page.waitForTimeout(150);
+    }
+    const loadingRange = Math.max(...loadingSamples) - Math.min(...loadingSamples);
+    assert.ok(
+      loadingRange > 150,
+      `expected a dramatic brightness swing while loading, saw range ${loadingRange} (samples: ${loadingSamples})`
+    );
+
+    await page.waitForSelector("#loading-status.is-hidden", { timeout: 4000 });
+
+    const steadySamples = [];
+    for (let i = 0; i < 5; i += 1) {
+      steadySamples.push(await lightBrightness());
+      await page.waitForTimeout(150);
+    }
+    const steadyRange = Math.max(...steadySamples) - Math.min(...steadySamples);
+    assert.ok(
+      steadyRange < 60,
+      `expected the light to hold roughly steady once loaded, saw range ${steadyRange} (samples: ${steadySamples})`
+    );
+
+    await page.close();
+  });
+
+  it("keeps the debug readout hidden unless ?debug is on the URL", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await mockWorkerAdapter(page, { observations: [liveObservation()] });
+
+    await page.goto(site.url, { waitUntil: "networkidle" });
+    await page.click("#launch-switch");
+    await page.waitForTimeout(2000);
+
+    assert.equal(await page.locator("#debug-status").isVisible(), false, "should stay hidden without ?debug");
+    assert.equal(await page.locator("#debug-status").textContent(), "", "should never even be populated without ?debug");
+
+    await page.close();
+
+    const debugPage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await mockWorkerAdapter(debugPage, { observations: [liveObservation()] });
+
+    await debugPage.goto(`${site.url}?debug`, { waitUntil: "networkidle" });
+    await debugPage.click("#launch-switch");
+    await debugPage.waitForFunction(() => document.getElementById("debug-status")?.textContent, { timeout: 5000 });
+
+    assert.match(await debugPage.locator("#debug-status").textContent(), /state=/, "should populate with ?debug present");
+
+    await debugPage.close();
+  });
+
   it("toggles sound without throwing", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     const errors = [];

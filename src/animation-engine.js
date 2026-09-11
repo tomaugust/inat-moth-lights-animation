@@ -529,6 +529,21 @@ function lightFlicker(elapsed) {
   return wave * 0.72 + shimmer * 0.28;
 }
 
+// A deliberately irregular "the bulb might be broken" flicker, distinct from
+// lightFlicker's smooth ambient shimmer above — three incommensurate-frequency
+// waves combined and clamped so the light mostly sits near full brightness
+// but sputters into sharp, uneven near-blackout dips, never a smooth pulse.
+// Used only while real data hasn't arrived yet (see drawLight) as a visual
+// cue that something is still loading, distinct from the steady-state glow.
+function brokenLightFlicker(elapsed) {
+  const noise =
+    Math.sin(elapsed * 13.7) * 0.55 +
+    Math.sin(elapsed * 7.3 + 2.1) * 0.33 +
+    Math.sin(elapsed * 21.1 + 4.4) * 0.22;
+  const dip = Math.max(0, -noise) ** 2;
+  return Math.max(0.06, 1 - dip * 1.8);
+}
+
 function drawRoundedRect(context, x, y, width, height, radius) {
   const corner = Math.min(radius, width * 0.5, height * 0.5);
   context.beginPath();
@@ -584,14 +599,22 @@ function drawLightFixture(context, cx, cy) {
   context.restore();
 }
 
-function drawLight(context, cx, cy, elapsed) {
-  const flicker = lightFlicker(elapsed);
+// isLoading swaps the subtle always-on ambient shimmer for a much more
+// pronounced "the bulb might be broken" sputter (brokenLightFlicker above) —
+// a deliberate visual cue that something is still loading, on both the glow
+// and the bulb itself, rather than the scene just silently sitting there
+// looking finished when it isn't. Never fully blacks out (a floor on every
+// alpha/radius below) so it still reads as "flickering", not "gone".
+function drawLight(context, cx, cy, elapsed, isLoading = false) {
+  const flicker = isLoading ? brokenLightFlicker(elapsed) : lightFlicker(elapsed);
   const flickerStrength = Math.max(0, config.light.flickerStrength);
-  const glowPulse = 1 - flickerStrength + flicker * flickerStrength * 2;
-  const glowRadius = config.light.glowRadius * (1 - flickerStrength * 0.7 + flicker * flickerStrength * 1.4);
+  const glowPulse = isLoading ? flicker : 1 - flickerStrength + flicker * flickerStrength * 2;
+  const glowRadius = isLoading
+    ? config.light.glowRadius * (0.5 + flicker * 0.5)
+    : config.light.glowRadius * (1 - flickerStrength * 0.7 + flicker * flickerStrength * 1.4);
 
   context.save();
-  context.globalAlpha = Math.max(0.35, Math.min(1, glowPulse));
+  context.globalAlpha = isLoading ? Math.max(0.1, Math.min(1, glowPulse)) : Math.max(0.35, Math.min(1, glowPulse));
   const halo = context.createRadialGradient(cx, cy, 0, cx, cy, glowRadius);
   halo.addColorStop(0, config.light.glowColor);
   halo.addColorStop(0.28, config.light.haloColor);
@@ -605,10 +628,10 @@ function drawLight(context, cx, cy, elapsed) {
   drawLightFixture(context, cx, cy);
 
   context.save();
-  context.globalAlpha = 1;
+  context.globalAlpha = isLoading ? Math.max(0.18, flicker) : 1;
   context.fillStyle = config.light.color;
   context.shadowColor = config.light.glowColor;
-  context.shadowBlur = config.light.shadowBlur;
+  context.shadowBlur = isLoading ? config.light.shadowBlur * Math.max(0.2, flicker) : config.light.shadowBlur;
   context.beginPath();
   context.arc(cx, cy, config.light.size, 0, Math.PI * 2);
   context.fill();
@@ -845,7 +868,7 @@ function drawProjectedMothLayer(context, moths, hoverState, lightX, lightY, widt
   moths.forEach((moth) => drawMoth(context, moth, getMothDrawState(moth, hoverState)));
 }
 
-function drawScene(context, moths, width, height, elapsed, animationTime, hoverState = null, presentationMode = "normal") {
+function drawScene(context, moths, width, height, elapsed, animationTime, hoverState = null, presentationMode = "normal", isLoading = false) {
   context.clearRect(0, 0, width, height);
 
   const cx = width / 2;
@@ -861,12 +884,12 @@ function drawScene(context, moths, width, height, elapsed, animationTime, hoverS
 
   drawGround(context, width, height, cx, cy);
   if (isLightOnly) {
-    drawLight(context, cx, cy, elapsed);
+    drawLight(context, cx, cy, elapsed, isLoading);
     return;
   }
 
   drawProjectedMothLayer(context, projectedMoths.filter((moth) => moth.depth < 0), hoverState, cx, cy, width, height);
-  drawLight(context, cx, cy, elapsed);
+  drawLight(context, cx, cy, elapsed, isLoading);
   drawProjectedMothLayer(context, projectedMoths.filter((moth) => moth.depth >= 0), hoverState, cx, cy, width, height);
   drawEntryLabels(context, projectedMoths, animationTime, width, height);
   drawHoverPopout(context, hoveredMoth, width, height, animationTime, hoverState ? hoverState.imageCache : null);

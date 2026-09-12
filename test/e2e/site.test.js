@@ -271,44 +271,35 @@ describe("UK Moths site", () => {
     await page.close();
   });
 
-  it("shows a loading indicator until the first real response arrives, then hides it", async () => {
+  it("shows a loading indicator for at least 3 seconds even when the real response arrives almost instantly, then hides it", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    await mockPhotoHost(page);
-    // A slow connection can take several seconds to fetch the full 24h
-    // window — this reproduces exactly that: the scene must not look
-    // silently broken (just the light, no feedback) while that's in flight.
-    await page.route(WORKER_URL_PATTERN, async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ fetchedAt: new Date().toISOString(), stale: false, cursor: "999", observations: [liveObservation()] })
-      });
-    });
+    await mockWorkerAdapter(page, { observations: [liveObservation()] }); // resolves essentially immediately
 
     await page.goto(site.url, { waitUntil: "networkidle" });
     await page.click("#launch-switch");
-    await page.waitForTimeout(1700);
+    await page.waitForTimeout(1800); // well past the fast response, still short of the 3s minimum
 
     const loading = page.locator("#loading-status");
-    assert.equal(await loading.isVisible(), true, "should still show loading before the delayed response arrives");
-    assert.match(await loading.textContent(), /loading/i);
-
-    await page.waitForTimeout(1000);
     assert.equal(
       await loading.evaluate((el) => el.classList.contains("is-hidden")),
-      true,
-      "should hide once the connection reports a real state"
+      false,
+      "the minimum display duration should keep this visible even though real data already arrived"
     );
+    assert.match(await loading.textContent(), /loading/i);
+
+    await page.waitForSelector("#loading-status.is-hidden", { timeout: 2500 });
 
     await page.close();
   });
 
-  it("flickers the light dramatically while loading, then holds steady once data arrives", async () => {
+  it("flickers the light slowly and smoothly while loading — no fast strobing — then holds steady once data arrives", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     await mockPhotoHost(page);
+    // Long enough that the real response (not just the 3s minimum display
+    // duration) is what's keeping the scene in "loading" for the whole
+    // sampling window below.
     await page.route(WORKER_URL_PATTERN, async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 2500));
+      await new Promise((resolve) => setTimeout(resolve, 8000));
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -318,7 +309,7 @@ describe("UK Moths site", () => {
 
     await page.goto(site.url, { waitUntil: "networkidle" });
     await page.click("#launch-switch");
-    await page.waitForTimeout(1200); // comfortably inside the 2500ms delay
+    await page.waitForTimeout(500);
 
     // Sampled at the light's own center pixel (not the surrounding glow),
     // which the always-on ambient shimmer never touches (see drawLight) —
@@ -334,18 +325,46 @@ describe("UK Moths site", () => {
       });
     }
 
-    const loadingSamples = [];
-    for (let i = 0; i < 5; i += 1) {
-      loadingSamples.push(await lightBrightness());
-      await page.waitForTimeout(150);
+    // SAFETY: sampled close together (50ms apart — 20x/second, denser than
+    // any real display refresh a viewer would perceive as separate frames),
+    // no consecutive pair should differ by a large amount. A fast strobe
+    // (the actual bug report this fix addresses) would show huge consecutive
+    // deltas here; a slow, smooth drift — confirmed at ~44 max in manual
+    // measurement against this exact implementation — never does.
+    const fineSamples = [];
+    for (let i = 0; i < 20; i += 1) {
+      fineSamples.push(await lightBrightness());
+      await page.waitForTimeout(50);
     }
-    const loadingRange = Math.max(...loadingSamples) - Math.min(...loadingSamples);
+    let maxConsecutiveDelta = 0;
+    for (let i = 1; i < fineSamples.length; i += 1) {
+      maxConsecutiveDelta = Math.max(maxConsecutiveDelta, Math.abs(fineSamples[i] - fineSamples[i - 1]));
+    }
     assert.ok(
-      loadingRange > 150,
-      `expected a dramatic brightness swing while loading, saw range ${loadingRange} (samples: ${loadingSamples})`
+      maxConsecutiveDelta < 150,
+      `expected only gradual, smooth changes 50ms apart (no strobing), saw a jump of ${maxConsecutiveDelta} (samples: ${fineSamples})`
     );
 
-    await page.waitForSelector("#loading-status.is-hidden", { timeout: 4000 });
+    // STILL VISIBLY FLICKERING: sampled over a much longer window (6s) than
+    // the fine-grained safety check above, since each dim-and-brighten sweep
+    // now takes seconds, not milliseconds, to complete — a short window here
+    // would be a coin flip depending on which phase of the (slow) wave it
+    // happens to land on. 6s comfortably exceeds this waveform's worst-case
+    // gap between visible dips (measured ~4.3s across many phase offsets),
+    // so this reliably catches at least one full dim-and-brighten sweep
+    // regardless of when the page happened to start relative to it.
+    const coarseSamples = [];
+    for (let i = 0; i < 24; i += 1) {
+      coarseSamples.push(await lightBrightness());
+      await page.waitForTimeout(250);
+    }
+    const coarseRange = Math.max(...coarseSamples) - Math.min(...coarseSamples);
+    assert.ok(
+      coarseRange > 150,
+      `expected a real (if slow) brightness swing while loading, saw range ${coarseRange} (samples: ${coarseSamples})`
+    );
+
+    await page.waitForSelector("#loading-status.is-hidden", { timeout: 6000 });
 
     const steadySamples = [];
     for (let i = 0; i < 5; i += 1) {

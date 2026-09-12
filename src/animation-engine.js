@@ -531,17 +531,32 @@ function lightFlicker(elapsed) {
 
 // A deliberately irregular "the bulb might be broken" flicker, distinct from
 // lightFlicker's smooth ambient shimmer above — three incommensurate-frequency
-// waves combined and clamped so the light mostly sits near full brightness
-// but sputters into sharp, uneven near-blackout dips, never a smooth pulse.
-// Used only while real data hasn't arrived yet (see drawLight) as a visual
-// cue that something is still loading, distinct from the steady-state glow.
+// waves combined into a gentle, uneven dim-and-brighten drift while real data
+// hasn't arrived yet (see drawLight), as a visual cue that something is still
+// loading, distinct from the steady-state glow.
+//
+// elapsed is in MILLISECONDS here (drawScene/drawLight are called with
+// performance.now(), not a seconds-based clock — see lightFlicker's own
+// config.light.flickerSpeed: 0.006 above, which is rad/ms for exactly this
+// reason). An earlier version used coefficients sized as if elapsed were in
+// seconds (e.g. 13.7): at 13.7 *rad per millisecond* that's ~2,180 Hz, so far
+// past any visible frequency that consecutive animation frames sampled
+// essentially uncorrelated phases of it — indistinguishable from a rapid,
+// per-frame-random strobe, which is exactly the photosensitive-seizure risk
+// WCAG 2.3.1's general flash threshold (max 3 flashes/second) exists to rule
+// out. These coefficients are scaled for real millisecond input: the fastest,
+// 0.0022 rad/ms, is 0.0022 × 1000 / 2π ≈ 0.35 Hz — a full period takes
+// seconds, not milliseconds — comfortably under one flash per second, let
+// alone three. The dip is linear, not squared, and floored much higher (0.4,
+// not 0.06), so brightness drifts smoothly rather than slamming into
+// near-black. Still reads as "unsteady," just paced and shaped for safety.
 function brokenLightFlicker(elapsed) {
   const noise =
-    Math.sin(elapsed * 13.7) * 0.55 +
-    Math.sin(elapsed * 7.3 + 2.1) * 0.33 +
-    Math.sin(elapsed * 21.1 + 4.4) * 0.22;
-  const dip = Math.max(0, -noise) ** 2;
-  return Math.max(0.06, 1 - dip * 1.8);
+    Math.sin(elapsed * 0.0022) * 0.55 +
+    Math.sin(elapsed * 0.0011 + 2.1) * 0.33 +
+    Math.sin(elapsed * 0.0007 + 4.4) * 0.22;
+  const dip = Math.max(0, -noise);
+  return Math.max(0.4, 1 - dip * 0.75);
 }
 
 function drawRoundedRect(context, x, y, width, height, radius) {

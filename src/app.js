@@ -24,6 +24,11 @@ const WORKER_OBSERVATIONS_URL = "https://inat-moth-lights-adapter.tomaugust1985.
 // once here (module load), not per fallback trigger, since it never changes.
 const FALLBACK_NORMALIZED_OBSERVATIONS = parseObservationsResponse({ observations: FALLBACK_OBSERVATIONS }).observations;
 
+// The loading flicker/text always stays up at least this long, even if the
+// real response comes back almost instantly — see startClientForPlace's
+// hideLoadingNoSoonerThanMinimumDuration().
+const MIN_LOADING_DURATION_MS = 3000;
+
 function countryHeading(countryName) {
   return countryName === FALLBACK_COUNTRY_NAME ? "UK Moths" : `${countryName} Moths`;
 }
@@ -115,6 +120,15 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   // while frozen is simply admitted the moment focus clears.
   let frozenTimestamp = null;
   let frozenSeconds = null;
+  // Captured at the same instant as frozenTimestamp/frozenSeconds (see
+  // tick()) so a freeze that happens to straddle the loading→loaded
+  // transition still holds the light's appearance constant too — isLoading
+  // isn't driven by the frozen render clock (it's read straight off the DOM,
+  // see isLoadingData() below), so without capturing it here specifically, a
+  // scene could still visibly change while "frozen" at the exact moment the
+  // loading indicator's minimum display duration (see startClientForPlace)
+  // elapses mid-hover.
+  let frozenIsLoading = null;
   let presentationMode = initialPresentationMode;
   const canHover = window.matchMedia
     ? window.matchMedia("(hover: hover) and (pointer: fine)").matches
@@ -153,6 +167,12 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     return frozenTimestamp !== null ? frozenTimestamp : performance.now();
   }
 
+  // See frozenIsLoading's own comment above for why this can't just be
+  // isLoadingData() directly while frozen.
+  function currentIsLoading() {
+    return frozenIsLoading !== null ? frozenIsLoading : isLoadingData();
+  }
+
   function activeProjectedKnownMoths() {
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
@@ -186,7 +206,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   }
 
   function redrawNow() {
-    drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, currentRenderTimestamp(), currentSceneSeconds(), hoverState, presentationMode, isLoadingData());
+    drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, currentRenderTimestamp(), currentSceneSeconds(), hoverState, presentationMode, currentIsLoading());
   }
 
   // The card is a wrapper around two independent controls, not one big
@@ -444,6 +464,12 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   // immediately, before tick()/updateDebugStatus() ever run) and reassigned
   // if resolveUserPlace() later swaps to a different country.
   let client = null;
+  // Handle for the pending "hide the loading indicator" timeout scheduled by
+  // startClientForPlace() below — kept at this outer scope (not inside that
+  // function) so a country switch can cancel a still-pending one from the
+  // previous client generation before it fires and hides the *new* country's
+  // still-genuinely-loading indicator early.
+  let hideLoadingTimeoutHandle = null;
 
   function updateDebugStatus(t) {
     if (!debugStatus || !client || t - lastDebugUpdateSeconds < 0.5) {
@@ -488,9 +514,11 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     if (isFrozen && frozenTimestamp === null) {
       frozenTimestamp = timestamp;
       frozenSeconds = nowSeconds();
+      frozenIsLoading = isLoadingData();
     } else if (!isFrozen) {
       frozenTimestamp = null;
       frozenSeconds = null;
+      frozenIsLoading = null;
     }
     const renderTimestamp = currentRenderTimestamp();
     const t = currentSceneSeconds();
@@ -509,7 +537,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
       store.removeExpired(t);
     }
 
-    drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, renderTimestamp, t, hoverState, presentationMode, isLoadingData());
+    drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, renderTimestamp, t, hoverState, presentationMode, currentIsLoading());
     audio.update(store.getActiveMoths(), deltaSeconds);
     updateActiveMothsPanel();
     updateDebugStatus(t);
@@ -624,6 +652,29 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     // client's already-tripped fallback.
     let hasReceivedLiveData = false;
     let fallbackActive = false;
+    const loadingStartedAtMs = performance.now();
+
+    // The loading flicker/text must stay up for at least MIN_LOADING_DURATION_MS
+    // even if the very first response comes back almost instantly (a warm
+    // cache, or a fast connection) — a flash of flicker lasting a few hundred
+    // milliseconds reads as a glitch, not a deliberate "still loading" cue,
+    // and is more likely to be jarring than a longer, calmer one. Cancels
+    // and replaces any timeout already pending from an earlier call so only
+    // the latest client generation's own minimum applies.
+    function hideLoadingNoSoonerThanMinimumDuration() {
+      if (!loadingStatus) {
+        return;
+      }
+      if (hideLoadingTimeoutHandle !== null) {
+        window.clearTimeout(hideLoadingTimeoutHandle);
+      }
+      const elapsedMs = performance.now() - loadingStartedAtMs;
+      const remainingMs = Math.max(0, MIN_LOADING_DURATION_MS - elapsedMs);
+      hideLoadingTimeoutHandle = window.setTimeout(() => {
+        hideLoadingTimeoutHandle = null;
+        loadingStatus.classList.add("is-hidden");
+      }, remainingMs);
+    }
 
     function enterFallbackModeIfNeeded() {
       if (hasReceivedLiveData || fallbackActive) {
@@ -656,8 +707,8 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
         // client.start() runs, before any network activity — only a later,
         // real state (success or failure) means the first fetch has actually
         // resolved, which is what "no longer loading" should mean here.
-        if (loadingStatus && state !== CONNECTION_STATES.STARTING) {
-          loadingStatus.classList.add("is-hidden");
+        if (state !== CONNECTION_STATES.STARTING) {
+          hideLoadingNoSoonerThanMinimumDuration();
         }
         if (state === CONNECTION_STATES.STALE || state === CONNECTION_STATES.OFFLINE) {
           runReachabilityProbeOnce();
@@ -733,6 +784,14 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     client.stop();
     queue = new ObservationQueue();
     store = new MothStore();
+    // Cancel a still-pending "hide the loading indicator" timeout from the
+    // client generation just stopped — left to fire, it would hide the *new*
+    // country's indicator on the old generation's schedule, possibly before
+    // the new one has even had its own MIN_LOADING_DURATION_MS.
+    if (hideLoadingTimeoutHandle !== null) {
+      window.clearTimeout(hideLoadingTimeoutHandle);
+      hideLoadingTimeoutHandle = null;
+    }
     if (loadingStatus) {
       loadingStatus.classList.remove("is-hidden");
     }

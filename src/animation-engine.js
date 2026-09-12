@@ -531,43 +531,41 @@ function lightFlicker(elapsed) {
 
 // A deliberately irregular "the bulb might be broken" flicker, distinct from
 // lightFlicker's smooth ambient shimmer above — three incommensurate-frequency
-// waves combined into a gentle, uneven dim-and-brighten drift while real data
-// hasn't arrived yet (see drawLight), as a visual cue that something is still
+// waves combined into an uneven dim-and-brighten drift while real data hasn't
+// arrived yet (see drawLight), as a visual cue that something is still
 // loading, distinct from the steady-state glow.
 //
 // elapsed is in MILLISECONDS here (drawScene/drawLight are called with
 // performance.now(), not a seconds-based clock — see lightFlicker's own
 // config.light.flickerSpeed: 0.006 above, which is rad/ms for exactly this
-// reason). An earlier version used coefficients sized as if elapsed were in
-// seconds (e.g. 13.7): at 13.7 *rad per millisecond* that's ~2,180 Hz, so far
-// past any visible frequency that consecutive animation frames sampled
+// reason). A much earlier version used coefficients sized as if elapsed were
+// in seconds (e.g. 13.7): at 13.7 *rad per millisecond* that's ~2,180 Hz, so
+// far past any visible frequency that consecutive animation frames sampled
 // essentially uncorrelated phases of it — indistinguishable from a rapid,
 // per-frame-random strobe, which is exactly the photosensitive-seizure risk
 // WCAG 2.3.1's general flash threshold (max 3 flashes/second) exists to rule
-// out. These coefficients are scaled for real millisecond input: the fastest,
-// 0.0022 rad/ms, is 0.0022 × 1000 / 2π ≈ 0.35 Hz — a full period takes
-// seconds, not milliseconds — comfortably under one flash per second, let
-// alone three. The dip is linear, not squared, and floored much higher (0.4,
-// not 0.06), so brightness drifts smoothly rather than slamming into
-// near-black. Still reads as "unsteady," just paced and shaped for safety.
+// out.
 //
-// Maps the combined wave directly to brightness (0.7 ± up to 0.3) rather than
-// clamping out its positive half (an earlier version's `Math.max(0, -noise)`
-// dip): that clamp meant brightness sat perfectly flat at 1.0 for up to two
-// full seconds at a stretch (confirmed by measurement) whenever the wave was
-// on its positive side, which is most of the time. Combined with a viewer
-// only watching for a few seconds, that made the flicker read as "not
-// working" for a real, reported visit — the dip that was there could easily
-// land entirely outside whatever short window they happened to be watching.
-// Mapping continuously means there is no flat stretch at any point in the
-// cycle: brightness is always visibly, gently in motion, at the same safe,
-// slow frequencies as before.
+// These coefficients are real millisecond-scaled values, tuned to sit
+// comfortably under that 3-flashes/second ceiling while still reading as a
+// genuine, noticeable flicker rather than a slow ambient breathing (an
+// intermediate version undershot this badly — the dip was so gentle and slow
+// it was reported as barely visible). The fastest, 0.008796 rad/ms, is
+// 0.008796 × 1000 / 2π ≈ 1.4 Hz — under half the WCAG ceiling, comfortable
+// safety margin, confirmed by simulation (~1.4 brightness-crossings/second
+// over a 20s run). Brightness swings roughly 0.23-0.92 (deeper than an
+// earlier 0.4-1.0 attempt) so the dips are actually visible, not subtle.
+//
+// Maps the combined wave directly to brightness (no clamping out either
+// half into a flat dip, unlike an earlier version) so there is no stretch,
+// at any point in the cycle, where the light sits still — it's always
+// visibly in motion, just never faster than the safe ceiling above.
 function brokenLightFlicker(elapsed) {
   const noise =
-    Math.sin(elapsed * 0.0022) * 0.5 +
-    Math.sin(elapsed * 0.0011 + 2.1) * 0.3 +
-    Math.sin(elapsed * 0.0007 + 4.4) * 0.2;
-  return 0.7 + noise * 0.3;
+    Math.sin(elapsed * 0.008796) * 0.5 +
+    Math.sin(elapsed * 0.004398 + 2.1) * 0.3 +
+    Math.sin(elapsed * 0.002199 + 4.4) * 0.2;
+  return 0.6 + noise * 0.4;
 }
 
 function drawRoundedRect(context, x, y, width, height, radius) {

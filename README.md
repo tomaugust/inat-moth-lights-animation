@@ -164,6 +164,13 @@ A user reported that hovering a moth (canvas or side-panel card) correctly froze
 - **Fixed with a running freeze offset.** `app.js` now tracks `freezeOffsetSeconds`/`freezeOffsetMs`, incremented by each freeze's own real duration the moment it ends (`freezeBeganAtRealSeconds`/`Ms` mark when the *current* freeze, if any, started, purely to measure that duration). `currentSceneSeconds()`/`currentRenderTimestamp()` now subtract this running offset from the live clock whenever nothing is frozen, so time resumes exactly from the value that was being held, rather than snapping to wherever the un-adjusted clock had since reached.
 - **Tested with a calibrated pixel-fingerprint comparison** (`test/e2e/site.test.js`), since a single moth's own randomized speed/radius makes an absolute pixel-diff threshold unreliable: several moths orbit concurrently for a stronger signal, and the test measures its own baselines from the same page load — ordinary short- vs. long-interval motion, and the hover UI's own visual cost (the focus popout and dimmed/focused style swap, which changes regardless of any time-jump and would otherwise contaminate a direct before/after comparison) — rather than assuming a fixed pixel-diff number. Confirmed failing against the pre-fix clock and passing against the fix.
 
+## Phase 13: the loading flicker undershot — too slow and shallow
+
+Immediately after Phase 11/the follow-up fix above, a user reported the opposite problem: the flicker was now so slow and shallow it barely read as flickering at all — "we have gone too far the wrong way."
+
+- **Retuned `brokenLightFlicker`'s coefficients** for a noticeably stronger effect while staying comfortably under WCAG 2.3.1's 3-flashes/second ceiling: the fastest component is now `0.008796` rad/ms (≈1.4 Hz, confirmed by simulation at ~1.4 brightness-midline-crossings/second over a 20s run) — under half the limit, a deliberate safety margin, but roughly 4x faster than the previous ≈0.35 Hz. Brightness now swings roughly 0.23-0.92 (real-browser measurement), versus the previous attempt's 0.41-0.94 — visibly deeper dips. The continuous (non-clamping) mapping from Phase 11's follow-up fix is unchanged, so there's still no flat stretch anywhere in the cycle.
+- **Verified with the same numerical + real-browser measurement approach** used throughout this flicker work: a standalone simulation for the frequency/depth claims, and a real Playwright measurement of the rendered bulb pixel (range 305 over just 2 seconds, versus 271 over 6 seconds previously; smooth 50ms-apart transitions, comfortably under the existing e2e safety test's 150-point threshold).
+
 ## Testing
 
 ```sh

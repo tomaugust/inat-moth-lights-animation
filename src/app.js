@@ -120,6 +120,26 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   // while frozen is simply admitted the moment focus clears.
   let frozenTimestamp = null;
   let frozenSeconds = null;
+  // performance.now() (and therefore nowSeconds()) never actually stops —
+  // "frozen" only ever meant "keep returning this one constant value" above,
+  // not "the clock itself paused". So the instant a freeze ended, the live
+  // clock had already run on ahead by however long the hover lasted, and the
+  // very next frame jumped straight to that real elapsed time — every active
+  // moth's position/age (all computed from currentSceneSeconds() minus its
+  // own entryTime, which was stamped before the freeze) suddenly leapt
+  // forward by the freeze's real duration instead of resuming smoothly from
+  // where it visibly stopped.
+  //
+  // Fixed with a running offset: every completed freeze adds its own real
+  // duration to freezeOffsetSeconds/Ms, and currentSceneSeconds()/
+  // currentRenderTimestamp() subtract that offset from the live clock
+  // whenever not currently frozen. freezeBeganAtRealSeconds/Ms mark when the
+  // *current* freeze (if any) started, purely to compute that duration once
+  // it ends — see tick()'s isFrozen handling.
+  let freezeOffsetSeconds = 0;
+  let freezeOffsetMs = 0;
+  let freezeBeganAtRealSeconds = null;
+  let freezeBeganAtRealMs = null;
   // Captured at the same instant as frozenTimestamp/frozenSeconds (see
   // tick()) so a freeze that happens to straddle the loading→loaded
   // transition still holds the light's appearance constant too — isLoading
@@ -160,11 +180,11 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   // underneath it. Live time whenever nothing is focused; held at the
   // instant focus began for as long as it stays focused (see tick()).
   function currentSceneSeconds() {
-    return frozenSeconds !== null ? frozenSeconds : nowSeconds();
+    return frozenSeconds !== null ? frozenSeconds : nowSeconds() - freezeOffsetSeconds;
   }
 
   function currentRenderTimestamp() {
-    return frozenTimestamp !== null ? frozenTimestamp : performance.now();
+    return frozenTimestamp !== null ? frozenTimestamp : performance.now() - freezeOffsetMs;
   }
 
   // See frozenIsLoading's own comment above for why this can't just be
@@ -512,10 +532,27 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
 
     const isFrozen = hoverState.hoveredMothId !== null;
     if (isFrozen && frozenTimestamp === null) {
-      frozenTimestamp = timestamp;
-      frozenSeconds = nowSeconds();
+      // Freeze just began: capture the current (already offset-adjusted)
+      // scene time as the constant to hold, and remember the real clock
+      // reading it started at so this freeze's own duration can be measured
+      // once it ends (see the !isFrozen branch below).
+      freezeBeganAtRealMs = timestamp;
+      freezeBeganAtRealSeconds = nowSeconds();
+      frozenTimestamp = timestamp - freezeOffsetMs;
+      frozenSeconds = freezeBeganAtRealSeconds - freezeOffsetSeconds;
       frozenIsLoading = isLoadingData();
-    } else if (!isFrozen) {
+    } else if (!isFrozen && frozenTimestamp !== null) {
+      // Freeze just ended: fold its real duration into the running offset
+      // so the live clock (nowSeconds()/performance.now() minus this
+      // offset — see currentSceneSeconds()/currentRenderTimestamp())
+      // continues from exactly frozenSeconds/frozenTimestamp instead of
+      // jumping straight to wherever the un-adjusted real clock has since
+      // reached, which is what made the scene visibly leap forward by the
+      // hover's own duration the instant it ended.
+      freezeOffsetMs += timestamp - freezeBeganAtRealMs;
+      freezeOffsetSeconds += nowSeconds() - freezeBeganAtRealSeconds;
+      freezeBeganAtRealMs = null;
+      freezeBeganAtRealSeconds = null;
       frozenTimestamp = null;
       frozenSeconds = null;
       frozenIsLoading = null;

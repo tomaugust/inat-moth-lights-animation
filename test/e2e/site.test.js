@@ -176,6 +176,115 @@ describe("UK Moths site", () => {
     await page.close();
   });
 
+  it("resumes exactly where it left off after a long hover, instead of jumping forward by the hover's own real duration", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    // Several concurrently orbiting moths, not just one — a single moth's
+    // own (randomized per-id) speed and orbit radius make its motion alone
+    // too noisy a signal to calibrate a reliable threshold against; several
+    // at once average that out.
+    const manyObservations = Array.from({ length: 8 }, (_, index) =>
+      liveObservation({ id: `inat-${900 + index}`, taxonId: 50000 + index })
+    );
+    await mockWorkerAdapter(page, { observations: manyObservations });
+
+    await page.goto(site.url, { waitUntil: "networkidle" });
+    await page.click("#launch-switch");
+    // Past the 3s minimum loading duration, so the scene is fully settled
+    // into its normal steady-state animation before any of this measures it.
+    await page.waitForTimeout(3500);
+
+    // A coarse grid of sampled pixels (not a single point) so a moth moving
+    // anywhere on the canvas registers, whichever direction it happens to be
+    // orbiting toward.
+    function canvasFingerprint() {
+      return page.evaluate(() => {
+        const canvas = document.getElementById("orbit-canvas");
+        const context = canvas.getContext("2d");
+        const cols = 24;
+        const rows = 18;
+        const values = [];
+        for (let row = 0; row < rows; row += 1) {
+          for (let col = 0; col < cols; col += 1) {
+            const x = Math.round((col + 0.5) * (canvas.width / cols));
+            const y = Math.round((row + 0.5) * (canvas.height / rows));
+            const [r, g, b] = context.getImageData(x, y, 1, 1).data;
+            values.push(r + g + b);
+          }
+        }
+        return values;
+      });
+    }
+
+    function fingerprintDiff(a, b) {
+      let sum = 0;
+      for (let i = 0; i < a.length; i += 1) {
+        sum += Math.abs(a[i] - b[i]);
+      }
+      return sum;
+    }
+
+    // Baselines from ordinary, never-frozen playback: how much the scene
+    // normally changes over a short (~500ms, comparable to one settle-tick)
+    // gap versus a long (~2.5s, comparable to the hover below) gap. These
+    // define what "barely moved" and "moved a lot" actually look like for
+    // this specific scene, rather than guessing at an absolute pixel
+    // threshold that might not hold for every moth speed/position.
+    const baselineStart = await canvasFingerprint();
+    await page.waitForTimeout(500);
+    const baselineShort = await canvasFingerprint();
+    await page.waitForTimeout(2000);
+    const baselineLong = await canvasFingerprint();
+    const shortGapDiff = fingerprintDiff(baselineStart, baselineShort);
+    const longGapDiff = fingerprintDiff(baselineStart, baselineLong);
+    assert.ok(
+      longGapDiff > shortGapDiff,
+      `expected more real motion over ~2.5s than ~0.5s of ordinary playback (short=${shortGapDiff}, long=${longGapDiff}) — otherwise this test can't tell a jump from normal motion`
+    );
+
+    await page.click("#active-moths-toggle");
+    await page.waitForSelector(".active-moths-card", { timeout: 5000 });
+
+    // Hovering/focusing also toggles its own visual chrome (the hover
+    // popout, a focused/dimmed style swap on the moths themselves) that has
+    // nothing to do with time passing — measured here with a deliberately
+    // brief hover (short enough that any position jump, buggy or not, is
+    // negligible) so it can be told apart from real jumped-forward motion
+    // below, rather than conflating the two.
+    const card = page.locator(".active-moths-card").first();
+    await card.hover();
+    await page.waitForTimeout(80);
+    const brieflyHoveredFingerprint = await canvasFingerprint();
+    await page.mouse.move(5, 5);
+    await page.waitForTimeout(60);
+    const brieflyResumedFingerprint = await canvasFingerprint();
+    const hoverUiOnlyDiff = fingerprintDiff(brieflyHoveredFingerprint, brieflyResumedFingerprint);
+
+    await card.hover();
+    await page.waitForTimeout(300); // let the freeze actually take hold
+    const frozenFingerprint = await canvasFingerprint();
+    await page.waitForTimeout(2500); // hold the hover for as long as baselineLong above
+
+    await page.mouse.move(5, 5); // outside the side panel — clears hover
+    // Sampled almost immediately after unhover (one settle-tick, not the
+    // ~500ms+ used elsewhere) — long enough for the next animation frame to
+    // actually run, short enough that any real jump-forward (this hover
+    // lasted ~2.8s total) would still be almost entirely un-recovered from.
+    await page.waitForTimeout(60);
+    const justResumedFingerprint = await canvasFingerprint();
+    const resumeDiff = fingerprintDiff(frozenFingerprint, justResumedFingerprint);
+
+    // resumeDiff is expected to include roughly hoverUiOnlyDiff (the popout/
+    // style toggle, present here too) plus only a normal short-interval
+    // amount of motion — nowhere near hoverUiOnlyDiff *plus* the ~2.5s worth
+    // of motion (longGapDiff) a real jump-forward would add on top.
+    assert.ok(
+      resumeDiff < hoverUiOnlyDiff + longGapDiff * 0.4,
+      `expected the scene to resume from almost exactly where it froze (hover-chrome-only diff=${hoverUiOnlyDiff}, plus normal short-interval motion), not jump forward by the ~2.8s the hover actually lasted (a ~2.5s jump would add on the order of longGapDiff=${longGapDiff} on top) — saw resumeDiff=${resumeDiff}`
+    );
+
+    await page.close();
+  });
+
   it("still shows moths after a reload, even though the Worker always returns the same full-window batch", async () => {
     // Regression test: the Worker adapter is stateless and returns the
     // *entire* current 24h window on every request, never an incremental

@@ -550,13 +550,24 @@ function lightFlicker(elapsed) {
 // alone three. The dip is linear, not squared, and floored much higher (0.4,
 // not 0.06), so brightness drifts smoothly rather than slamming into
 // near-black. Still reads as "unsteady," just paced and shaped for safety.
+//
+// Maps the combined wave directly to brightness (0.7 ± up to 0.3) rather than
+// clamping out its positive half (an earlier version's `Math.max(0, -noise)`
+// dip): that clamp meant brightness sat perfectly flat at 1.0 for up to two
+// full seconds at a stretch (confirmed by measurement) whenever the wave was
+// on its positive side, which is most of the time. Combined with a viewer
+// only watching for a few seconds, that made the flicker read as "not
+// working" for a real, reported visit — the dip that was there could easily
+// land entirely outside whatever short window they happened to be watching.
+// Mapping continuously means there is no flat stretch at any point in the
+// cycle: brightness is always visibly, gently in motion, at the same safe,
+// slow frequencies as before.
 function brokenLightFlicker(elapsed) {
   const noise =
-    Math.sin(elapsed * 0.0022) * 0.55 +
-    Math.sin(elapsed * 0.0011 + 2.1) * 0.33 +
-    Math.sin(elapsed * 0.0007 + 4.4) * 0.22;
-  const dip = Math.max(0, -noise);
-  return Math.max(0.4, 1 - dip * 0.75);
+    Math.sin(elapsed * 0.0022) * 0.5 +
+    Math.sin(elapsed * 0.0011 + 2.1) * 0.3 +
+    Math.sin(elapsed * 0.0007 + 4.4) * 0.2;
+  return 0.7 + noise * 0.3;
 }
 
 function drawRoundedRect(context, x, y, width, height, radius) {

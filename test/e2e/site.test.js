@@ -346,13 +346,15 @@ describe("UK Moths site", () => {
     );
 
     // STILL VISIBLY FLICKERING: sampled over a much longer window (6s) than
-    // the fine-grained safety check above, since each dim-and-brighten sweep
-    // now takes seconds, not milliseconds, to complete — a short window here
-    // would be a coin flip depending on which phase of the (slow) wave it
-    // happens to land on. 6s comfortably exceeds this waveform's worst-case
-    // gap between visible dips (measured ~4.3s across many phase offsets),
-    // so this reliably catches at least one full dim-and-brighten sweep
-    // regardless of when the page happened to start relative to it.
+    // the fine-grained safety check above, since a full dim-and-brighten
+    // cycle now takes seconds, not milliseconds. brokenLightFlicker maps its
+    // wave continuously to brightness (no flat plateau at either extreme —
+    // an earlier version clamped out its positive half, which sat completely
+    // flat at full brightness for up to 2 real seconds at a stretch,
+    // confirmed by measurement, and was reported as "the flicker doesn't
+    // seem to work" for a visit whose loading window landed in one of those
+    // stretches), so any few-second window reliably shows real, continuous
+    // movement regardless of when the page happened to start relative to it.
     const coarseSamples = [];
     for (let i = 0; i < 24; i += 1) {
       coarseSamples.push(await lightBrightness());

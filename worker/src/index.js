@@ -27,7 +27,7 @@
 // Reuses the same raw-v2-to-contract mapping and query-building the Phase 3
 // direct client uses, and the same validation/normalization the frontend
 // already trusts, so the contract can't drift between the two paths.
-import { fetchAllObservationsInWindow, mapRawObservationToContract } from "../../src/inaturalist-client.js";
+import { DEFAULT_WITHOUT_TAXON_ID, fetchAllObservationsInWindow, mapRawObservationToContract } from "../../src/inaturalist-client.js";
 import { parseObservationsResponse } from "../../src/observation-adapter.js";
 
 const DEFAULT_TAXON_ID = 47157;
@@ -156,6 +156,14 @@ function resolvePlaceId(request, env) {
 function buildUpstreamOptions(env, placeId) {
   return {
     taxonId: Number(env.TAXON_ID) || DEFAULT_TAXON_ID,
+    // Excludes butterflies (Papilionoidea, which nests skippers too — see
+    // DEFAULT_WITHOUT_TAXON_ID's own comment in inaturalist-client.js) so the
+    // feed is moths only. Mirrors TAXON_ID's own env-override pattern, but
+    // (like SPARSE_OBSERVATION_THRESHOLD below) checks finiteness explicitly
+    // rather than `Number(env.X) || DEFAULT`, since 0 is how an operator
+    // would deliberately opt back into the full Lepidoptera order — `||`
+    // would treat that as unset and silently restore the default instead.
+    withoutTaxonId: Number.isFinite(Number(env.WITHOUT_TAXON_ID)) ? Number(env.WITHOUT_TAXON_ID) : DEFAULT_WITHOUT_TAXON_ID,
     placeId,
     photoLicenses: ["cc0", "cc-by", "cc-by-sa", "cc-by-nc", "cc-by-nc-sa", "cc-by-nd", "cc-by-nc-nd"],
     pageSize: Number(env.PAGE_SIZE) || DEFAULT_PAGE_SIZE

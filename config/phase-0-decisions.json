@@ -1,7 +1,9 @@
 {
   "scope": {
     "prototypeTaxonId": 47157,
-    "prototypeLabel": "Butterflies and moths (Lepidoptera)",
+    "prototypeLabel": "Moths (Lepidoptera, excluding butterflies)",
+    "withoutTaxonId": 47224,
+    "withoutTaxonIdNote": "Papilionoidea (\"Butterflies\"), which also nests skippers (Hesperiidae) — confirmed against the iNaturalist taxonomy (GET /v1/taxa) rather than assumed. Excluded via without_taxon_id in every query (src/inaturalist-client.js, worker/src/index.js) so the live feed and the app-level fallback dataset are both moths only.",
     "publicMothStrategy": "Use a reviewed, versioned allowlist of moth families and superfamilies before public launch; do not describe all Lepidoptera as moths."
   },
   "media": {
@@ -61,7 +63,7 @@
     "appLevelFallback": {
       "source": "src/fallback-observations.js",
       "country": "Colombia",
-      "observationCount": 53,
+      "observationCount": 68,
       "note": "Last-resort static dataset shown only when a fresh page load gets no live data from anywhere (not the short cache, not the 7-day backup either). Real, research-grade, individually-licensed iNaturalist observations, one per species. Fed through the same ObservationQueue/MothStore pipeline as live data; cleared the moment a real batch (even an empty/quiet one) arrives."
     }
   }

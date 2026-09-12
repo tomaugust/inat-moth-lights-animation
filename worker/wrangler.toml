@@ -26,6 +26,10 @@ id = "__OBSERVATIONS_KV_ID__"
 [vars]
 ALLOWED_ORIGINS = "https://tomaugust.github.io,http://localhost:8080"
 TAXON_ID = "47157"
+# Excludes butterflies (Papilionoidea, id 47224 — which nests skippers too,
+# see DEFAULT_WITHOUT_TAXON_ID's comment in src/inaturalist-client.js) so the
+# feed is moths only. Set to "0" to opt back into the full Lepidoptera order.
+WITHOUT_TAXON_ID = "47224"
 # Default place_id when a request doesn't supply its own (?place_id=) — see
 # resolvePlaceId() in src/index.js. 6857 = United Kingdom (admin_level 0).
 PLACE_ID = "6857"

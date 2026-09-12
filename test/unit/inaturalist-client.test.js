@@ -3,6 +3,7 @@ import { afterEach, describe, it } from "node:test";
 
 import {
   CONNECTION_STATES,
+  DEFAULT_WITHOUT_TAXON_ID,
   InatClient,
   MAX_WINDOW_PAGES,
   buildQueryUrl,
@@ -167,6 +168,37 @@ describe("buildQueryUrl", () => {
         `expected the 24h default for lookbackHours=${badValue}`
       );
     }
+  });
+
+  it("excludes butterflies (without_taxon_id) when withoutTaxonId is set", () => {
+    const url = buildQueryUrl({ ...options, withoutTaxonId: DEFAULT_WITHOUT_TAXON_ID }, null);
+    assert.match(url, new RegExp(`without_taxon_id=${DEFAULT_WITHOUT_TAXON_ID}`));
+  });
+
+  it("omits without_taxon_id entirely when withoutTaxonId is not set", () => {
+    const url = buildQueryUrl(options, null);
+    assert.doesNotMatch(url, /without_taxon_id/);
+  });
+
+  it("omits without_taxon_id when withoutTaxonId is explicitly falsy (opting back into the full Lepidoptera order)", () => {
+    for (const disabledValue of [0, null, undefined]) {
+      const url = buildQueryUrl({ ...options, withoutTaxonId: disabledValue }, null);
+      assert.doesNotMatch(url, /without_taxon_id/, `expected no without_taxon_id for withoutTaxonId=${disabledValue}`);
+    }
+  });
+});
+
+describe("InatClient default query scope", () => {
+  it("excludes butterflies by default, so a real client's own poll asks for moths only", async () => {
+    const { client, fake } = createClient({
+      responses: [jsonResponse({ total_results: 0, results: [] })]
+    });
+
+    client.isRunning = true;
+    await client._pollNow();
+
+    assert.equal(fake.calls.length, 1);
+    assert.match(fake.calls[0].url, new RegExp(`without_taxon_id=${DEFAULT_WITHOUT_TAXON_ID}`));
   });
 });
 

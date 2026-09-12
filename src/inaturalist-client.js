@@ -41,6 +41,19 @@ export const CONNECTION_STATES = Object.freeze({
 // visitor's own country.
 export const DEFAULT_PLACE_ID = 6857;
 
+// iNaturalist taxon id for Papilionoidea (superfamily "Butterflies"),
+// confirmed against GET /v1/taxa?q=Papilionoidea&rank=superfamily — its
+// preferred_common_name is literally "Butterflies", and it's a *child* of
+// Lepidoptera (parent_id 47157, this file's taxonId), not a sibling, so
+// excluding it removes only true butterflies and skippers. Skippers
+// (Hesperiidae) are commonly mistaken for a separate group, but iNaturalist's
+// current taxonomy nests them under this same superfamily (parent_id 47224 —
+// confirmed via GET /v1/taxa?q=Hesperiidae&rank=family), so this one id is
+// enough to exclude both without a second, harder-to-maintain family list.
+// The scope was always "moths and butterflies" (see taxonId's own history);
+// this narrows it to moths only, per a later, explicit product decision.
+export const DEFAULT_WITHOUT_TAXON_ID = 47224;
+
 // Every query this client (or the Worker adapter) builds MUST be bounded to
 // a recent window — never "however far back per_page=200 happens to reach,"
 // which drifts with upload volume and, worse, asks iNaturalist to sort
@@ -55,6 +68,7 @@ export const DEFAULT_LOOKBACK_HOURS = 24;
 
 const DEFAULT_OPTIONS = {
   taxonId: 47157,
+  withoutTaxonId: DEFAULT_WITHOUT_TAXON_ID,
   placeId: DEFAULT_PLACE_ID,
   lookbackHours: DEFAULT_LOOKBACK_HOURS,
   photoLicenses: DEFAULT_PHOTO_LICENSES,
@@ -110,6 +124,14 @@ export function mapRawObservationToContract(raw) {
 
 function setSharedParams(params, options) {
   params.set("taxon_id", String(options.taxonId));
+  // Excludes butterflies (see DEFAULT_WITHOUT_TAXON_ID) so the feed is moths
+  // only. Conditional (unlike taxon_id above) so a caller can still pass
+  // withoutTaxonId: null/0 to opt back to the full Lepidoptera order, e.g. a
+  // future test or a diagnostic query, without a magic "0 means unset" value
+  // silently reaching the real API as without_taxon_id=0.
+  if (options.withoutTaxonId) {
+    params.set("without_taxon_id", String(options.withoutTaxonId));
+  }
   // place_id (not a lat/lng bounding box) is the documented way to scope
   // /v1/observations to a place: "Must be observed within the place with
   // this ID" — see GET /v1/observations in the iNaturalist API docs.

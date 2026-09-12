@@ -30,7 +30,7 @@ function countryHeading(countryName) {
 
 function countryDescription(countryName) {
   const place = countryName === FALLBACK_COUNTRY_NAME ? "the United Kingdom" : countryName;
-  return `A living view of moth and butterfly sightings recently shared on iNaturalist across ${place} — recently shared records, not real-time abundance or movement.`;
+  return `A living view of moth sightings recently shared on iNaturalist across ${place} — recently shared records, not real-time abundance or movement.`;
 }
 
 // Shown in #debug-status purely so a screenshot from a real device proves
@@ -633,7 +633,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
       queue.enqueue(FALLBACK_NORMALIZED_OBSERVATIONS);
       if (fallbackStatus) {
         fallbackStatus.textContent =
-          `It looks like live data is temporarily unavailable. While we wait, here's a look at ${FALLBACK_DATASET_COUNTRY} — one of the most Lepidoptera-rich countries on Earth.`;
+          `It looks like live data is temporarily unavailable. While we wait, here's a look at ${FALLBACK_DATASET_COUNTRY} — one of the most moth-rich countries on Earth.`;
         fallbackStatus.classList.remove("is-hidden");
       }
     }

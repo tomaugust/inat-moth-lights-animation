@@ -135,6 +135,26 @@ describe("worker adapter: upstream fetch, mapping and caching", () => {
     assert.doesNotMatch(fetchCalls[0].url, /swlat|swlng|nelat|nelng/);
   });
 
+  it("excludes butterflies (without_taxon_id) by default", async () => {
+    const kv = createFakeKv();
+    fetchQueue.push(upstreamJson({ total_results: 0, results: [] }));
+
+    await handleRequest(get(), ENV, kv);
+
+    assert.equal(fetchCalls.length, 1);
+    assert.match(fetchCalls[0].url, /without_taxon_id=47224/);
+  });
+
+  it("lets WITHOUT_TAXON_ID=0 opt back into the full Lepidoptera order (moths and butterflies)", async () => {
+    const kv = createFakeKv();
+    fetchQueue.push(upstreamJson({ total_results: 0, results: [] }));
+
+    await handleRequest(get(), { ...ENV, WITHOUT_TAXON_ID: "0" }, kv);
+
+    assert.equal(fetchCalls.length, 1);
+    assert.doesNotMatch(fetchCalls[0].url, /without_taxon_id/);
+  });
+
   it("always bounds the upstream request with created_d1 — never a temporally unbounded query", async () => {
     const kv = createFakeKv();
     fetchQueue.push(upstreamJson({ total_results: 0, results: [] }));

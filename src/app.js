@@ -3,17 +3,19 @@ import { drawScene, projectMoth } from "./animation-engine.js";
 import { setupAudio } from "./audio-engine.js";
 import { ObservationQueue } from "./observation-queue.js";
 import { MothStore } from "./moth-store.js";
-import { CONNECTION_STATES, DEFAULT_PLACE_ID, InatClient } from "./inaturalist-client.js";
-import { FALLBACK_COUNTRY_NAME, resolveUserPlace } from "./geolocation.js";
+import { CONNECTION_STATES, InatClient } from "./inaturalist-client.js";
 import { parseObservationsResponse } from "./observation-adapter.js";
 import { FALLBACK_OBSERVATIONS } from "./fallback-observations.js";
+import { createMapProjector } from "./robinson-projection.js";
+import { drawArrivalDeparturePulses, drawMapPoints, findMapPointAt, loadWorldBorders, renderMapToOffscreenCanvas } from "./world-map.js";
 
 // The production site's one and only data source: api.inaturalist.org
 // itself, called directly from this browser via InatClient's default direct
 // mode (see README's Phase 14) — there is no server component, no shared
-// cache, and no custom User-Agent (a browser fetch() can't set one). Each
-// visitor's own resolved country (resolveUserPlace(), below) is passed
-// straight through as InatClient's placeId option.
+// cache, and no custom User-Agent (a browser fetch() can't set one). No
+// place_id is ever sent (see startClient's explicit placeId: null below) —
+// the feed is global, not scoped to any one visitor's country, matching the
+// world map now behind the light (Phase 15).
 
 // The last line of defense: a small, bundled-in-the-app dataset of real
 // iNaturalist observations (see fallback-observations.js), shown only when a
@@ -40,18 +42,9 @@ function createQueue() {
 }
 
 // The loading flicker/text always stays up at least this long, even if the
-// real response comes back almost instantly — see startClientForPlace's
+// real response comes back almost instantly — see startClient's
 // hideLoadingNoSoonerThanMinimumDuration().
 const MIN_LOADING_DURATION_MS = 3000;
-
-function countryHeading(countryName) {
-  return countryName === FALLBACK_COUNTRY_NAME ? "UK Moths" : `${countryName} Moths`;
-}
-
-function countryDescription(countryName) {
-  const place = countryName === FALLBACK_COUNTRY_NAME ? "the United Kingdom" : countryName;
-  return `A living view of moth sightings recently shared on iNaturalist across ${place} — recently shared records, not real-time abundance or movement.`;
-}
 
 // Shown in #debug-status purely so a screenshot from a real device proves
 // which deployed build that browser is actually running, rather than leaving
@@ -79,9 +72,53 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   const debugStatus = new URLSearchParams(window.location.search).has("debug")
     ? document.getElementById("debug-status")
     : null;
-  const animationTitle = document.getElementById("animation-title");
-  const animationDescription = document.getElementById("animation-description");
   const audio = setupAudio();
+
+  // The Robinson-projection world map behind the light (Phase 15): built
+  // once the borders finish loading (fire-and-forget, not awaited before the
+  // rest of the scene starts — a visitor's first paint shouldn't wait on it)
+  // and rebuilt on resize alongside the canvas itself. mapCanvas is an
+  // offscreen render of the whole map (see world-map.js's
+  // renderMapToOffscreenCanvas) composited in every frame rather than
+  // redrawn, since the map's shape never changes; projector turns a real
+  // observation's lat/lon into a screen point, used both for that
+  // compositing and for aiming each moth's entry/exit flight at its own
+  // real reported location (see tick() below).
+  let worldBorders = null;
+  let mapCanvas = null;
+  let projector = null;
+
+  function rebuildMap() {
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    // Centered on the same point drawScene's own light uses (cx, cy) so the
+    // globe's "center" (0°N 0°E) sits right behind the bulb — expected to
+    // partially obscure that part of the map, an accepted tradeoff rather
+    // than something to design around.
+    projector = createMapProjector({
+      width,
+      height,
+      offsetX: width / 2,
+      offsetY: height * config.scene.centerYRatio,
+      padding: 24
+    });
+    if (worldBorders) {
+      mapCanvas = renderMapToOffscreenCanvas(worldBorders, projector, width, height);
+    }
+  }
+
+  loadWorldBorders()
+    .then((borders) => {
+      worldBorders = borders;
+      rebuildMap();
+    })
+    .catch((error) => {
+      // The light show and live moths work fine without the map background —
+      // this is a visual layer, not a hard dependency, so a failed fetch
+      // (offline, a bad deploy) degrades to just not showing it rather than
+      // breaking the whole page.
+      console.error("Failed to load the world map background; continuing without it.", error);
+    });
 
   // Deliberately in-memory only (no storage option) — persisting the seen-ID
   // dedup/cursor to localStorage across page loads (the option other callers
@@ -90,11 +127,11 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   // hours or days ago, rather than starting from what's actually recent —
   // the opposite of the intended "living view" experience. A fresh load
   // should always replay the current window from scratch.
-  // Reassigned (not just mutated) if resolveUserPlace() later swaps to a
-  // different country than the default this starts with — see below. `let`
-  // rather than `const` because every downstream reader (tick, the side
-  // panel, hit-testing) closes over this binding, so reassigning it here is
-  // what makes them all pick up the fresh queue/store on their next call.
+  // Reassigned (not just mutated) when entering/leaving fallback mode — see
+  // below. `let` rather than `const` because every downstream reader (tick,
+  // the side panel, hit-testing) closes over this binding, so reassigning it
+  // here is what makes them all pick up the fresh queue/store on their next
+  // call.
   let queue = createQueue();
   let store = new MothStore();
   // A false autoplay is the one remaining kill-switch: the scene loads (just
@@ -139,8 +176,8 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   // isn't driven by the frozen render clock (it's read straight off the DOM,
   // see isLoadingData() below), so without capturing it here specifically, a
   // scene could still visibly change while "frozen" at the exact moment the
-  // loading indicator's minimum display duration (see startClientForPlace)
-  // elapses mid-hover.
+  // loading indicator's minimum display duration (see startClient) elapses
+  // mid-hover.
   let frozenIsLoading = null;
   let presentationMode = initialPresentationMode;
   const canHover = window.matchMedia
@@ -159,9 +196,9 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
 
   // Derived from loadingStatus's own visibility rather than a separate flag,
   // so the light's flicker (see drawScene's isLoading) can never drift out
-  // of sync with the loading text — both a country switch showing it again
-  // and the initial load before any client exists (no "is-hidden" class yet)
-  // are naturally "loading" by this same definition.
+  // of sync with the loading text — the initial load, before any client
+  // exists (no "is-hidden" class yet), is naturally "loading" by this same
+  // definition.
   function isLoadingData() {
     return Boolean(loadingStatus && !loadingStatus.classList.contains("is-hidden"));
   }
@@ -443,6 +480,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     canvas.width = Math.max(1, Math.floor(rect.width * scale));
     canvas.height = Math.max(1, Math.floor(rect.height * scale));
     context.setTransform(scale, 0, 0, scale, 0, 0);
+    rebuildMap();
   }
 
   // Preloads one real observation photo the first time it's admitted (rather
@@ -471,15 +509,12 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   }
 
   let lastDebugUpdateSeconds = 0;
-  // Assigned synchronously by startClientForPlace() below (called
-  // immediately, before tick()/updateDebugStatus() ever run) and reassigned
-  // if resolveUserPlace() later swaps to a different country.
+  // Assigned synchronously by startClient() below, called immediately —
+  // before tick()/updateDebugStatus() ever run.
   let client = null;
   // Handle for the pending "hide the loading indicator" timeout scheduled by
-  // startClientForPlace() below — kept at this outer scope (not inside that
-  // function) so a country switch can cancel a still-pending one from the
-  // previous client generation before it fires and hides the *new* country's
-  // still-genuinely-loading indicator early.
+  // startClient() below — kept at this outer scope so a later state change
+  // can cancel a still-pending one before it fires twice.
   let hideLoadingTimeoutHandle = null;
 
   function updateDebugStatus(t) {
@@ -550,8 +585,50 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
       store.removeExpired(t);
     }
 
-    drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, renderTimestamp, t, hoverState, presentationMode, currentIsLoading());
-    audio.update(store.getActiveMoths(), deltaSeconds);
+    const activeMoths = store.getActiveMoths();
+    // Every active moth flies in from — and, on exit, back out to — its own
+    // real reported location instead of animation-engine.js's default random
+    // point beyond the canvas edge (see projectMoth's entryPoint/exitPoint
+    // override). Recomputed every frame, not cached at admission time, so it
+    // keeps tracking the right screen position across a resize (rebuildMap()
+    // runs on resize too). getActiveMoths() returns the store's own moth
+    // objects by reference, so mutating them here is what makes drawScene's
+    // own projectMoth calls below actually see these fields. A moth with no
+    // known location (a real minority — see observation-adapter.js) simply
+    // keeps the default off-canvas entry/exit instead.
+    if (projector) {
+      activeMoths.forEach((moth) => {
+        if (Number.isFinite(moth.lat) && Number.isFinite(moth.lon)) {
+          const point = projector.project([moth.lon, moth.lat]);
+          moth.entryPoint = point;
+          moth.exitPoint = point;
+        }
+      });
+    }
+
+    // drawScene() clears the whole canvas and fills it (transparently, per
+    // the backgroundColor override in bootstrap()) before drawing the light/
+    // moths — so the map has to be composited in AFTER, "behind" whatever
+    // drawScene just drew, rather than before it (which drawScene's own
+    // clear would just erase). destination-over draws new content only
+    // where the existing canvas is transparent or partially so, which is
+    // exactly "behind the light and moths" — including the light visibly
+    // obscuring the map underneath it, an accepted tradeoff of this design.
+    drawScene(context, activeMoths, canvas.clientWidth, canvas.clientHeight, renderTimestamp, t, hoverState, presentationMode, currentIsLoading());
+    if (projector) {
+      context.save();
+      context.globalCompositeOperation = "destination-over";
+      if (mapCanvas) {
+        context.drawImage(mapCanvas, 0, 0, canvas.clientWidth, canvas.clientHeight);
+      }
+      drawMapPoints(context, projector, activeMoths, hoverState.hoveredMothId);
+      context.restore();
+      // Normal (source-over) compositing, on top of everything drawn above —
+      // see drawArrivalDeparturePulses's own comment for why this can't
+      // share the destination-over pass the steady point markers use.
+      drawArrivalDeparturePulses(context, projector, activeMoths, t);
+    }
+    audio.update(activeMoths, deltaSeconds);
     updateActiveMothsPanel();
     updateDebugStatus(t);
     requestAnimationFrame(tick);
@@ -586,6 +663,19 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
       })[0]?.moth || null;
   }
 
+  // Checks the orbiting light show first (a moth's own position on the
+  // canvas), then falls back to its steady marker on the world map behind it
+  // (world-map.js's findMapPointAt) — so hovering either one focuses the
+  // same moth, and the smaller background map marker never steals a hit
+  // from the light show sitting on top of it.
+  function findHoveredMothOrPoint(pointerX, pointerY) {
+    const hoveredMoth = findHoveredMoth(pointerX, pointerY);
+    if (hoveredMoth) {
+      return hoveredMoth;
+    }
+    return projector ? findMapPointAt(projector, store.getActiveMoths(), pointerX, pointerY) : null;
+  }
+
   function updateHover(event) {
     if (!canHover) {
       return;
@@ -594,7 +684,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     const rect = canvas.getBoundingClientRect();
     const pointerX = event.clientX - rect.left;
     const pointerY = event.clientY - rect.top;
-    const hoveredMoth = findHoveredMoth(pointerX, pointerY);
+    const hoveredMoth = findHoveredMothOrPoint(pointerX, pointerY);
 
     if (!hoveredMoth) {
       clearHover();
@@ -612,7 +702,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     const rect = canvas.getBoundingClientRect();
     const pointerX = event.clientX - rect.left;
     const pointerY = event.clientY - rect.top;
-    const tappedMoth = findHoveredMoth(pointerX, pointerY);
+    const tappedMoth = findHoveredMothOrPoint(pointerX, pointerY);
 
     event.preventDefault();
 
@@ -646,23 +736,10 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   window.addEventListener("resize", resizeCanvas);
   resizeCanvas();
 
-  // Constructs and starts the InatClient for a given place_id. Called once
-  // immediately below (the UK default — matching this page's behavior
-  // before per-country support existed, so a real visitor's very first
-  // paint and first fetch are exactly as fast as they always were) and
-  // again later if resolveUserPlace() finds a different country (see the
-  // IIFE below) — never awaited before starting, since real geolocation
-  // permission prompts a visitor doesn't respond to make resolveUserPlace()
-  // take its full ~8s fallback timeout, and most first-time visitors never
-  // interact with that prompt at all. Blocking the initial start on it
-  // would turn an instant start into an ~8s wait for most visitors, not an
-  // edge case — confirmed by this exact symptom during testing (a real,
-  // unanswered permission prompt in a real browser).
-  function startClientForPlace(placeId) {
-    // Scoped to this client generation, not module/outer state — a country
-    // switch below starts a fresh client (and a fresh queue/store) that must
-    // get its own fresh chance at live data, never inherit an earlier
-    // client's already-tripped fallback.
+  // Constructs and starts the one and only InatClient this page ever needs —
+  // no place_id, ever (see the file header): the feed is global, matching
+  // the world map now behind the light.
+  function startClient() {
     let hasReceivedLiveData = false;
     let fallbackActive = false;
     const loadingStartedAtMs = performance.now();
@@ -705,7 +782,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     }
 
     client = new InatClient({
-      placeId,
+      placeId: null,
       getCursor: () => queue.cursor || null,
       onStateChange: (state) => {
         // STARTING is the synchronous initial state set the instant
@@ -756,57 +833,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     client.start();
   }
 
-  startClientForPlace(DEFAULT_PLACE_ID);
-
-  // Resolves the visitor's real country in the background; if it turns out
-  // to be somewhere other than the UK default just started above, cut over
-  // to it — a fresh queue/store (a different country is a different feed,
-  // not a continuation) and the loading indicator reappears until the new
-  // client's first real fetch resolves. If it resolves to the UK anyway
-  // (a real UK visitor, or any failure's fallback — both already showing
-  // exactly this), there's nothing to switch and no visible change at all.
-  // client.stop() doesn't abort an in-flight request (InatClient has no
-  // abort-on-stop), so a UK response already in flight at the moment of a
-  // switch can still land afterward and enqueue a handful of real UK
-  // observations alongside the new country's — a minor, self-limited,
-  // accepted edge case rather than deeper surgery on InatClient itself.
-  (async () => {
-    const { placeId, countryName } = await resolveUserPlace();
-    if (placeId === DEFAULT_PLACE_ID) {
-      return;
-    }
-
-    if (animationTitle) {
-      animationTitle.textContent = countryHeading(countryName);
-    }
-    if (animationDescription) {
-      animationDescription.textContent = countryDescription(countryName);
-    }
-    document.title = countryHeading(countryName);
-
-    client.stop();
-    queue = createQueue();
-    store = new MothStore();
-    // Cancel a still-pending "hide the loading indicator" timeout from the
-    // client generation just stopped — left to fire, it would hide the *new*
-    // country's indicator on the old generation's schedule, possibly before
-    // the new one has even had its own MIN_LOADING_DURATION_MS.
-    if (hideLoadingTimeoutHandle !== null) {
-      window.clearTimeout(hideLoadingTimeoutHandle);
-      hideLoadingTimeoutHandle = null;
-    }
-    if (loadingStatus) {
-      loadingStatus.classList.remove("is-hidden");
-    }
-    // The default client's own fallback banner (if it had tripped one before
-    // this resolved) belongs to a client generation that's being replaced —
-    // the new one gets its own fresh attempt at live data, per
-    // startClientForPlace's fallbackActive being scoped to each call.
-    if (fallbackStatus) {
-      fallbackStatus.classList.add("is-hidden");
-    }
-    startClientForPlace(placeId);
-  })();
+  startClient();
 
   requestAnimationFrame(tick);
 
@@ -909,6 +936,15 @@ async function bootstrap() {
     throw new Error("Failed to load config/site-config.json: " + response.status);
   }
   setConfig(await response.json());
+  // drawScene() (see drawGround in animation-engine.js) unconditionally
+  // clears the canvas and fills it with this opaque color every frame,
+  // regardless of showGround — reasonable when it's the only thing drawing
+  // to the canvas, but it would erase the world map drawn underneath it
+  // here (Phase 15). Making it transparent, combined with drawing the map
+  // via globalCompositeOperation "destination-over" (see tick() in
+  // setupOrbitAnimation), is what actually gets the map to sit behind the
+  // light/moths rather than behind an opaque rectangle.
+  config.animation.backgroundColor = "rgba(0, 0, 0, 0)";
   setupLaunchScreen();
 }
 

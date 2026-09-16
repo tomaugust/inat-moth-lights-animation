@@ -113,6 +113,18 @@ describe("mapRawObservationToContract", () => {
     assert.equal(mapped.taxonId, null);
     assert.equal(mapped.imageUrl, "");
   });
+
+  it("parses the v2 API's \"lat,lon\" location string", () => {
+    const mapped = mapRawObservationToContract(rawObservation({ location: "51.5074,-0.1278" }));
+    assert.equal(mapped.lat, 51.5074);
+    assert.equal(mapped.lon, -0.1278);
+  });
+
+  it("treats a missing or malformed location as no known point, not a throw", () => {
+    assert.equal(mapRawObservationToContract(rawObservation()).lat, null);
+    assert.equal(mapRawObservationToContract(rawObservation({ location: "not-a-location" })).lat, null);
+    assert.equal(mapRawObservationToContract(rawObservation({ location: "51.5074" })).lat, null);
+  });
 });
 
 describe("buildQueryUrl", () => {

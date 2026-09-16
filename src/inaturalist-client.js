@@ -21,7 +21,7 @@ const API_BASE = "https://api.inaturalist.org/v2/observations";
 
 const FIELDS =
   "(id:!t,uuid:!t,created_at:!t,observed_on:!t,time_observed_at:!t,uri:!t,quality_grade:!t," +
-  "place_guess:!t,taxon:(id:!t,rank:!t,name:!t,preferred_common_name:!t)," +
+  "place_guess:!t,location:!t,taxon:(id:!t,rank:!t,name:!t,preferred_common_name:!t)," +
   "photos:(id:!t,url:!t,attribution:!t,license_code:!t))";
 
 const DEFAULT_PHOTO_LICENSES = ["cc0", "cc-by", "cc-by-sa", "cc-by-nc", "cc-by-nc-sa", "cc-by-nd", "cc-by-nc-nd"];
@@ -100,12 +100,31 @@ function toMediumPhotoUrl(url) {
   return url.replace(/\/(square|thumb|small|medium|large|original)\.([A-Za-z0-9]+)$/, "/medium.$2");
 }
 
+// The v2 API's "location" field is a plain "lat,lon" string (confirmed
+// against a live response — not documented alongside the structured
+// "geojson" field it sits next to, which was the other candidate). Returns
+// {lat, lon} or null — a small, real minority of observations have no
+// location at all (obscured/private, or simply never set).
+function parseLocation(raw) {
+  if (!raw || typeof raw.location !== "string") {
+    return null;
+  }
+  const parts = raw.location.split(",");
+  if (parts.length !== 2) {
+    return null;
+  }
+  const lat = Number(parts[0]);
+  const lon = Number(parts[1]);
+  return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null;
+}
+
 // Maps one raw v2 API result into the same project-owned contract shape
 // observation-adapter.js already validates — this file never invents its
 // own record shape.
 export function mapRawObservationToContract(raw) {
   const taxon = raw && raw.taxon ? raw.taxon : null;
   const photo = raw && Array.isArray(raw.photos) ? raw.photos[0] : null;
+  const location = parseLocation(raw);
 
   return {
     id: raw && raw.id != null ? `inat-${raw.id}` : "",
@@ -126,7 +145,9 @@ export function mapRawObservationToContract(raw) {
     imageUrl: photo ? toMediumPhotoUrl(photo.url) : "",
     imageAttribution: photo ? photo.attribution : "",
     imageLicense: photo ? photo.license_code : "",
-    observationUrl: raw ? raw.uri : ""
+    observationUrl: raw ? raw.uri : "",
+    lat: location ? location.lat : null,
+    lon: location ? location.lon : null
   };
 }
 

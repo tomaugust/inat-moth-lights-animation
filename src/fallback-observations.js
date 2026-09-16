@@ -23,6 +23,12 @@
 // identified that coarsely would. This is a real, representative mix for
 // what a live feed's freshest observations actually look like, not a defect.
 //
+// lat/lon (Phase 15) were backfilled by re-querying this exact captured
+// window with the location field added — 477 of 478 resolved to a real
+// point; the one that did not is left with lat/lon: null, which the world
+// map (src/world-map.js) treats as "no known point for this one" and skips
+// gracefully rather than requiring.
+//
 // This is the last line of defense for a visitor whose very first load can't
 // get live data at all (see app.js's fallback-mode wiring). The site has no
 // server-side cache of its own (see README's website-only-design phase) — a
@@ -45,7 +51,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734902879/medium.jpg",
     "imageAttribution": "(c) Zachi Mihai, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400473950"
+    "observationUrl": "https://www.inaturalist.org/observations/400473950",
+    "lat": 40.7606262028,
+    "lon": 44.923338025
   },
   {
     "id": "fallback-inat-400473953",
@@ -60,7 +68,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903743/medium.jpg",
     "imageAttribution": "(c) Mihály Balogh, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400473953"
+    "observationUrl": "https://www.inaturalist.org/observations/400473953",
+    "lat": 46.8217480935,
+    "lon": 21.7247477174
   },
   {
     "id": "fallback-inat-400473959",
@@ -75,7 +85,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903716/medium.jpg",
     "imageAttribution": "(c) krakebolle, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400473959"
+    "observationUrl": "https://www.inaturalist.org/observations/400473959",
+    "lat": 29.2490916667,
+    "lon": -89.3579116667
   },
   {
     "id": "fallback-inat-400473977",
@@ -90,7 +102,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903688/medium.jpg",
     "imageAttribution": "(c) Guillaume Labeyrie, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400473977"
+    "observationUrl": "https://www.inaturalist.org/observations/400473977",
+    "lat": 43.7576065161,
+    "lon": 6.9038517839
   },
   {
     "id": "fallback-inat-400473979",
@@ -104,7 +118,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903285/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400473979"
+    "observationUrl": "https://www.inaturalist.org/observations/400473979",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400473980",
@@ -118,7 +134,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903282/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400473980"
+    "observationUrl": "https://www.inaturalist.org/observations/400473980",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400473981",
@@ -132,7 +150,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903287/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400473981"
+    "observationUrl": "https://www.inaturalist.org/observations/400473981",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400473990",
@@ -146,7 +166,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903306/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400473990"
+    "observationUrl": "https://www.inaturalist.org/observations/400473990",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400473991",
@@ -160,7 +182,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903307/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400473991"
+    "observationUrl": "https://www.inaturalist.org/observations/400473991",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400473992",
@@ -174,7 +198,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903312/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400473992"
+    "observationUrl": "https://www.inaturalist.org/observations/400473992",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400473994",
@@ -188,7 +214,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903325/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400473994"
+    "observationUrl": "https://www.inaturalist.org/observations/400473994",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400473997",
@@ -202,7 +230,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903328/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400473997"
+    "observationUrl": "https://www.inaturalist.org/observations/400473997",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400473998",
@@ -216,7 +246,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903329/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400473998"
+    "observationUrl": "https://www.inaturalist.org/observations/400473998",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474003",
@@ -230,7 +262,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903346/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474003"
+    "observationUrl": "https://www.inaturalist.org/observations/400474003",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474004",
@@ -244,7 +278,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903341/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474004"
+    "observationUrl": "https://www.inaturalist.org/observations/400474004",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474007",
@@ -258,7 +294,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903345/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474007"
+    "observationUrl": "https://www.inaturalist.org/observations/400474007",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474009",
@@ -272,7 +310,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903360/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474009"
+    "observationUrl": "https://www.inaturalist.org/observations/400474009",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474010",
@@ -286,7 +326,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903367/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474010"
+    "observationUrl": "https://www.inaturalist.org/observations/400474010",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474013",
@@ -300,7 +342,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903784/medium.jpg",
     "imageAttribution": "(c) krakebolle, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474013"
+    "observationUrl": "https://www.inaturalist.org/observations/400474013",
+    "lat": 29.2491083333,
+    "lon": -89.357925
   },
   {
     "id": "fallback-inat-400474015",
@@ -314,7 +358,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903369/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474015"
+    "observationUrl": "https://www.inaturalist.org/observations/400474015",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474016",
@@ -328,7 +374,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903382/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474016"
+    "observationUrl": "https://www.inaturalist.org/observations/400474016",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474017",
@@ -342,7 +390,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903388/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474017"
+    "observationUrl": "https://www.inaturalist.org/observations/400474017",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474020",
@@ -356,7 +406,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903404/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474020"
+    "observationUrl": "https://www.inaturalist.org/observations/400474020",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474021",
@@ -370,7 +422,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903394/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474021"
+    "observationUrl": "https://www.inaturalist.org/observations/400474021",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474022",
@@ -384,7 +438,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903406/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474022"
+    "observationUrl": "https://www.inaturalist.org/observations/400474022",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474023",
@@ -398,7 +454,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903412/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474023"
+    "observationUrl": "https://www.inaturalist.org/observations/400474023",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474024",
@@ -412,7 +470,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903424/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474024"
+    "observationUrl": "https://www.inaturalist.org/observations/400474024",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474025",
@@ -426,7 +486,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903426/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474025"
+    "observationUrl": "https://www.inaturalist.org/observations/400474025",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474028",
@@ -440,7 +502,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903433/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474028"
+    "observationUrl": "https://www.inaturalist.org/observations/400474028",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474029",
@@ -454,7 +518,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903445/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474029"
+    "observationUrl": "https://www.inaturalist.org/observations/400474029",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474030",
@@ -468,7 +534,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903451/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474030"
+    "observationUrl": "https://www.inaturalist.org/observations/400474030",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474033",
@@ -483,7 +551,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903733/medium.jpg",
     "imageAttribution": "(c) fredur, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474033"
+    "observationUrl": "https://www.inaturalist.org/observations/400474033",
+    "lat": 49.479102171,
+    "lon": 6.0863461156
   },
   {
     "id": "fallback-inat-400474035",
@@ -497,7 +567,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903453/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474035"
+    "observationUrl": "https://www.inaturalist.org/observations/400474035",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474036",
@@ -511,7 +583,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903458/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474036"
+    "observationUrl": "https://www.inaturalist.org/observations/400474036",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400474043",
@@ -525,7 +599,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903877/medium.jpg",
     "imageAttribution": "(c) Annick Foucart, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474043"
+    "observationUrl": "https://www.inaturalist.org/observations/400474043",
+    "lat": 50.8251995219,
+    "lon": 4.2838757113
   },
   {
     "id": "fallback-inat-400474071",
@@ -540,7 +616,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903874/medium.jpg",
     "imageAttribution": "(c) jellywheels17, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474071"
+    "observationUrl": "https://www.inaturalist.org/observations/400474071",
+    "lat": -33.769979551,
+    "lon": 150.7283125251
   },
   {
     "id": "fallback-inat-400474076",
@@ -554,7 +632,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734892654/medium.jpg",
     "imageAttribution": "(c) andydnunn, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474076"
+    "observationUrl": "https://www.inaturalist.org/observations/400474076",
+    "lat": -24.5523855,
+    "lon": 31.0970711
   },
   {
     "id": "fallback-inat-400474128",
@@ -568,7 +648,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903919/medium.jpg",
     "imageAttribution": "(c) buddycat4829, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474128"
+    "observationUrl": "https://www.inaturalist.org/observations/400474128",
+    "lat": 39.43598,
+    "lon": -76.5932383333
   },
   {
     "id": "fallback-inat-400474206",
@@ -583,7 +665,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904140/medium.jpg",
     "imageAttribution": "(c) krakebolle, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474206"
+    "observationUrl": "https://www.inaturalist.org/observations/400474206",
+    "lat": 29.2491224737,
+    "lon": -89.3578689627
   },
   {
     "id": "fallback-inat-400474231",
@@ -598,7 +682,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904177/medium.jpg",
     "imageAttribution": "(c) Lila Redding, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474231"
+    "observationUrl": "https://www.inaturalist.org/observations/400474231",
+    "lat": 42.7279557858,
+    "lon": -78.453855297
   },
   {
     "id": "fallback-inat-400474238",
@@ -612,7 +698,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904259/medium.jpg",
     "imageAttribution": "(c) Edgar Fernando Maldonado Álvarez, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474238"
+    "observationUrl": "https://www.inaturalist.org/observations/400474238",
+    "lat": 20.5675338642,
+    "lon": -100.7854836434
   },
   {
     "id": "fallback-inat-400474293",
@@ -627,7 +715,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894879/medium.jpg",
     "imageAttribution": "(c) assmann, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474293"
+    "observationUrl": "https://www.inaturalist.org/observations/400474293",
+    "lat": 33.035321,
+    "lon": -96.7280318
   },
   {
     "id": "fallback-inat-400474298",
@@ -642,7 +732,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734902853/medium.jpg",
     "imageAttribution": "(c) assmann, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474298"
+    "observationUrl": "https://www.inaturalist.org/observations/400474298",
+    "lat": 33.035321,
+    "lon": -96.7280318
   },
   {
     "id": "fallback-inat-400474302",
@@ -657,7 +749,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903930/medium.jpg",
     "imageAttribution": "(c) assmann, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474302"
+    "observationUrl": "https://www.inaturalist.org/observations/400474302",
+    "lat": 33.035321,
+    "lon": -96.7280318
   },
   {
     "id": "fallback-inat-400474363",
@@ -672,7 +766,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904478/medium.jpg",
     "imageAttribution": "(c) felicitymeade, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474363"
+    "observationUrl": "https://www.inaturalist.org/observations/400474363",
+    "lat": 38.0066997,
+    "lon": -78.4835425
   },
   {
     "id": "fallback-inat-400474369",
@@ -687,7 +783,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904516/medium.jpg",
     "imageAttribution": "(c) David W K Foster, some rights reserved (CC BY-NC-ND)",
     "imageLicense": "cc-by-nc-nd",
-    "observationUrl": "https://www.inaturalist.org/observations/400474369"
+    "observationUrl": "https://www.inaturalist.org/observations/400474369",
+    "lat": 6.0638972,
+    "lon": -75.5038069997
   },
   {
     "id": "fallback-inat-400474373",
@@ -702,7 +800,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904440/medium.jpg",
     "imageAttribution": "(c) jellywheels17, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474373"
+    "observationUrl": "https://www.inaturalist.org/observations/400474373",
+    "lat": -33.7698788395,
+    "lon": 150.7285328826
   },
   {
     "id": "fallback-inat-400474374",
@@ -716,7 +816,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904437/medium.jpg",
     "imageAttribution": "(c) foggyfrog, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474374"
+    "observationUrl": "https://www.inaturalist.org/observations/400474374",
+    "lat": 44.6377380058,
+    "lon": -86.2455941221
   },
   {
     "id": "fallback-inat-400474379",
@@ -730,7 +832,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904525/medium.jpg",
     "imageAttribution": "(c) Mariella, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474379"
+    "observationUrl": "https://www.inaturalist.org/observations/400474379",
+    "lat": 38.6566444444,
+    "lon": -90.5213555556
   },
   {
     "id": "fallback-inat-400474430",
@@ -745,7 +849,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904423/medium.jpg",
     "imageAttribution": "(c) fredur, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474430"
+    "observationUrl": "https://www.inaturalist.org/observations/400474430",
+    "lat": 49.4790989117,
+    "lon": 6.0863413496
   },
   {
     "id": "fallback-inat-400474499",
@@ -760,7 +866,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904723/medium.jpg",
     "imageAttribution": "(c) Edgar Fernando Maldonado Álvarez, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474499"
+    "observationUrl": "https://www.inaturalist.org/observations/400474499",
+    "lat": 20.5676628791,
+    "lon": -100.7854494452
   },
   {
     "id": "fallback-inat-400474543",
@@ -775,7 +883,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904735/medium.jpg",
     "imageAttribution": "(c) Guillaume Labeyrie, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474543"
+    "observationUrl": "https://www.inaturalist.org/observations/400474543",
+    "lat": 43.7577024409,
+    "lon": 6.9036297451
   },
   {
     "id": "fallback-inat-400474549",
@@ -790,7 +900,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904803/medium.jpg",
     "imageAttribution": "(c) Arne, some rights reserved (CC BY-NC-SA)",
     "imageLicense": "cc-by-nc-sa",
-    "observationUrl": "https://www.inaturalist.org/observations/400474549"
+    "observationUrl": "https://www.inaturalist.org/observations/400474549",
+    "lat": 54.3219898104,
+    "lon": 10.6499023363
   },
   {
     "id": "fallback-inat-400474556",
@@ -805,7 +917,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904748/medium.jpg",
     "imageAttribution": "(c) Zachi Mihai, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474556"
+    "observationUrl": "https://www.inaturalist.org/observations/400474556",
+    "lat": 39.5029121997,
+    "lon": 46.3468931997
   },
   {
     "id": "fallback-inat-400474575",
@@ -820,7 +934,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904839/medium.jpg",
     "imageAttribution": "(c) microgravity, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474575"
+    "observationUrl": "https://www.inaturalist.org/observations/400474575",
+    "lat": 52.2106782348,
+    "lon": -2.1164077349
   },
   {
     "id": "fallback-inat-400474593",
@@ -835,7 +951,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904881/medium.jpg",
     "imageAttribution": "(c) Nicolas HELITAS, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474593"
+    "observationUrl": "https://www.inaturalist.org/observations/400474593",
+    "lat": 48.9422884644,
+    "lon": 4.0084631369
   },
   {
     "id": "fallback-inat-400474613",
@@ -850,7 +968,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904870/medium.jpg",
     "imageAttribution": "(c) bwalke12, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474613"
+    "observationUrl": "https://www.inaturalist.org/observations/400474613",
+    "lat": 45.3588115732,
+    "lon": -76.2167133304
   },
   {
     "id": "fallback-inat-400474645",
@@ -865,7 +985,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904983/medium.jpg",
     "imageAttribution": "(c) Nicolas HELITAS, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474645"
+    "observationUrl": "https://www.inaturalist.org/observations/400474645",
+    "lat": 48.9422867027,
+    "lon": 4.008468166
   },
   {
     "id": "fallback-inat-400474666",
@@ -880,7 +1002,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905040/medium.jpg",
     "imageAttribution": "(c) Nicolas HELITAS, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474666"
+    "observationUrl": "https://www.inaturalist.org/observations/400474666",
+    "lat": 48.9422781143,
+    "lon": 4.008477889
   },
   {
     "id": "fallback-inat-400474676",
@@ -894,7 +1018,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905076/medium.jpg",
     "imageAttribution": "(c) Audrey J, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474676"
+    "observationUrl": "https://www.inaturalist.org/observations/400474676",
+    "lat": 21.0434577348,
+    "lon": -89.6130759269
   },
   {
     "id": "fallback-inat-400474688",
@@ -909,7 +1035,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905118/medium.jpg",
     "imageAttribution": "(c) Nicolas HELITAS, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474688"
+    "observationUrl": "https://www.inaturalist.org/observations/400474688",
+    "lat": 48.9422781143,
+    "lon": 4.0084856004
   },
   {
     "id": "fallback-inat-400474707",
@@ -924,7 +1052,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905107/medium.jpg",
     "imageAttribution": "(c) Zachi Mihai, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474707"
+    "observationUrl": "https://www.inaturalist.org/observations/400474707",
+    "lat": 39.5028290997,
+    "lon": 46.3468955
   },
   {
     "id": "fallback-inat-400474731",
@@ -939,7 +1069,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905024/medium.jpg",
     "imageAttribution": "(c) fredur, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474731"
+    "observationUrl": "https://www.inaturalist.org/observations/400474731",
+    "lat": 49.4790916181,
+    "lon": 6.0861931862
   },
   {
     "id": "fallback-inat-400474736",
@@ -953,7 +1085,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905237/medium.jpg",
     "imageAttribution": "(c) Nicolas HELITAS, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474736"
+    "observationUrl": "https://www.inaturalist.org/observations/400474736",
+    "lat": 48.9422827388,
+    "lon": 4.0084685013
   },
   {
     "id": "fallback-inat-400474762",
@@ -968,7 +1102,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905223/medium.jpg",
     "imageAttribution": "(c) ebirr23, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474762"
+    "observationUrl": "https://www.inaturalist.org/observations/400474762",
+    "lat": 45.9878216667,
+    "lon": -86.2869633333
   },
   {
     "id": "fallback-inat-400474796",
@@ -982,7 +1118,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905372/medium.jpg",
     "imageAttribution": "(c) Nicolas HELITAS, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474796"
+    "observationUrl": "https://www.inaturalist.org/observations/400474796",
+    "lat": 48.9422838399,
+    "lon": 4.008474201
   },
   {
     "id": "fallback-inat-400474800",
@@ -997,7 +1135,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905314/medium.jpg",
     "imageAttribution": "(c) Zachi Mihai, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474800"
+    "observationUrl": "https://www.inaturalist.org/observations/400474800",
+    "lat": 39.5029240611,
+    "lon": 46.3467687472
   },
   {
     "id": "fallback-inat-400474874",
@@ -1012,7 +1152,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905495/medium.jpg",
     "imageAttribution": "(c) Nicolas HELITAS, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474874"
+    "observationUrl": "https://www.inaturalist.org/observations/400474874",
+    "lat": 48.9422565331,
+    "lon": 4.0085010231
   },
   {
     "id": "fallback-inat-400474890",
@@ -1026,7 +1168,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734902632/medium.jpg",
     "imageAttribution": "(c) voidclover, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474890"
+    "observationUrl": "https://www.inaturalist.org/observations/400474890",
+    "lat": 34.7561094637,
+    "lon": -112.4500071097
   },
   {
     "id": "fallback-inat-400474904",
@@ -1040,7 +1184,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905500/medium.jpg",
     "imageAttribution": "(c) ebirr23, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474904"
+    "observationUrl": "https://www.inaturalist.org/observations/400474904",
+    "lat": 34.9003678079,
+    "lon": -76.8821482848
   },
   {
     "id": "fallback-inat-400474906",
@@ -1055,7 +1201,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909986/medium.jpg",
     "imageAttribution": "(c) brdholl, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474906"
+    "observationUrl": "https://www.inaturalist.org/observations/400474906",
+    "lat": 45.587012507,
+    "lon": 8.9045063329
   },
   {
     "id": "fallback-inat-400474911",
@@ -1070,7 +1218,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905581/medium.jpg",
     "imageAttribution": "(c) ineke1401, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474911"
+    "observationUrl": "https://www.inaturalist.org/observations/400474911",
+    "lat": 50.9924670801,
+    "lon": -1.3199063999
   },
   {
     "id": "fallback-inat-400474914",
@@ -1085,7 +1235,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905516/medium.jpg",
     "imageAttribution": "(c) Zachi Mihai, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474914"
+    "observationUrl": "https://www.inaturalist.org/observations/400474914",
+    "lat": 39.5027063833,
+    "lon": 46.346857175
   },
   {
     "id": "fallback-inat-400474934",
@@ -1099,7 +1251,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905183/medium.jpg",
     "imageAttribution": "(c) Guillaume Labeyrie, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474934"
+    "observationUrl": "https://www.inaturalist.org/observations/400474934",
+    "lat": 43.7577881642,
+    "lon": 6.9035314604
   },
   {
     "id": "fallback-inat-400474945",
@@ -1113,7 +1267,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905668/medium.jpg",
     "imageAttribution": "(c) Angelica Ramos, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474945"
+    "observationUrl": "https://www.inaturalist.org/observations/400474945",
+    "lat": 18.860800969,
+    "lon": -96.90239935
   },
   {
     "id": "fallback-inat-400474949",
@@ -1128,7 +1284,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905736/medium.jpg",
     "imageAttribution": "(c) natge, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474949"
+    "observationUrl": "https://www.inaturalist.org/observations/400474949",
+    "lat": 49.0472548856,
+    "lon": 8.5273523256
   },
   {
     "id": "fallback-inat-400474972",
@@ -1142,7 +1300,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905716/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400474972"
+    "observationUrl": "https://www.inaturalist.org/observations/400474972",
+    "lat": 52.0182202,
+    "lon": -4.8556556
   },
   {
     "id": "fallback-inat-400474986",
@@ -1157,7 +1317,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905691/medium.jpg",
     "imageAttribution": "(c) Calvin S., some rights reserved (CC BY-NC-ND)",
     "imageLicense": "cc-by-nc-nd",
-    "observationUrl": "https://www.inaturalist.org/observations/400474986"
+    "observationUrl": "https://www.inaturalist.org/observations/400474986",
+    "lat": 50.8635236768,
+    "lon": -114.0004513434
   },
   {
     "id": "fallback-inat-400474989",
@@ -1172,7 +1334,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905754/medium.jpg",
     "imageAttribution": "(c) Makalya Cosgrove, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400474989"
+    "observationUrl": "https://www.inaturalist.org/observations/400474989",
+    "lat": 39.8141139445,
+    "lon": -82.0783866942
   },
   {
     "id": "fallback-inat-400475013",
@@ -1187,7 +1351,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905757/medium.jpg",
     "imageAttribution": "(c) Hannah Moreau, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475013"
+    "observationUrl": "https://www.inaturalist.org/observations/400475013",
+    "lat": 42.615025,
+    "lon": -73.7709883333
   },
   {
     "id": "fallback-inat-400475016",
@@ -1201,7 +1367,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905819/medium.jpg",
     "imageAttribution": "(c) Sophie H, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475016"
+    "observationUrl": "https://www.inaturalist.org/observations/400475016",
+    "lat": 49.6735224,
+    "lon": 6.0154116
   },
   {
     "id": "fallback-inat-400475018",
@@ -1215,7 +1383,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904127/medium.jpg",
     "imageAttribution": "(c) Barbara Banfield, some rights reserved (CC BY)",
     "imageLicense": "cc-by",
-    "observationUrl": "https://www.inaturalist.org/observations/400475018"
+    "observationUrl": "https://www.inaturalist.org/observations/400475018",
+    "lat": 36.11055,
+    "lon": -121.24585
   },
   {
     "id": "fallback-inat-400475079",
@@ -1229,7 +1399,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905882/medium.jpg",
     "imageAttribution": "(c) syoshinsyalv35, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475079"
+    "observationUrl": "https://www.inaturalist.org/observations/400475079",
+    "lat": 36.3046811434,
+    "lon": 138.1428599073
   },
   {
     "id": "fallback-inat-400475087",
@@ -1244,7 +1416,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907038/medium.jpg",
     "imageAttribution": "(c) Tim Cowley, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475087"
+    "observationUrl": "https://www.inaturalist.org/observations/400475087",
+    "lat": 53.8793569656,
+    "lon": -0.4377800374
   },
   {
     "id": "fallback-inat-400475142",
@@ -1259,7 +1433,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906011/medium.jpg",
     "imageAttribution": "(c) quiet_critter, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475142"
+    "observationUrl": "https://www.inaturalist.org/observations/400475142",
+    "lat": 40.4938396236,
+    "lon": -79.485258363
   },
   {
     "id": "fallback-inat-400475150",
@@ -1273,7 +1449,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905994/medium.jpg",
     "imageAttribution": "(c) Guillaume Labeyrie, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475150"
+    "observationUrl": "https://www.inaturalist.org/observations/400475150",
+    "lat": 43.7578589154,
+    "lon": 6.9038215891
   },
   {
     "id": "fallback-inat-400475197",
@@ -1287,7 +1465,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904001/medium.jpg",
     "imageAttribution": "(c) Julien Bottinelli, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475197"
+    "observationUrl": "https://www.inaturalist.org/observations/400475197",
+    "lat": 48.4921598419,
+    "lon": 2.9772288651
   },
   {
     "id": "fallback-inat-400475211",
@@ -1302,7 +1482,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904061/medium.jpg",
     "imageAttribution": "(c) Julien Bottinelli, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475211"
+    "observationUrl": "https://www.inaturalist.org/observations/400475211",
+    "lat": 48.4921598419,
+    "lon": 2.9772288651
   },
   {
     "id": "fallback-inat-400475212",
@@ -1316,7 +1498,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904058/medium.jpg",
     "imageAttribution": "(c) Julien Bottinelli, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475212"
+    "observationUrl": "https://www.inaturalist.org/observations/400475212",
+    "lat": 48.4921598419,
+    "lon": 2.9772288651
   },
   {
     "id": "fallback-inat-400475216",
@@ -1331,7 +1515,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904089/medium.jpg",
     "imageAttribution": "(c) Julien Bottinelli, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475216"
+    "observationUrl": "https://www.inaturalist.org/observations/400475216",
+    "lat": 48.4921598419,
+    "lon": 2.9772288651
   },
   {
     "id": "fallback-inat-400475217",
@@ -1346,7 +1532,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904088/medium.jpg",
     "imageAttribution": "(c) Julien Bottinelli, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475217"
+    "observationUrl": "https://www.inaturalist.org/observations/400475217",
+    "lat": 48.4921598419,
+    "lon": 2.9772288651
   },
   {
     "id": "fallback-inat-400475228",
@@ -1361,7 +1549,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904104/medium.jpg",
     "imageAttribution": "(c) Julien Bottinelli, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475228"
+    "observationUrl": "https://www.inaturalist.org/observations/400475228",
+    "lat": 48.4921598419,
+    "lon": 2.9772288651
   },
   {
     "id": "fallback-inat-400475229",
@@ -1375,7 +1565,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904111/medium.jpg",
     "imageAttribution": "(c) Julien Bottinelli, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475229"
+    "observationUrl": "https://www.inaturalist.org/observations/400475229",
+    "lat": 48.4921598419,
+    "lon": 2.9772288651
   },
   {
     "id": "fallback-inat-400475237",
@@ -1390,7 +1582,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904126/medium.jpg",
     "imageAttribution": "(c) Julien Bottinelli, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475237"
+    "observationUrl": "https://www.inaturalist.org/observations/400475237",
+    "lat": 48.4921598419,
+    "lon": 2.9772288651
   },
   {
     "id": "fallback-inat-400475239",
@@ -1405,7 +1599,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904135/medium.jpg",
     "imageAttribution": "(c) Julien Bottinelli, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475239"
+    "observationUrl": "https://www.inaturalist.org/observations/400475239",
+    "lat": 48.4921598419,
+    "lon": 2.9772288651
   },
   {
     "id": "fallback-inat-400475242",
@@ -1420,7 +1616,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906256/medium.jpg",
     "imageAttribution": "(c) Gabriel, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475242"
+    "observationUrl": "https://www.inaturalist.org/observations/400475242",
+    "lat": 46.0055182594,
+    "lon": -64.6237562969
   },
   {
     "id": "fallback-inat-400475246",
@@ -1435,7 +1633,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904133/medium.jpg",
     "imageAttribution": "(c) Julien Bottinelli, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475246"
+    "observationUrl": "https://www.inaturalist.org/observations/400475246",
+    "lat": 48.4921598419,
+    "lon": 2.9772288651
   },
   {
     "id": "fallback-inat-400475249",
@@ -1450,7 +1650,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734904153/medium.jpg",
     "imageAttribution": "(c) Julien Bottinelli, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475249"
+    "observationUrl": "https://www.inaturalist.org/observations/400475249",
+    "lat": 48.4921598419,
+    "lon": 2.9772288651
   },
   {
     "id": "fallback-inat-400475255",
@@ -1465,7 +1667,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905562/medium.jpg",
     "imageAttribution": "(c) Александр Лисеенко, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475255"
+    "observationUrl": "https://www.inaturalist.org/observations/400475255",
+    "lat": 51.1131410853,
+    "lon": 58.1930597518
   },
   {
     "id": "fallback-inat-400475314",
@@ -1480,7 +1684,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898667/medium.jpg",
     "imageAttribution": "(c) Jeanette Jaskula, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475314"
+    "observationUrl": "https://www.inaturalist.org/observations/400475314",
+    "lat": 41.0875305,
+    "lon": -87.405508
   },
   {
     "id": "fallback-inat-400475315",
@@ -1495,7 +1701,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734901352/medium.jpg",
     "imageAttribution": "(c) Jeanette Jaskula, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475315"
+    "observationUrl": "https://www.inaturalist.org/observations/400475315",
+    "lat": 41.0875305,
+    "lon": -87.405508
   },
   {
     "id": "fallback-inat-400475316",
@@ -1509,7 +1717,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734902736/medium.jpg",
     "imageAttribution": "(c) Jeanette Jaskula, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475316"
+    "observationUrl": "https://www.inaturalist.org/observations/400475316",
+    "lat": 41.0875305,
+    "lon": -87.405508
   },
   {
     "id": "fallback-inat-400475322",
@@ -1524,7 +1734,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903915/medium.jpg",
     "imageAttribution": "(c) Jeanette Jaskula, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475322"
+    "observationUrl": "https://www.inaturalist.org/observations/400475322",
+    "lat": 41.0875305,
+    "lon": -87.405508
   },
   {
     "id": "fallback-inat-400475327",
@@ -1539,7 +1751,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905474/medium.jpg",
     "imageAttribution": "(c) 莲子, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475327"
+    "observationUrl": "https://www.inaturalist.org/observations/400475327",
+    "lat": 36.5454725169,
+    "lon": 116.8282228825
   },
   {
     "id": "fallback-inat-400475328",
@@ -1553,7 +1767,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905398/medium.jpg",
     "imageAttribution": "(c) 莲子, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475328"
+    "observationUrl": "https://www.inaturalist.org/observations/400475328",
+    "lat": 36.5454782821,
+    "lon": 116.8282801222
   },
   {
     "id": "fallback-inat-400475329",
@@ -1568,7 +1784,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906366/medium.jpg",
     "imageAttribution": "(c) Tim Cowley, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475329"
+    "observationUrl": "https://www.inaturalist.org/observations/400475329",
+    "lat": 53.8793545925,
+    "lon": -0.4377874931
   },
   {
     "id": "fallback-inat-400475331",
@@ -1582,7 +1800,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905419/medium.jpg",
     "imageAttribution": "(c) 莲子, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475331"
+    "observationUrl": "https://www.inaturalist.org/observations/400475331",
+    "lat": 36.5454715564,
+    "lon": 116.8283268652
   },
   {
     "id": "fallback-inat-400475336",
@@ -1597,7 +1817,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905539/medium.jpg",
     "imageAttribution": "(c) 莲子, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475336"
+    "observationUrl": "https://www.inaturalist.org/observations/400475336",
+    "lat": 36.5448958065,
+    "lon": 116.8281264254
   },
   {
     "id": "fallback-inat-400475337",
@@ -1611,7 +1833,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905600/medium.jpg",
     "imageAttribution": "(c) 莲子, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475337"
+    "observationUrl": "https://www.inaturalist.org/observations/400475337",
+    "lat": 36.54548645,
+    "lon": 116.8283157347
   },
   {
     "id": "fallback-inat-400475347",
@@ -1625,7 +1849,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734905733/medium.jpg",
     "imageAttribution": "(c) 莲子, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475347"
+    "observationUrl": "https://www.inaturalist.org/observations/400475347",
+    "lat": 36.548289348,
+    "lon": 116.8279713822
   },
   {
     "id": "fallback-inat-400475352",
@@ -1640,7 +1866,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906452/medium.jpg",
     "imageAttribution": "(c) haurumlise, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475352"
+    "observationUrl": "https://www.inaturalist.org/observations/400475352",
+    "lat": 56.2017109,
+    "lon": 10.7061758
   },
   {
     "id": "fallback-inat-400475391",
@@ -1654,7 +1882,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734903084/medium.jpg",
     "imageAttribution": "(c) Shelley Rutkin, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475391"
+    "observationUrl": "https://www.inaturalist.org/observations/400475391",
+    "lat": 28.0516388889,
+    "lon": -82.769875
   },
   {
     "id": "fallback-inat-400475392",
@@ -1669,7 +1899,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906470/medium.jpg",
     "imageAttribution": "(c) Casie, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475392"
+    "observationUrl": "https://www.inaturalist.org/observations/400475392",
+    "lat": 28.4161583156,
+    "lon": -82.524073895
   },
   {
     "id": "fallback-inat-400475398",
@@ -1684,7 +1916,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906435/medium.jpg",
     "imageAttribution": "(c) Guillaume Labeyrie, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475398"
+    "observationUrl": "https://www.inaturalist.org/observations/400475398",
+    "lat": 43.7580237141,
+    "lon": 6.9039389429
   },
   {
     "id": "fallback-inat-400475474",
@@ -1699,7 +1933,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906669/medium.jpg",
     "imageAttribution": "(c) Christopher G Harris, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475474"
+    "observationUrl": "https://www.inaturalist.org/observations/400475474",
+    "lat": 45.3603224411,
+    "lon": -75.7877653969
   },
   {
     "id": "fallback-inat-400475509",
@@ -1714,7 +1950,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906798/medium.jpg",
     "imageAttribution": "(c) cfres, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475509"
+    "observationUrl": "https://www.inaturalist.org/observations/400475509",
+    "lat": 41.1034608234,
+    "lon": -3.4896447882
   },
   {
     "id": "fallback-inat-400475532",
@@ -1729,7 +1967,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906831/medium.jpg",
     "imageAttribution": "(c) okasana, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475532"
+    "observationUrl": "https://www.inaturalist.org/observations/400475532",
+    "lat": 44.1366778333,
+    "lon": 43.0240445
   },
   {
     "id": "fallback-inat-400475550",
@@ -1744,7 +1984,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906876/medium.jpg",
     "imageAttribution": "(c) cdge, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475550"
+    "observationUrl": "https://www.inaturalist.org/observations/400475550",
+    "lat": 39.9799783333,
+    "lon": -86.1369733333
   },
   {
     "id": "fallback-inat-400475573",
@@ -1758,7 +2000,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906889/medium.jpg",
     "imageAttribution": "(c) Jan Martin, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475573"
+    "observationUrl": "https://www.inaturalist.org/observations/400475573",
+    "lat": -20.5017166667,
+    "lon": -41.0391166667
   },
   {
     "id": "fallback-inat-400475579",
@@ -1773,7 +2017,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906915/medium.jpg",
     "imageAttribution": "(c) earthling711, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475579"
+    "observationUrl": "https://www.inaturalist.org/observations/400475579",
+    "lat": 38.4718283333,
+    "lon": 27.0895305
   },
   {
     "id": "fallback-inat-400475594",
@@ -1787,7 +2033,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906953/medium.jpg",
     "imageAttribution": "(c) Mayra Ahumada, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475594"
+    "observationUrl": "https://www.inaturalist.org/observations/400475594",
+    "lat": 19.7022116667,
+    "lon": -103.4509583333
   },
   {
     "id": "fallback-inat-400475619",
@@ -1802,7 +2050,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907029/medium.jpg",
     "imageAttribution": "(c) romi48, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475619"
+    "observationUrl": "https://www.inaturalist.org/observations/400475619",
+    "lat": 43.9755956557,
+    "lon": 15.0976042731
   },
   {
     "id": "fallback-inat-400475643",
@@ -1817,7 +2067,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907099/medium.jpg",
     "imageAttribution": "(c) Saskia, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475643"
+    "observationUrl": "https://www.inaturalist.org/observations/400475643",
+    "lat": 52.7845157489,
+    "lon": 6.6936885586
   },
   {
     "id": "fallback-inat-400475646",
@@ -1832,7 +2084,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907110/medium.jpg",
     "imageAttribution": "(c) Guillaume Labeyrie, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475646"
+    "observationUrl": "https://www.inaturalist.org/observations/400475646",
+    "lat": 43.75734598,
+    "lon": 6.9041876446
   },
   {
     "id": "fallback-inat-400475654",
@@ -1847,7 +2101,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/735275229/medium.jpg",
     "imageAttribution": "(c) Sebastian K., some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475654"
+    "observationUrl": "https://www.inaturalist.org/observations/400475654",
+    "lat": 48.2374316,
+    "lon": 11.3092489
   },
   {
     "id": "fallback-inat-400475692",
@@ -1862,7 +2118,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907245/medium.jpg",
     "imageAttribution": "(c) Alana Mullen, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475692"
+    "observationUrl": "https://www.inaturalist.org/observations/400475692",
+    "lat": 45.5707166667,
+    "lon": -122.1250722222
   },
   {
     "id": "fallback-inat-400475716",
@@ -1877,7 +2135,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907279/medium.jpg",
     "imageAttribution": "(c) ajpaddock, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475716"
+    "observationUrl": "https://www.inaturalist.org/observations/400475716",
+    "lat": 52.8970115751,
+    "lon": -1.8664108405
   },
   {
     "id": "fallback-inat-400475721",
@@ -1892,7 +2152,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907839/medium.jpg",
     "imageAttribution": "(c) Alana Mullen, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475721"
+    "observationUrl": "https://www.inaturalist.org/observations/400475721",
+    "lat": 45.5900805556,
+    "lon": -122.17255
   },
   {
     "id": "fallback-inat-400475731",
@@ -1907,7 +2169,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907286/medium.jpg",
     "imageAttribution": "(c) emuviking, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475731"
+    "observationUrl": "https://www.inaturalist.org/observations/400475731",
+    "lat": 40.4038448492,
+    "lon": -88.9934857694
   },
   {
     "id": "fallback-inat-400475763",
@@ -1922,7 +2186,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907444/medium.jpg",
     "imageAttribution": "(c) Bob Scott Placier, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475763"
+    "observationUrl": "https://www.inaturalist.org/observations/400475763",
+    "lat": 39.2349034,
+    "lon": -82.27432916
   },
   {
     "id": "fallback-inat-400475765",
@@ -1937,7 +2203,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734902078/medium.jpg",
     "imageAttribution": "(c) naturbalkon, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475765"
+    "observationUrl": "https://www.inaturalist.org/observations/400475765",
+    "lat": 49.5323509,
+    "lon": 11.1540547
   },
   {
     "id": "fallback-inat-400475780",
@@ -1952,7 +2220,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907395/medium.jpg",
     "imageAttribution": "(c) Guillaume Labeyrie, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475780"
+    "observationUrl": "https://www.inaturalist.org/observations/400475780",
+    "lat": 43.757648197,
+    "lon": 6.9041661869
   },
   {
     "id": "fallback-inat-400475786",
@@ -1967,7 +2237,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734902248/medium.jpg",
     "imageAttribution": "(c) naturbalkon, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475786"
+    "observationUrl": "https://www.inaturalist.org/observations/400475786",
+    "lat": 49.5323509,
+    "lon": 11.1540547
   },
   {
     "id": "fallback-inat-400475813",
@@ -1982,7 +2254,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907509/medium.jpg",
     "imageAttribution": "(c) emily-inthewild, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475813"
+    "observationUrl": "https://www.inaturalist.org/observations/400475813",
+    "lat": 38.72955878,
+    "lon": -120.79861055
   },
   {
     "id": "fallback-inat-400475861",
@@ -1996,7 +2270,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907607/medium.jpg",
     "imageAttribution": "(c) LE MURZET, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475861"
+    "observationUrl": "https://www.inaturalist.org/observations/400475861",
+    "lat": null,
+    "lon": null
   },
   {
     "id": "fallback-inat-400475937",
@@ -2011,7 +2287,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907751/medium.jpg",
     "imageAttribution": "(c) Andrew Heaton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475937"
+    "observationUrl": "https://www.inaturalist.org/observations/400475937",
+    "lat": 30.45976249,
+    "lon": -88.42920246
   },
   {
     "id": "fallback-inat-400475987",
@@ -2026,7 +2304,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907873/medium.jpg",
     "imageAttribution": "(c) Alana Mullen, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475987"
+    "observationUrl": "https://www.inaturalist.org/observations/400475987",
+    "lat": 45.5736119449,
+    "lon": -122.1088639274
   },
   {
     "id": "fallback-inat-400475990",
@@ -2041,7 +2321,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907887/medium.jpg",
     "imageAttribution": "(c) clivestr, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400475990"
+    "observationUrl": "https://www.inaturalist.org/observations/400475990",
+    "lat": 46.730795,
+    "lon": 12.22977
   },
   {
     "id": "fallback-inat-400476003",
@@ -2055,7 +2337,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907948/medium.jpg",
     "imageAttribution": "(c) Utpal Handique, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476003"
+    "observationUrl": "https://www.inaturalist.org/observations/400476003",
+    "lat": 26.8748595192,
+    "lon": 94.5370500907
   },
   {
     "id": "fallback-inat-400476096",
@@ -2070,7 +2354,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734908175/medium.jpg",
     "imageAttribution": "(c) Jesse Holifield, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476096"
+    "observationUrl": "https://www.inaturalist.org/observations/400476096",
+    "lat": 32.66093,
+    "lon": -87.314675
   },
   {
     "id": "fallback-inat-400476140",
@@ -2085,7 +2371,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734908249/medium.jpg",
     "imageAttribution": "(c) Justin Brown, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476140"
+    "observationUrl": "https://www.inaturalist.org/observations/400476140",
+    "lat": 34.1354222,
+    "lon": -84.4773773
   },
   {
     "id": "fallback-inat-400476177",
@@ -2099,7 +2387,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907756/medium.jpg",
     "imageAttribution": "(c) 莲子, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476177"
+    "observationUrl": "https://www.inaturalist.org/observations/400476177",
+    "lat": 36.5481902649,
+    "lon": 116.8279577439
   },
   {
     "id": "fallback-inat-400476179",
@@ -2114,7 +2404,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907913/medium.jpg",
     "imageAttribution": "(c) 莲子, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476179"
+    "observationUrl": "https://www.inaturalist.org/observations/400476179",
+    "lat": 36.5481759011,
+    "lon": 116.8279646056
   },
   {
     "id": "fallback-inat-400476185",
@@ -2129,7 +2421,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907619/medium.jpg",
     "imageAttribution": "(c) kovacs-jc, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476185"
+    "observationUrl": "https://www.inaturalist.org/observations/400476185",
+    "lat": 49.1998368174,
+    "lon": 1.7030014265
   },
   {
     "id": "fallback-inat-400476188",
@@ -2144,7 +2438,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907915/medium.jpg",
     "imageAttribution": "(c) 莲子, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476188"
+    "observationUrl": "https://www.inaturalist.org/observations/400476188",
+    "lat": 36.5480078308,
+    "lon": 116.8279356531
   },
   {
     "id": "fallback-inat-400476202",
@@ -2159,7 +2455,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894267/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476202"
+    "observationUrl": "https://www.inaturalist.org/observations/400476202",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476203",
@@ -2174,7 +2472,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907258/medium.jpg",
     "imageAttribution": "(c) Александр Лисеенко, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476203"
+    "observationUrl": "https://www.inaturalist.org/observations/400476203",
+    "lat": 51.133612222,
+    "lon": 58.2234634116
   },
   {
     "id": "fallback-inat-400476204",
@@ -2188,7 +2488,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906955/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476204"
+    "observationUrl": "https://www.inaturalist.org/observations/400476204",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476205",
@@ -2202,7 +2504,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906960/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476205"
+    "observationUrl": "https://www.inaturalist.org/observations/400476205",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476208",
@@ -2216,7 +2520,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906958/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476208"
+    "observationUrl": "https://www.inaturalist.org/observations/400476208",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476210",
@@ -2231,7 +2537,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894269/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476210"
+    "observationUrl": "https://www.inaturalist.org/observations/400476210",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476213",
@@ -2245,7 +2553,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894268/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476213"
+    "observationUrl": "https://www.inaturalist.org/observations/400476213",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476217",
@@ -2259,7 +2569,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906971/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476217"
+    "observationUrl": "https://www.inaturalist.org/observations/400476217",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476218",
@@ -2273,7 +2585,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906970/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476218"
+    "observationUrl": "https://www.inaturalist.org/observations/400476218",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476219",
@@ -2287,7 +2601,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906972/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476219"
+    "observationUrl": "https://www.inaturalist.org/observations/400476219",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476220",
@@ -2302,7 +2618,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894334/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476220"
+    "observationUrl": "https://www.inaturalist.org/observations/400476220",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476224",
@@ -2316,7 +2634,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906994/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476224"
+    "observationUrl": "https://www.inaturalist.org/observations/400476224",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476225",
@@ -2330,7 +2650,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906996/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476225"
+    "observationUrl": "https://www.inaturalist.org/observations/400476225",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476226",
@@ -2344,7 +2666,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734906998/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476226"
+    "observationUrl": "https://www.inaturalist.org/observations/400476226",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476228",
@@ -2358,7 +2682,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894390/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476228"
+    "observationUrl": "https://www.inaturalist.org/observations/400476228",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476229",
@@ -2373,7 +2699,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894389/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476229"
+    "observationUrl": "https://www.inaturalist.org/observations/400476229",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476231",
@@ -2387,7 +2715,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894414/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476231"
+    "observationUrl": "https://www.inaturalist.org/observations/400476231",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476233",
@@ -2401,7 +2731,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907028/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476233"
+    "observationUrl": "https://www.inaturalist.org/observations/400476233",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476234",
@@ -2415,7 +2747,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907031/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476234"
+    "observationUrl": "https://www.inaturalist.org/observations/400476234",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476235",
@@ -2429,7 +2763,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907026/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476235"
+    "observationUrl": "https://www.inaturalist.org/observations/400476235",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476239",
@@ -2443,7 +2779,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907050/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476239"
+    "observationUrl": "https://www.inaturalist.org/observations/400476239",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476241",
@@ -2457,7 +2795,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907048/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476241"
+    "observationUrl": "https://www.inaturalist.org/observations/400476241",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476242",
@@ -2471,7 +2811,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907052/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476242"
+    "observationUrl": "https://www.inaturalist.org/observations/400476242",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476248",
@@ -2485,7 +2827,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894460/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476248"
+    "observationUrl": "https://www.inaturalist.org/observations/400476248",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476249",
@@ -2500,7 +2844,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734908393/medium.jpg",
     "imageAttribution": "(c) westcarolina, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476249"
+    "observationUrl": "https://www.inaturalist.org/observations/400476249",
+    "lat": 42.9400133333,
+    "lon": -78.8542633333
   },
   {
     "id": "fallback-inat-400476250",
@@ -2515,7 +2861,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894462/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476250"
+    "observationUrl": "https://www.inaturalist.org/observations/400476250",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476252",
@@ -2529,7 +2877,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907066/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476252"
+    "observationUrl": "https://www.inaturalist.org/observations/400476252",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476253",
@@ -2543,7 +2893,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907073/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476253"
+    "observationUrl": "https://www.inaturalist.org/observations/400476253",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476254",
@@ -2557,7 +2909,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907080/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476254"
+    "observationUrl": "https://www.inaturalist.org/observations/400476254",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476256",
@@ -2572,7 +2926,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894487/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476256"
+    "observationUrl": "https://www.inaturalist.org/observations/400476256",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476257",
@@ -2587,7 +2943,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894502/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476257"
+    "observationUrl": "https://www.inaturalist.org/observations/400476257",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476262",
@@ -2601,7 +2959,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894498/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476262"
+    "observationUrl": "https://www.inaturalist.org/observations/400476262",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476263",
@@ -2615,7 +2975,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907094/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476263"
+    "observationUrl": "https://www.inaturalist.org/observations/400476263",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476264",
@@ -2629,7 +2991,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907106/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476264"
+    "observationUrl": "https://www.inaturalist.org/observations/400476264",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476265",
@@ -2643,7 +3007,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907088/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476265"
+    "observationUrl": "https://www.inaturalist.org/observations/400476265",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476267",
@@ -2657,7 +3023,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894537/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476267"
+    "observationUrl": "https://www.inaturalist.org/observations/400476267",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476269",
@@ -2672,7 +3040,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734908251/medium.jpg",
     "imageAttribution": "(c) Guillaume Labeyrie, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476269"
+    "observationUrl": "https://www.inaturalist.org/observations/400476269",
+    "lat": 43.7582388883,
+    "lon": 6.9042406515
   },
   {
     "id": "fallback-inat-400476273",
@@ -2686,7 +3056,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894539/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476273"
+    "observationUrl": "https://www.inaturalist.org/observations/400476273",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476276",
@@ -2700,7 +3072,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894541/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476276"
+    "observationUrl": "https://www.inaturalist.org/observations/400476276",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476277",
@@ -2715,7 +3089,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894583/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476277"
+    "observationUrl": "https://www.inaturalist.org/observations/400476277",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476278",
@@ -2729,7 +3105,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907111/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476278"
+    "observationUrl": "https://www.inaturalist.org/observations/400476278",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476279",
@@ -2743,7 +3121,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907122/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476279"
+    "observationUrl": "https://www.inaturalist.org/observations/400476279",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476280",
@@ -2757,7 +3137,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907121/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476280"
+    "observationUrl": "https://www.inaturalist.org/observations/400476280",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476289",
@@ -2771,7 +3153,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894588/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476289"
+    "observationUrl": "https://www.inaturalist.org/observations/400476289",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476290",
@@ -2785,7 +3169,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894592/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476290"
+    "observationUrl": "https://www.inaturalist.org/observations/400476290",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476291",
@@ -2799,7 +3185,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894726/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476291"
+    "observationUrl": "https://www.inaturalist.org/observations/400476291",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476293",
@@ -2813,7 +3201,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907128/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476293"
+    "observationUrl": "https://www.inaturalist.org/observations/400476293",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476294",
@@ -2827,7 +3217,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907139/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476294"
+    "observationUrl": "https://www.inaturalist.org/observations/400476294",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476295",
@@ -2842,7 +3234,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894660/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476295"
+    "observationUrl": "https://www.inaturalist.org/observations/400476295",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476296",
@@ -2856,7 +3250,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907144/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476296"
+    "observationUrl": "https://www.inaturalist.org/observations/400476296",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476297",
@@ -2870,7 +3266,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894664/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476297"
+    "observationUrl": "https://www.inaturalist.org/observations/400476297",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476298",
@@ -2884,7 +3282,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894780/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476298"
+    "observationUrl": "https://www.inaturalist.org/observations/400476298",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476303",
@@ -2898,7 +3298,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907148/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476303"
+    "observationUrl": "https://www.inaturalist.org/observations/400476303",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476304",
@@ -2912,7 +3314,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907158/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476304"
+    "observationUrl": "https://www.inaturalist.org/observations/400476304",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476306",
@@ -2926,7 +3330,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894901/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476306"
+    "observationUrl": "https://www.inaturalist.org/observations/400476306",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476307",
@@ -2940,7 +3346,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907163/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476307"
+    "observationUrl": "https://www.inaturalist.org/observations/400476307",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476308",
@@ -2954,7 +3362,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894903/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476308"
+    "observationUrl": "https://www.inaturalist.org/observations/400476308",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476311",
@@ -2968,7 +3378,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907172/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476311"
+    "observationUrl": "https://www.inaturalist.org/observations/400476311",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476315",
@@ -2982,7 +3394,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907179/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476315"
+    "observationUrl": "https://www.inaturalist.org/observations/400476315",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476316",
@@ -2996,7 +3410,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907183/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476316"
+    "observationUrl": "https://www.inaturalist.org/observations/400476316",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476317",
@@ -3010,7 +3426,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894955/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476317"
+    "observationUrl": "https://www.inaturalist.org/observations/400476317",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476319",
@@ -3025,7 +3443,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894956/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476319"
+    "observationUrl": "https://www.inaturalist.org/observations/400476319",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476320",
@@ -3039,7 +3459,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907192/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476320"
+    "observationUrl": "https://www.inaturalist.org/observations/400476320",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476322",
@@ -3053,7 +3475,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907202/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476322"
+    "observationUrl": "https://www.inaturalist.org/observations/400476322",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476324",
@@ -3067,7 +3491,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907206/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476324"
+    "observationUrl": "https://www.inaturalist.org/observations/400476324",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476325",
@@ -3082,7 +3508,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894995/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476325"
+    "observationUrl": "https://www.inaturalist.org/observations/400476325",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476327",
@@ -3096,7 +3524,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734894999/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476327"
+    "observationUrl": "https://www.inaturalist.org/observations/400476327",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476329",
@@ -3110,7 +3540,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895000/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476329"
+    "observationUrl": "https://www.inaturalist.org/observations/400476329",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476331",
@@ -3124,7 +3556,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907220/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476331"
+    "observationUrl": "https://www.inaturalist.org/observations/400476331",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476334",
@@ -3138,7 +3572,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907226/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476334"
+    "observationUrl": "https://www.inaturalist.org/observations/400476334",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476335",
@@ -3152,7 +3588,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907227/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476335"
+    "observationUrl": "https://www.inaturalist.org/observations/400476335",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476338",
@@ -3166,7 +3604,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907236/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476338"
+    "observationUrl": "https://www.inaturalist.org/observations/400476338",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476339",
@@ -3181,7 +3621,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895026/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476339"
+    "observationUrl": "https://www.inaturalist.org/observations/400476339",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476340",
@@ -3196,7 +3638,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895036/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476340"
+    "observationUrl": "https://www.inaturalist.org/observations/400476340",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476348",
@@ -3210,7 +3654,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907240/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476348"
+    "observationUrl": "https://www.inaturalist.org/observations/400476348",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476350",
@@ -3224,7 +3670,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907241/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476350"
+    "observationUrl": "https://www.inaturalist.org/observations/400476350",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476351",
@@ -3238,7 +3686,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907250/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476351"
+    "observationUrl": "https://www.inaturalist.org/observations/400476351",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476353",
@@ -3252,7 +3702,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895054/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476353"
+    "observationUrl": "https://www.inaturalist.org/observations/400476353",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476355",
@@ -3267,7 +3719,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895062/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476355"
+    "observationUrl": "https://www.inaturalist.org/observations/400476355",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476358",
@@ -3282,7 +3736,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895071/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476358"
+    "observationUrl": "https://www.inaturalist.org/observations/400476358",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476359",
@@ -3296,7 +3752,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907271/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476359"
+    "observationUrl": "https://www.inaturalist.org/observations/400476359",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476360",
@@ -3310,7 +3768,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907270/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476360"
+    "observationUrl": "https://www.inaturalist.org/observations/400476360",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476361",
@@ -3324,7 +3784,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734907273/medium.jpg",
     "imageAttribution": "(c) Ian Morton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476361"
+    "observationUrl": "https://www.inaturalist.org/observations/400476361",
+    "lat": 16.0945543057,
+    "lon": -88.8328488861
   },
   {
     "id": "fallback-inat-400476369",
@@ -3339,7 +3801,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895098/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476369"
+    "observationUrl": "https://www.inaturalist.org/observations/400476369",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476371",
@@ -3353,7 +3817,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895100/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476371"
+    "observationUrl": "https://www.inaturalist.org/observations/400476371",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476372",
@@ -3367,7 +3833,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895107/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476372"
+    "observationUrl": "https://www.inaturalist.org/observations/400476372",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476383",
@@ -3382,7 +3850,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895130/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476383"
+    "observationUrl": "https://www.inaturalist.org/observations/400476383",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476384",
@@ -3396,7 +3866,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895138/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476384"
+    "observationUrl": "https://www.inaturalist.org/observations/400476384",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476385",
@@ -3410,7 +3882,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895143/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476385"
+    "observationUrl": "https://www.inaturalist.org/observations/400476385",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476393",
@@ -3425,7 +3899,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895170/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476393"
+    "observationUrl": "https://www.inaturalist.org/observations/400476393",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476394",
@@ -3439,7 +3915,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895176/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476394"
+    "observationUrl": "https://www.inaturalist.org/observations/400476394",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476398",
@@ -3453,7 +3931,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895195/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476398"
+    "observationUrl": "https://www.inaturalist.org/observations/400476398",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476402",
@@ -3468,7 +3948,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895199/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476402"
+    "observationUrl": "https://www.inaturalist.org/observations/400476402",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476403",
@@ -3483,7 +3965,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895209/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476403"
+    "observationUrl": "https://www.inaturalist.org/observations/400476403",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476408",
@@ -3497,7 +3981,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734908594/medium.jpg",
     "imageAttribution": "(c) chankinsegundo, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476408"
+    "observationUrl": "https://www.inaturalist.org/observations/400476408",
+    "lat": 16.97626875,
+    "lon": -91.5808258056
   },
   {
     "id": "fallback-inat-400476421",
@@ -3511,7 +3997,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895229/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476421"
+    "observationUrl": "https://www.inaturalist.org/observations/400476421",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476423",
@@ -3525,7 +4013,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895233/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476423"
+    "observationUrl": "https://www.inaturalist.org/observations/400476423",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476424",
@@ -3539,7 +4029,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895238/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476424"
+    "observationUrl": "https://www.inaturalist.org/observations/400476424",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476429",
@@ -3554,7 +4046,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895263/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476429"
+    "observationUrl": "https://www.inaturalist.org/observations/400476429",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476430",
@@ -3569,7 +4063,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734908621/medium.jpg",
     "imageAttribution": "(c) Alexey V. Ivanov, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476430"
+    "observationUrl": "https://www.inaturalist.org/observations/400476430",
+    "lat": 56.1807331997,
+    "lon": 47.1235386
   },
   {
     "id": "fallback-inat-400476431",
@@ -3583,7 +4079,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895264/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476431"
+    "observationUrl": "https://www.inaturalist.org/observations/400476431",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476432",
@@ -3597,7 +4095,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895271/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476432"
+    "observationUrl": "https://www.inaturalist.org/observations/400476432",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476437",
@@ -3611,7 +4111,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895296/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476437"
+    "observationUrl": "https://www.inaturalist.org/observations/400476437",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476438",
@@ -3626,7 +4128,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895309/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476438"
+    "observationUrl": "https://www.inaturalist.org/observations/400476438",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476439",
@@ -3641,7 +4145,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895312/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476439"
+    "observationUrl": "https://www.inaturalist.org/observations/400476439",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476442",
@@ -3655,7 +4161,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895364/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476442"
+    "observationUrl": "https://www.inaturalist.org/observations/400476442",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476444",
@@ -3670,7 +4178,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895366/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476444"
+    "observationUrl": "https://www.inaturalist.org/observations/400476444",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476445",
@@ -3685,7 +4195,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895353/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476445"
+    "observationUrl": "https://www.inaturalist.org/observations/400476445",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476448",
@@ -3700,7 +4212,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895387/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476448"
+    "observationUrl": "https://www.inaturalist.org/observations/400476448",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476451",
@@ -3714,7 +4228,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895395/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476451"
+    "observationUrl": "https://www.inaturalist.org/observations/400476451",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476452",
@@ -3728,7 +4244,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895401/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476452"
+    "observationUrl": "https://www.inaturalist.org/observations/400476452",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476456",
@@ -3742,7 +4260,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895422/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476456"
+    "observationUrl": "https://www.inaturalist.org/observations/400476456",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476458",
@@ -3757,7 +4277,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895435/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476458"
+    "observationUrl": "https://www.inaturalist.org/observations/400476458",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476464",
@@ -3772,7 +4294,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909475/medium.jpg",
     "imageAttribution": "(c) Stella L'Italien, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476464"
+    "observationUrl": "https://www.inaturalist.org/observations/400476464",
+    "lat": 38.4145191464,
+    "lon": -89.823015617
   },
   {
     "id": "fallback-inat-400476467",
@@ -3786,7 +4310,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895451/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476467"
+    "observationUrl": "https://www.inaturalist.org/observations/400476467",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476469",
@@ -3801,7 +4327,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895461/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476469"
+    "observationUrl": "https://www.inaturalist.org/observations/400476469",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476471",
@@ -3816,7 +4344,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895467/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476471"
+    "observationUrl": "https://www.inaturalist.org/observations/400476471",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476477",
@@ -3830,7 +4360,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895474/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476477"
+    "observationUrl": "https://www.inaturalist.org/observations/400476477",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476478",
@@ -3844,7 +4376,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895502/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476478"
+    "observationUrl": "https://www.inaturalist.org/observations/400476478",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476487",
@@ -3859,7 +4393,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895594/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476487"
+    "observationUrl": "https://www.inaturalist.org/observations/400476487",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476488",
@@ -3873,7 +4409,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895593/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476488"
+    "observationUrl": "https://www.inaturalist.org/observations/400476488",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476491",
@@ -3888,7 +4426,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895596/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476491"
+    "observationUrl": "https://www.inaturalist.org/observations/400476491",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476492",
@@ -3902,7 +4442,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895716/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476492"
+    "observationUrl": "https://www.inaturalist.org/observations/400476492",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476493",
@@ -3916,7 +4458,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895721/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476493"
+    "observationUrl": "https://www.inaturalist.org/observations/400476493",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476494",
@@ -3930,7 +4474,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734908713/medium.jpg",
     "imageAttribution": "(c) antoniadegregorio, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476494"
+    "observationUrl": "https://www.inaturalist.org/observations/400476494",
+    "lat": -36.8955363,
+    "lon": -72.0119090997
   },
   {
     "id": "fallback-inat-400476499",
@@ -3945,7 +4491,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895717/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476499"
+    "observationUrl": "https://www.inaturalist.org/observations/400476499",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476500",
@@ -3960,7 +4508,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895815/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476500"
+    "observationUrl": "https://www.inaturalist.org/observations/400476500",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476501",
@@ -3975,7 +4525,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895821/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476501"
+    "observationUrl": "https://www.inaturalist.org/observations/400476501",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476505",
@@ -3989,7 +4541,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895831/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476505"
+    "observationUrl": "https://www.inaturalist.org/observations/400476505",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476516",
@@ -4004,7 +4558,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895873/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476516"
+    "observationUrl": "https://www.inaturalist.org/observations/400476516",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476517",
@@ -4019,7 +4575,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895888/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476517"
+    "observationUrl": "https://www.inaturalist.org/observations/400476517",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476518",
@@ -4033,7 +4591,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895921/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476518"
+    "observationUrl": "https://www.inaturalist.org/observations/400476518",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476524",
@@ -4048,7 +4608,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895919/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476524"
+    "observationUrl": "https://www.inaturalist.org/observations/400476524",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476526",
@@ -4062,7 +4624,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895925/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476526"
+    "observationUrl": "https://www.inaturalist.org/observations/400476526",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476527",
@@ -4076,7 +4640,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895955/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476527"
+    "observationUrl": "https://www.inaturalist.org/observations/400476527",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476530",
@@ -4091,7 +4657,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734911856/medium.jpg",
     "imageAttribution": "(c) Alexey V. Ivanov, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476530"
+    "observationUrl": "https://www.inaturalist.org/observations/400476530",
+    "lat": 56.1807749,
+    "lon": 47.1234768997
   },
   {
     "id": "fallback-inat-400476531",
@@ -4105,7 +4673,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895959/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476531"
+    "observationUrl": "https://www.inaturalist.org/observations/400476531",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476532",
@@ -4119,7 +4689,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895963/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476532"
+    "observationUrl": "https://www.inaturalist.org/observations/400476532",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476533",
@@ -4134,7 +4706,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734895995/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476533"
+    "observationUrl": "https://www.inaturalist.org/observations/400476533",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476536",
@@ -4148,7 +4722,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896005/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476536"
+    "observationUrl": "https://www.inaturalist.org/observations/400476536",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476538",
@@ -4162,7 +4738,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896072/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476538"
+    "observationUrl": "https://www.inaturalist.org/observations/400476538",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476551",
@@ -4177,7 +4755,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896058/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476551"
+    "observationUrl": "https://www.inaturalist.org/observations/400476551",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476553",
@@ -4191,7 +4771,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896061/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476553"
+    "observationUrl": "https://www.inaturalist.org/observations/400476553",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476560",
@@ -4206,7 +4788,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896101/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476560"
+    "observationUrl": "https://www.inaturalist.org/observations/400476560",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476561",
@@ -4220,7 +4804,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896103/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476561"
+    "observationUrl": "https://www.inaturalist.org/observations/400476561",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476574",
@@ -4234,7 +4820,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896114/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476574"
+    "observationUrl": "https://www.inaturalist.org/observations/400476574",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476576",
@@ -4249,7 +4837,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896135/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476576"
+    "observationUrl": "https://www.inaturalist.org/observations/400476576",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476577",
@@ -4263,7 +4853,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896133/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476577"
+    "observationUrl": "https://www.inaturalist.org/observations/400476577",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476580",
@@ -4277,7 +4869,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896147/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476580"
+    "observationUrl": "https://www.inaturalist.org/observations/400476580",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476581",
@@ -4292,7 +4886,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896168/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476581"
+    "observationUrl": "https://www.inaturalist.org/observations/400476581",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476584",
@@ -4307,7 +4903,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896185/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476584"
+    "observationUrl": "https://www.inaturalist.org/observations/400476584",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476585",
@@ -4321,7 +4919,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896205/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476585"
+    "observationUrl": "https://www.inaturalist.org/observations/400476585",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476586",
@@ -4335,7 +4935,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896216/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476586"
+    "observationUrl": "https://www.inaturalist.org/observations/400476586",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476591",
@@ -4350,7 +4952,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896221/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476591"
+    "observationUrl": "https://www.inaturalist.org/observations/400476591",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476600",
@@ -4364,7 +4968,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896272/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476600"
+    "observationUrl": "https://www.inaturalist.org/observations/400476600",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476603",
@@ -4378,7 +4984,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896290/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476603"
+    "observationUrl": "https://www.inaturalist.org/observations/400476603",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476604",
@@ -4393,7 +5001,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734922433/medium.jpg",
     "imageAttribution": "(c) keegancongleton, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476604"
+    "observationUrl": "https://www.inaturalist.org/observations/400476604",
+    "lat": 35.2052280537,
+    "lon": -85.9390602617
   },
   {
     "id": "fallback-inat-400476606",
@@ -4408,7 +5018,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896297/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476606"
+    "observationUrl": "https://www.inaturalist.org/observations/400476606",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476607",
@@ -4422,7 +5034,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896302/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476607"
+    "observationUrl": "https://www.inaturalist.org/observations/400476607",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476610",
@@ -4436,7 +5050,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896353/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476610"
+    "observationUrl": "https://www.inaturalist.org/observations/400476610",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476618",
@@ -4450,7 +5066,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896357/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476618"
+    "observationUrl": "https://www.inaturalist.org/observations/400476618",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476619",
@@ -4465,7 +5083,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896359/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476619"
+    "observationUrl": "https://www.inaturalist.org/observations/400476619",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476620",
@@ -4480,7 +5100,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896384/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476620"
+    "observationUrl": "https://www.inaturalist.org/observations/400476620",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476624",
@@ -4494,7 +5116,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896401/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476624"
+    "observationUrl": "https://www.inaturalist.org/observations/400476624",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476625",
@@ -4509,7 +5133,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896405/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476625"
+    "observationUrl": "https://www.inaturalist.org/observations/400476625",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476626",
@@ -4523,7 +5149,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896415/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476626"
+    "observationUrl": "https://www.inaturalist.org/observations/400476626",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476630",
@@ -4537,7 +5165,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896434/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476630"
+    "observationUrl": "https://www.inaturalist.org/observations/400476630",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476633",
@@ -4552,7 +5182,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896453/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476633"
+    "observationUrl": "https://www.inaturalist.org/observations/400476633",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476642",
@@ -4567,7 +5199,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896472/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476642"
+    "observationUrl": "https://www.inaturalist.org/observations/400476642",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476643",
@@ -4581,7 +5215,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896471/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476643"
+    "observationUrl": "https://www.inaturalist.org/observations/400476643",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476644",
@@ -4595,7 +5231,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896482/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476644"
+    "observationUrl": "https://www.inaturalist.org/observations/400476644",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476645",
@@ -4610,7 +5248,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896508/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476645"
+    "observationUrl": "https://www.inaturalist.org/observations/400476645",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476654",
@@ -4625,7 +5265,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896529/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476654"
+    "observationUrl": "https://www.inaturalist.org/observations/400476654",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476655",
@@ -4639,7 +5281,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896535/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476655"
+    "observationUrl": "https://www.inaturalist.org/observations/400476655",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476657",
@@ -4653,7 +5297,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896550/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476657"
+    "observationUrl": "https://www.inaturalist.org/observations/400476657",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476658",
@@ -4667,7 +5313,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896564/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476658"
+    "observationUrl": "https://www.inaturalist.org/observations/400476658",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476664",
@@ -4682,7 +5330,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896684/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476664"
+    "observationUrl": "https://www.inaturalist.org/observations/400476664",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476667",
@@ -4696,7 +5346,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896689/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476667"
+    "observationUrl": "https://www.inaturalist.org/observations/400476667",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476671",
@@ -4710,7 +5362,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896765/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476671"
+    "observationUrl": "https://www.inaturalist.org/observations/400476671",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476676",
@@ -4724,7 +5378,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896798/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476676"
+    "observationUrl": "https://www.inaturalist.org/observations/400476676",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476677",
@@ -4738,7 +5394,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896817/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476677"
+    "observationUrl": "https://www.inaturalist.org/observations/400476677",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476681",
@@ -4753,7 +5411,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896810/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476681"
+    "observationUrl": "https://www.inaturalist.org/observations/400476681",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476682",
@@ -4768,7 +5428,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896834/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476682"
+    "observationUrl": "https://www.inaturalist.org/observations/400476682",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476693",
@@ -4782,7 +5444,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896846/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476693"
+    "observationUrl": "https://www.inaturalist.org/observations/400476693",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476694",
@@ -4796,7 +5460,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896860/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476694"
+    "observationUrl": "https://www.inaturalist.org/observations/400476694",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476701",
@@ -4810,7 +5476,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896898/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476701"
+    "observationUrl": "https://www.inaturalist.org/observations/400476701",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476711",
@@ -4825,7 +5493,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896917/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476711"
+    "observationUrl": "https://www.inaturalist.org/observations/400476711",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476713",
@@ -4839,7 +5509,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896929/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476713"
+    "observationUrl": "https://www.inaturalist.org/observations/400476713",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476714",
@@ -4854,7 +5526,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896959/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476714"
+    "observationUrl": "https://www.inaturalist.org/observations/400476714",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476720",
@@ -4868,7 +5542,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896969/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476720"
+    "observationUrl": "https://www.inaturalist.org/observations/400476720",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476722",
@@ -4882,7 +5558,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896974/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476722"
+    "observationUrl": "https://www.inaturalist.org/observations/400476722",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476724",
@@ -4896,7 +5574,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734896992/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476724"
+    "observationUrl": "https://www.inaturalist.org/observations/400476724",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476746",
@@ -4910,7 +5590,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897038/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476746"
+    "observationUrl": "https://www.inaturalist.org/observations/400476746",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476751",
@@ -4924,7 +5606,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909129/medium.jpg",
     "imageAttribution": "(c) Frode Jacobsen, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476751"
+    "observationUrl": "https://www.inaturalist.org/observations/400476751",
+    "lat": 44.301955,
+    "lon": -76.5787416667
   },
   {
     "id": "fallback-inat-400476753",
@@ -4938,7 +5622,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897048/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476753"
+    "observationUrl": "https://www.inaturalist.org/observations/400476753",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476754",
@@ -4952,7 +5638,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897064/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476754"
+    "observationUrl": "https://www.inaturalist.org/observations/400476754",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476755",
@@ -4966,7 +5654,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897074/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476755"
+    "observationUrl": "https://www.inaturalist.org/observations/400476755",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476763",
@@ -4980,7 +5670,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897103/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476763"
+    "observationUrl": "https://www.inaturalist.org/observations/400476763",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476764",
@@ -4995,7 +5687,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897080/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476764"
+    "observationUrl": "https://www.inaturalist.org/observations/400476764",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476765",
@@ -5010,7 +5704,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897121/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476765"
+    "observationUrl": "https://www.inaturalist.org/observations/400476765",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476771",
@@ -5024,7 +5720,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897130/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476771"
+    "observationUrl": "https://www.inaturalist.org/observations/400476771",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476772",
@@ -5038,7 +5736,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897152/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476772"
+    "observationUrl": "https://www.inaturalist.org/observations/400476772",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476774",
@@ -5052,7 +5752,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897155/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476774"
+    "observationUrl": "https://www.inaturalist.org/observations/400476774",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476783",
@@ -5067,7 +5769,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897210/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476783"
+    "observationUrl": "https://www.inaturalist.org/observations/400476783",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476785",
@@ -5082,7 +5786,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897224/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476785"
+    "observationUrl": "https://www.inaturalist.org/observations/400476785",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476790",
@@ -5096,7 +5802,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897250/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476790"
+    "observationUrl": "https://www.inaturalist.org/observations/400476790",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476791",
@@ -5110,7 +5818,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897251/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476791"
+    "observationUrl": "https://www.inaturalist.org/observations/400476791",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476792",
@@ -5124,7 +5834,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909136/medium.jpg",
     "imageAttribution": "(c) Matheus Estevam, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476792"
+    "observationUrl": "https://www.inaturalist.org/observations/400476792",
+    "lat": -9.6363229722,
+    "lon": -35.703907
   },
   {
     "id": "fallback-inat-400476793",
@@ -5138,7 +5850,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897264/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476793"
+    "observationUrl": "https://www.inaturalist.org/observations/400476793",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476801",
@@ -5152,7 +5866,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909024/medium.jpg",
     "imageAttribution": "(c) Guillaume Labeyrie, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476801"
+    "observationUrl": "https://www.inaturalist.org/observations/400476801",
+    "lat": 43.7576714444,
+    "lon": 6.9037263046
   },
   {
     "id": "fallback-inat-400476803",
@@ -5167,7 +5883,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897301/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476803"
+    "observationUrl": "https://www.inaturalist.org/observations/400476803",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476804",
@@ -5181,7 +5899,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897304/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476804"
+    "observationUrl": "https://www.inaturalist.org/observations/400476804",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476806",
@@ -5196,7 +5916,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897319/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476806"
+    "observationUrl": "https://www.inaturalist.org/observations/400476806",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476813",
@@ -5210,7 +5932,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897340/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476813"
+    "observationUrl": "https://www.inaturalist.org/observations/400476813",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476815",
@@ -5225,7 +5949,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897348/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476815"
+    "observationUrl": "https://www.inaturalist.org/observations/400476815",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476819",
@@ -5239,7 +5965,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897363/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476819"
+    "observationUrl": "https://www.inaturalist.org/observations/400476819",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476821",
@@ -5253,7 +5981,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897384/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476821"
+    "observationUrl": "https://www.inaturalist.org/observations/400476821",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476822",
@@ -5267,7 +5997,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897405/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476822"
+    "observationUrl": "https://www.inaturalist.org/observations/400476822",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476824",
@@ -5282,7 +6014,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897426/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476824"
+    "observationUrl": "https://www.inaturalist.org/observations/400476824",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476825",
@@ -5296,7 +6030,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897468/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476825"
+    "observationUrl": "https://www.inaturalist.org/observations/400476825",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476826",
@@ -5310,7 +6046,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897491/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476826"
+    "observationUrl": "https://www.inaturalist.org/observations/400476826",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476828",
@@ -5325,7 +6063,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909106/medium.jpg",
     "imageAttribution": "(c) emuviking, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476828"
+    "observationUrl": "https://www.inaturalist.org/observations/400476828",
+    "lat": 40.4597528461,
+    "lon": -88.9629955089
   },
   {
     "id": "fallback-inat-400476830",
@@ -5340,7 +6080,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897494/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476830"
+    "observationUrl": "https://www.inaturalist.org/observations/400476830",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476831",
@@ -5354,7 +6096,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897515/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476831"
+    "observationUrl": "https://www.inaturalist.org/observations/400476831",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476833",
@@ -5368,7 +6112,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909206/medium.jpg",
     "imageAttribution": "(c) Cintya Segura, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476833"
+    "observationUrl": "https://www.inaturalist.org/observations/400476833",
+    "lat": 22.1394260498,
+    "lon": -103.2447873428
   },
   {
     "id": "fallback-inat-400476835",
@@ -5382,7 +6128,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897609/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476835"
+    "observationUrl": "https://www.inaturalist.org/observations/400476835",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476837",
@@ -5396,7 +6144,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897610/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476837"
+    "observationUrl": "https://www.inaturalist.org/observations/400476837",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476843",
@@ -5410,7 +6160,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897636/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476843"
+    "observationUrl": "https://www.inaturalist.org/observations/400476843",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476844",
@@ -5425,7 +6177,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897662/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476844"
+    "observationUrl": "https://www.inaturalist.org/observations/400476844",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476845",
@@ -5439,7 +6193,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897666/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476845"
+    "observationUrl": "https://www.inaturalist.org/observations/400476845",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476850",
@@ -5454,7 +6210,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897677/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476850"
+    "observationUrl": "https://www.inaturalist.org/observations/400476850",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476851",
@@ -5469,7 +6227,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897703/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476851"
+    "observationUrl": "https://www.inaturalist.org/observations/400476851",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476853",
@@ -5483,7 +6243,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897697/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476853"
+    "observationUrl": "https://www.inaturalist.org/observations/400476853",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476856",
@@ -5498,7 +6260,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897710/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476856"
+    "observationUrl": "https://www.inaturalist.org/observations/400476856",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476857",
@@ -5512,7 +6276,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897751/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476857"
+    "observationUrl": "https://www.inaturalist.org/observations/400476857",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476858",
@@ -5526,7 +6292,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897774/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476858"
+    "observationUrl": "https://www.inaturalist.org/observations/400476858",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476864",
@@ -5540,7 +6308,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897801/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476864"
+    "observationUrl": "https://www.inaturalist.org/observations/400476864",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476865",
@@ -5554,7 +6324,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897819/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476865"
+    "observationUrl": "https://www.inaturalist.org/observations/400476865",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476866",
@@ -5568,7 +6340,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897832/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476866"
+    "observationUrl": "https://www.inaturalist.org/observations/400476866",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476870",
@@ -5583,7 +6357,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897875/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476870"
+    "observationUrl": "https://www.inaturalist.org/observations/400476870",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476871",
@@ -5598,7 +6374,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897850/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476871"
+    "observationUrl": "https://www.inaturalist.org/observations/400476871",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476874",
@@ -5613,7 +6391,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897947/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476874"
+    "observationUrl": "https://www.inaturalist.org/observations/400476874",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476875",
@@ -5627,7 +6407,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897946/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476875"
+    "observationUrl": "https://www.inaturalist.org/observations/400476875",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476879",
@@ -5642,7 +6424,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734908767/medium.jpg",
     "imageAttribution": "(c) Jean-Nicholas Haché, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476879"
+    "observationUrl": "https://www.inaturalist.org/observations/400476879",
+    "lat": 45.4909811152,
+    "lon": -73.4032157451
   },
   {
     "id": "fallback-inat-400476881",
@@ -5656,7 +6440,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734897989/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476881"
+    "observationUrl": "https://www.inaturalist.org/observations/400476881",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476882",
@@ -5670,7 +6456,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898003/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476882"
+    "observationUrl": "https://www.inaturalist.org/observations/400476882",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476884",
@@ -5685,7 +6473,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898008/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476884"
+    "observationUrl": "https://www.inaturalist.org/observations/400476884",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476887",
@@ -5700,7 +6490,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898026/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476887"
+    "observationUrl": "https://www.inaturalist.org/observations/400476887",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476888",
@@ -5714,7 +6506,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898037/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476888"
+    "observationUrl": "https://www.inaturalist.org/observations/400476888",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476891",
@@ -5728,7 +6522,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898045/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476891"
+    "observationUrl": "https://www.inaturalist.org/observations/400476891",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476892",
@@ -5743,7 +6539,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898064/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476892"
+    "observationUrl": "https://www.inaturalist.org/observations/400476892",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476893",
@@ -5757,7 +6555,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898069/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476893"
+    "observationUrl": "https://www.inaturalist.org/observations/400476893",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476895",
@@ -5771,7 +6571,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898077/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476895"
+    "observationUrl": "https://www.inaturalist.org/observations/400476895",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476896",
@@ -5785,7 +6587,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898112/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476896"
+    "observationUrl": "https://www.inaturalist.org/observations/400476896",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476899",
@@ -5799,7 +6603,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898121/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476899"
+    "observationUrl": "https://www.inaturalist.org/observations/400476899",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476904",
@@ -5814,7 +6620,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898148/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476904"
+    "observationUrl": "https://www.inaturalist.org/observations/400476904",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476906",
@@ -5829,7 +6637,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898166/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476906"
+    "observationUrl": "https://www.inaturalist.org/observations/400476906",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476909",
@@ -5843,7 +6653,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898177/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476909"
+    "observationUrl": "https://www.inaturalist.org/observations/400476909",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476910",
@@ -5857,7 +6669,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898204/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476910"
+    "observationUrl": "https://www.inaturalist.org/observations/400476910",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476911",
@@ -5872,7 +6686,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898221/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476911"
+    "observationUrl": "https://www.inaturalist.org/observations/400476911",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476914",
@@ -5886,7 +6702,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898251/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476914"
+    "observationUrl": "https://www.inaturalist.org/observations/400476914",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476915",
@@ -5900,7 +6718,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898261/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476915"
+    "observationUrl": "https://www.inaturalist.org/observations/400476915",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476919",
@@ -5915,7 +6735,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898268/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476919"
+    "observationUrl": "https://www.inaturalist.org/observations/400476919",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476921",
@@ -5929,7 +6751,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898327/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476921"
+    "observationUrl": "https://www.inaturalist.org/observations/400476921",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476925",
@@ -5943,7 +6767,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898341/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476925"
+    "observationUrl": "https://www.inaturalist.org/observations/400476925",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476928",
@@ -5958,7 +6784,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898363/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476928"
+    "observationUrl": "https://www.inaturalist.org/observations/400476928",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476932",
@@ -5972,7 +6800,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898373/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476932"
+    "observationUrl": "https://www.inaturalist.org/observations/400476932",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476933",
@@ -5986,7 +6816,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898382/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476933"
+    "observationUrl": "https://www.inaturalist.org/observations/400476933",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476937",
@@ -6001,7 +6833,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898403/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476937"
+    "observationUrl": "https://www.inaturalist.org/observations/400476937",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476939",
@@ -6016,7 +6850,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898436/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476939"
+    "observationUrl": "https://www.inaturalist.org/observations/400476939",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476940",
@@ -6030,7 +6866,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898441/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476940"
+    "observationUrl": "https://www.inaturalist.org/observations/400476940",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476943",
@@ -6045,7 +6883,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898560/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476943"
+    "observationUrl": "https://www.inaturalist.org/observations/400476943",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476945",
@@ -6060,7 +6900,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898577/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476945"
+    "observationUrl": "https://www.inaturalist.org/observations/400476945",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476946",
@@ -6075,7 +6917,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898613/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476946"
+    "observationUrl": "https://www.inaturalist.org/observations/400476946",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476947",
@@ -6090,7 +6934,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909336/medium.jpg",
     "imageAttribution": "(c) Seth Brewer, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476947"
+    "observationUrl": "https://www.inaturalist.org/observations/400476947",
+    "lat": 40.5726521529,
+    "lon": -83.1571433355
   },
   {
     "id": "fallback-inat-400476952",
@@ -6105,7 +6951,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898625/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476952"
+    "observationUrl": "https://www.inaturalist.org/observations/400476952",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476955",
@@ -6120,7 +6968,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898631/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476955"
+    "observationUrl": "https://www.inaturalist.org/observations/400476955",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476961",
@@ -6135,7 +6985,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898687/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476961"
+    "observationUrl": "https://www.inaturalist.org/observations/400476961",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476962",
@@ -6149,7 +7001,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898695/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476962"
+    "observationUrl": "https://www.inaturalist.org/observations/400476962",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476963",
@@ -6164,7 +7018,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898712/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476963"
+    "observationUrl": "https://www.inaturalist.org/observations/400476963",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476966",
@@ -6179,7 +7035,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909402/medium.jpg",
     "imageAttribution": "(c) Gail Fennell, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400476966"
+    "observationUrl": "https://www.inaturalist.org/observations/400476966",
+    "lat": 50.4610360898,
+    "lon": -104.5691134725
   },
   {
     "id": "fallback-inat-400476973",
@@ -6193,7 +7051,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898773/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476973"
+    "observationUrl": "https://www.inaturalist.org/observations/400476973",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476974",
@@ -6208,7 +7068,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898783/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476974"
+    "observationUrl": "https://www.inaturalist.org/observations/400476974",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476982",
@@ -6222,7 +7084,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898844/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476982"
+    "observationUrl": "https://www.inaturalist.org/observations/400476982",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476983",
@@ -6237,7 +7101,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898839/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476983"
+    "observationUrl": "https://www.inaturalist.org/observations/400476983",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400476987",
@@ -6251,7 +7117,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898883/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400476987"
+    "observationUrl": "https://www.inaturalist.org/observations/400476987",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477002",
@@ -6266,7 +7134,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898937/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477002"
+    "observationUrl": "https://www.inaturalist.org/observations/400477002",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477004",
@@ -6280,7 +7150,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898948/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477004"
+    "observationUrl": "https://www.inaturalist.org/observations/400477004",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477009",
@@ -6294,7 +7166,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898980/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477009"
+    "observationUrl": "https://www.inaturalist.org/observations/400477009",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477010",
@@ -6309,7 +7183,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898993/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477010"
+    "observationUrl": "https://www.inaturalist.org/observations/400477010",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477014",
@@ -6324,7 +7200,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734898998/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477014"
+    "observationUrl": "https://www.inaturalist.org/observations/400477014",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477016",
@@ -6339,7 +7217,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899012/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477016"
+    "observationUrl": "https://www.inaturalist.org/observations/400477016",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477017",
@@ -6354,7 +7234,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899030/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477017"
+    "observationUrl": "https://www.inaturalist.org/observations/400477017",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477019",
@@ -6369,7 +7251,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909531/medium.jpg",
     "imageAttribution": "(c) Radha Radha, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477019"
+    "observationUrl": "https://www.inaturalist.org/observations/400477019",
+    "lat": 13.73079212,
+    "lon": 75.6294010207
   },
   {
     "id": "fallback-inat-400477020",
@@ -6384,7 +7268,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899031/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477020"
+    "observationUrl": "https://www.inaturalist.org/observations/400477020",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477022",
@@ -6399,7 +7285,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899052/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477022"
+    "observationUrl": "https://www.inaturalist.org/observations/400477022",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477023",
@@ -6414,7 +7302,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899064/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477023"
+    "observationUrl": "https://www.inaturalist.org/observations/400477023",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477031",
@@ -6428,7 +7318,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899087/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477031"
+    "observationUrl": "https://www.inaturalist.org/observations/400477031",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477034",
@@ -6442,7 +7334,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899133/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477034"
+    "observationUrl": "https://www.inaturalist.org/observations/400477034",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477035",
@@ -6457,7 +7351,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899130/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477035"
+    "observationUrl": "https://www.inaturalist.org/observations/400477035",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477037",
@@ -6471,7 +7367,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899138/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477037"
+    "observationUrl": "https://www.inaturalist.org/observations/400477037",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477038",
@@ -6486,7 +7384,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899166/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477038"
+    "observationUrl": "https://www.inaturalist.org/observations/400477038",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477042",
@@ -6501,7 +7401,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899172/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477042"
+    "observationUrl": "https://www.inaturalist.org/observations/400477042",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477045",
@@ -6516,7 +7418,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899195/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477045"
+    "observationUrl": "https://www.inaturalist.org/observations/400477045",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477048",
@@ -6530,7 +7434,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899203/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477048"
+    "observationUrl": "https://www.inaturalist.org/observations/400477048",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477056",
@@ -6544,7 +7450,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899230/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477056"
+    "observationUrl": "https://www.inaturalist.org/observations/400477056",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477057",
@@ -6558,7 +7466,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899231/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477057"
+    "observationUrl": "https://www.inaturalist.org/observations/400477057",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477058",
@@ -6572,7 +7482,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899236/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477058"
+    "observationUrl": "https://www.inaturalist.org/observations/400477058",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477062",
@@ -6586,7 +7498,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899260/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477062"
+    "observationUrl": "https://www.inaturalist.org/observations/400477062",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477063",
@@ -6600,7 +7514,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899271/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477063"
+    "observationUrl": "https://www.inaturalist.org/observations/400477063",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477064",
@@ -6615,7 +7531,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899277/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477064"
+    "observationUrl": "https://www.inaturalist.org/observations/400477064",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477067",
@@ -6630,7 +7548,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899285/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477067"
+    "observationUrl": "https://www.inaturalist.org/observations/400477067",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477069",
@@ -6644,7 +7564,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734899292/medium.jpg",
     "imageAttribution": "no rights reserved",
     "imageLicense": "cc0",
-    "observationUrl": "https://www.inaturalist.org/observations/400477069"
+    "observationUrl": "https://www.inaturalist.org/observations/400477069",
+    "lat": 41.3810640108,
+    "lon": 43.2961061988
   },
   {
     "id": "fallback-inat-400477074",
@@ -6659,7 +7581,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909534/medium.jpg",
     "imageAttribution": "(c) Guillaume Labeyrie, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477074"
+    "observationUrl": "https://www.inaturalist.org/observations/400477074",
+    "lat": 43.7579316897,
+    "lon": 6.9035373789
   },
   {
     "id": "fallback-inat-400477122",
@@ -6674,7 +7598,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909711/medium.jpg",
     "imageAttribution": "(c) lillybyrd, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477122"
+    "observationUrl": "https://www.inaturalist.org/observations/400477122",
+    "lat": 29.6294347394,
+    "lon": -85.1067294858
   },
   {
     "id": "fallback-inat-400477142",
@@ -6689,7 +7615,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909907/medium.jpg",
     "imageAttribution": "(c) saifibano, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477142"
+    "observationUrl": "https://www.inaturalist.org/observations/400477142",
+    "lat": 25.4125611111,
+    "lon": 81.8479444444
   },
   {
     "id": "fallback-inat-400477147",
@@ -6704,7 +7632,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909673/medium.jpg",
     "imageAttribution": "(c) Tim Cowley, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477147"
+    "observationUrl": "https://www.inaturalist.org/observations/400477147",
+    "lat": 53.8793584162,
+    "lon": -0.4377731739
   },
   {
     "id": "fallback-inat-400477153",
@@ -6719,7 +7649,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909741/medium.jpg",
     "imageAttribution": "(c) soulekiki, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477153"
+    "observationUrl": "https://www.inaturalist.org/observations/400477153",
+    "lat": 41.3795633365,
+    "lon": -70.6013537756
   },
   {
     "id": "fallback-inat-400477159",
@@ -6734,7 +7666,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909749/medium.jpg",
     "imageAttribution": "(c) brdholl, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477159"
+    "observationUrl": "https://www.inaturalist.org/observations/400477159",
+    "lat": 45.4221349431,
+    "lon": 8.9026479444
   },
   {
     "id": "fallback-inat-400477216",
@@ -6749,7 +7683,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909873/medium.jpg",
     "imageAttribution": "(c) brdholl, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477216"
+    "observationUrl": "https://www.inaturalist.org/observations/400477216",
+    "lat": 45.5738768565,
+    "lon": 8.8282288093
   },
   {
     "id": "fallback-inat-400477232",
@@ -6764,7 +7700,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909911/medium.jpg",
     "imageAttribution": "(c) nebrooks, some rights reserved (CC BY)",
     "imageLicense": "cc-by",
-    "observationUrl": "https://www.inaturalist.org/observations/400477232"
+    "observationUrl": "https://www.inaturalist.org/observations/400477232",
+    "lat": 42.44073,
+    "lon": -76.4825083333
   },
   {
     "id": "fallback-inat-400477252",
@@ -6779,7 +7717,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909622/medium.jpg",
     "imageAttribution": "(c) ZEPHYNE, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477252"
+    "observationUrl": "https://www.inaturalist.org/observations/400477252",
+    "lat": 8.4954887442,
+    "lon": 76.867893792
   },
   {
     "id": "fallback-inat-400477253",
@@ -6794,7 +7734,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909629/medium.jpg",
     "imageAttribution": "(c) ZEPHYNE, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477253"
+    "observationUrl": "https://www.inaturalist.org/observations/400477253",
+    "lat": 8.4660524813,
+    "lon": 76.8603557384
   },
   {
     "id": "fallback-inat-400477268",
@@ -6809,7 +7751,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734909699/medium.jpg",
     "imageAttribution": "(c) Jean-Nicholas Haché, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477268"
+    "observationUrl": "https://www.inaturalist.org/observations/400477268",
+    "lat": 45.4877670789,
+    "lon": -73.409774102
   },
   {
     "id": "fallback-inat-400477278",
@@ -6824,7 +7768,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734910058/medium.jpg",
     "imageAttribution": "(c) syoshinsyalv35, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477278"
+    "observationUrl": "https://www.inaturalist.org/observations/400477278",
+    "lat": 36.339111719,
+    "lon": 138.739473198
   },
   {
     "id": "fallback-inat-400477279",
@@ -6839,7 +7785,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734910122/medium.jpg",
     "imageAttribution": "(c) Amaury Gatelier, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477279"
+    "observationUrl": "https://www.inaturalist.org/observations/400477279",
+    "lat": 44.540145137,
+    "lon": -0.2665622905
   },
   {
     "id": "fallback-inat-400477282",
@@ -6854,7 +7802,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734910180/medium.jpg",
     "imageAttribution": "(c) Frode Jacobsen, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477282"
+    "observationUrl": "https://www.inaturalist.org/observations/400477282",
+    "lat": 44.299495,
+    "lon": -76.57823
   },
   {
     "id": "fallback-inat-400477300",
@@ -6869,7 +7819,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734910022/medium.jpg",
     "imageAttribution": "(c) Alain Benard, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477300"
+    "observationUrl": "https://www.inaturalist.org/observations/400477300",
+    "lat": 46.0443566667,
+    "lon": 6.3366
   },
   {
     "id": "fallback-inat-400477345",
@@ -6883,7 +7835,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734910201/medium.jpg",
     "imageAttribution": "(c) Vimal Rajyaguru, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477345"
+    "observationUrl": "https://www.inaturalist.org/observations/400477345",
+    "lat": 22.3000395,
+    "lon": 73.2064994
   },
   {
     "id": "fallback-inat-400477361",
@@ -6898,7 +7852,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734910171/medium.jpg",
     "imageAttribution": "(c) ZEPHYNE, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477361"
+    "observationUrl": "https://www.inaturalist.org/observations/400477361",
+    "lat": 8.5194213924,
+    "lon": 76.9961552155
   },
   {
     "id": "fallback-inat-400477379",
@@ -6913,7 +7869,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734910421/medium.jpg",
     "imageAttribution": "(c) tjm2026, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477379"
+    "observationUrl": "https://www.inaturalist.org/observations/400477379",
+    "lat": 39.1076083333,
+    "lon": -84.4918533333
   },
   {
     "id": "fallback-inat-400477385",
@@ -6928,7 +7886,9 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734925053/medium.jpg",
     "imageAttribution": "(c) terriblereptiles77, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477385"
+    "observationUrl": "https://www.inaturalist.org/observations/400477385",
+    "lat": 43.5130249398,
+    "lon": -80.2223681576
   },
   {
     "id": "fallback-inat-400477403",
@@ -6943,6 +7903,8 @@ export const FALLBACK_OBSERVATIONS = [
     "imageUrl": "https://inaturalist-open-data.s3.amazonaws.com/photos/734910436/medium.jpg",
     "imageAttribution": "(c) Dan Hodges, some rights reserved (CC BY-NC)",
     "imageLicense": "cc-by-nc",
-    "observationUrl": "https://www.inaturalist.org/observations/400477403"
+    "observationUrl": "https://www.inaturalist.org/observations/400477403",
+    "lat": 40.7281211104,
+    "lon": -84.1005204991
   }
 ];

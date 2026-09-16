@@ -158,6 +158,14 @@ function projectMoth(moth, animationTime, width, height, cx, cy, includeTrail = 
 
   const orbit = orbitPosition(moth, animationTime, cx, cy);
   const entryDuration = Math.min(6, Math.max(2, (moth.exitTime - moth.entryTime) * 0.22));
+  // Position eases in over the whole, slower entryDuration above, but
+  // opacity ramps up several times faster — matching world-map.js's own
+  // PULSE_SPEED_MULTIPLIER-scaled arrival pulse — so a moth reads as
+  // emerging out of that pulse, already close to fully visible, rather than
+  // still fading in long after the pulse itself has faded away and gone.
+  // Applies to every moth's arrival, not just ones with a real map location,
+  // for one consistent, snappier-looking entrance either way.
+  const opacityFadeInDuration = entryDuration / 5;
   const exitDuration = Math.min(6, Math.max(2, (moth.exitTime - moth.entryTime) * 0.22));
   const exitStart = Math.max(moth.entryTime, moth.exitTime - exitDuration);
   let x = orbit.x;
@@ -213,7 +221,7 @@ function projectMoth(moth, animationTime, width, height, cx, cy, includeTrail = 
   }
 
   if (phase === "entering") {
-    opacity *= easeInOut((animationTime - moth.entryTime) / entryDuration);
+    opacity *= easeInOut((animationTime - moth.entryTime) / opacityFadeInDuration);
   } else if (phase === "exiting") {
     opacity *= 1 - easeInOut((animationTime - exitStart) / exitDuration);
     const edgeFadeDistance = Math.max(48, moth.size * 10);

@@ -7,7 +7,7 @@ import { CONNECTION_STATES, InatClient } from "./inaturalist-client.js";
 import { parseObservationsResponse } from "./observation-adapter.js";
 import { FALLBACK_OBSERVATIONS } from "./fallback-observations.js";
 import { createMapProjector } from "./robinson-projection.js";
-import { drawArrivalDeparturePulses, drawMapPoints, findMapPointAt, loadWorldBorders, renderMapToOffscreenCanvas } from "./world-map.js";
+import { drawArrivalPulses, drawMapPoints, findMapPointAt, loadWorldBorders, renderMapToOffscreenCanvas } from "./world-map.js";
 
 // The production site's one and only data source: api.inaturalist.org
 // itself, called directly from this browser via InatClient's default direct
@@ -624,9 +624,9 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
       drawMapPoints(context, projector, activeMoths, hoverState.hoveredMothId);
       context.restore();
       // Normal (source-over) compositing, on top of everything drawn above —
-      // see drawArrivalDeparturePulses's own comment for why this can't
-      // share the destination-over pass the steady point markers use.
-      drawArrivalDeparturePulses(context, projector, activeMoths, t);
+      // see drawArrivalPulses's own comment for why this can't share the
+      // destination-over pass the steady point markers use.
+      drawArrivalPulses(context, projector, activeMoths, t);
     }
     audio.update(activeMoths, deltaSeconds);
     updateActiveMothsPanel();

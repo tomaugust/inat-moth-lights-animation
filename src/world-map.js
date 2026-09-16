@@ -142,34 +142,32 @@ function clamp01(value) {
 
 // A quick ping at the map location reads better than a ring that takes as
 // long to resolve as the moth's own multi-second flight, so this starts from
-// the same entry/exit duration formula projectMoth itself uses
-// (animation-engine.js) for the fly-in/fly-out animation moth.entryPoint/
-// exitPoint drives, then plays this many times faster. The ring no longer
-// stays in sync with the flight for its whole duration (it finishes well
-// before the moth actually arrives/departs) — a deliberate tradeoff for a
-// snappier-looking pulse. Duplicated rather than exported from
-// animation-engine.js since this pairing (a pulse at a real map location)
-// only exists here so far.
+// the same entry duration formula projectMoth itself uses
+// (animation-engine.js) for the fly-in animation moth.entryPoint drives, then
+// plays this many times faster. The ring no longer stays in sync with the
+// flight for its whole duration (it finishes well before the moth actually
+// arrives) — a deliberate tradeoff for a snappier-looking pulse, and it also
+// gives moth-opacity.js's own fast fade-in (see FADE_IN_SPEED_MULTIPLIER
+// there) a matching timescale to become fully visible against, so the moth
+// reads as emerging from the pulse rather than fading in long after it's
+// gone. Duplicated rather than exported from animation-engine.js since this
+// pairing (a pulse at a real map location) only exists here so far. Exit
+// deliberately has no pulse of its own — with the map behind the light and
+// other moths, a departure ping is easy to miss and mostly just adds visual
+// noise; the arrival pulse is the one moment worth calling out.
 const PULSE_SPEED_MULTIPLIER = 5;
 
 export function pulsePhase(moth, t) {
   const duration = Math.min(6, Math.max(2, (moth.exitTime - moth.entryTime) * 0.22)) / PULSE_SPEED_MULTIPLIER;
   if (t < moth.entryTime + duration) {
-    return { kind: "entering", progress: easeInOut(clamp01((t - moth.entryTime) / duration)) };
-  }
-  const exitStart = Math.max(moth.entryTime, moth.exitTime - duration);
-  if (t > exitStart) {
-    return { kind: "exiting", progress: easeInOut(clamp01((t - exitStart) / duration)) };
+    return { progress: easeInOut(clamp01((t - moth.entryTime) / duration)) };
   }
   return null;
 }
 
 // ringProgress: 0 = tight and bright right at the point, 1 = fully expanded
-// and faded out. Arrival plays this forward (a ripple emanating outward as
-// the moth departs the map to fly in); departure plays the exact same
-// drawing backward — starting expanded and faded, converging back to a
-// bright point exactly as the moth lands back where it came from — rather
-// than being a separately designed animation.
+// and faded out — a ripple emanating outward as the moth arrives from the
+// map into the orbit.
 function drawLocationPulse(context, x, y, color, ringProgress) {
   const maxRadius = 42;
   const radius = 3 + ringProgress * maxRadius;
@@ -195,7 +193,7 @@ function drawLocationPulse(context, x, y, color, ringProgress) {
 // glow sitting right on top of it. The pulse is a foreground event (like a
 // sonar ping), not part of the background map layer, so it belongs on top
 // of everything, always visible regardless of what else is on the canvas.
-export function drawArrivalDeparturePulses(context, projector, activeMoths, t) {
+export function drawArrivalPulses(context, projector, activeMoths, t) {
   activeMoths.forEach((moth) => {
     if (!Number.isFinite(moth.lat) || !Number.isFinite(moth.lon)) {
       return;
@@ -205,8 +203,7 @@ export function drawArrivalDeparturePulses(context, projector, activeMoths, t) {
       return;
     }
     const { x, y } = projector.project([moth.lon, moth.lat]);
-    const ringProgress = pulse.kind === "entering" ? pulse.progress : 1 - pulse.progress;
-    drawLocationPulse(context, x, y, moth.color, ringProgress);
+    drawLocationPulse(context, x, y, moth.color, pulse.progress);
   });
 }
 

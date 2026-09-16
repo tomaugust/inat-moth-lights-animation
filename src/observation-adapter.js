@@ -21,6 +21,62 @@ function toValidTimestamp(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+// iNaturalist's own taxonomic rank hierarchy, mirroring the numeric
+// rank_level value its own API returns for each rank name (confirmed against
+// GET /v1/taxa?rank=<name> — e.g. family=30, order=40; higher is coarser).
+// Used to reject any observation identified more coarsely than family level:
+// an ID of just "Lepidoptera" (order, 40) or a superfamily grouping (33)
+// tells a viewer nothing recognizable about the actual moth, unlike family
+// and everything finer. Every rank iNaturalist defines is listed here (not
+// just the ones observed in practice) so an unusual coarse rank can't slip
+// through unrecognized.
+const RANK_LEVELS = {
+  stateofmatter: 100,
+  kingdom: 70,
+  subkingdom: 67,
+  phylum: 60,
+  subphylum: 57,
+  superclass: 53,
+  class: 50,
+  subclass: 47,
+  infraclass: 45,
+  superorder: 43,
+  order: 40,
+  suborder: 37,
+  infraorder: 35,
+  parvorder: 34.5,
+  zoosection: 34,
+  zoosubsection: 33.5,
+  superfamily: 33,
+  epifamily: 32,
+  family: 30,
+  subfamily: 27,
+  supertribe: 26,
+  tribe: 25,
+  subtribe: 24,
+  genus: 20,
+  genushybrid: 20,
+  subgenus: 15,
+  section: 13,
+  subsection: 12,
+  complex: 11,
+  species: 10,
+  hybrid: 10,
+  subspecies: 5,
+  variety: 5,
+  form: 5,
+  infrahybrid: 5
+};
+
+// An unrecognized or missing rank name (e.g. no taxon at all) is treated as
+// "too coarse to trust" — safer than silently admitting something this table
+// can't actually place in the hierarchy. Exported so other modules (and
+// tests) can check the same rule without duplicating RANK_LEVELS.
+export function isAtLeastFamilyLevel(taxonRank) {
+  const level = RANK_LEVELS[taxonRank];
+  return typeof level === "number" && level <= RANK_LEVELS.family;
+}
+
 // Returns a normalized observation, or null if the record is unusable (no id,
 // or no valid creation time to schedule it by). Every other field degrades to
 // a safe default instead of rejecting the record.
@@ -36,6 +92,10 @@ export function normalizeObservation(raw) {
 
   const createdAtMs = toValidTimestamp(raw.createdAt);
   if (createdAtMs === null) {
+    return null;
+  }
+
+  if (!isAtLeastFamilyLevel(toTrimmedString(raw.taxonRank))) {
     return null;
   }
 

@@ -6,11 +6,12 @@ import { chromium } from "playwright";
 import { startStaticServer } from "../helpers/static-server.mjs";
 import { stubGeolocation } from "../helpers/geolocation.mjs";
 
-const WORKER_URL = "https://inat-moth-lights-adapter.tomaugust1985.workers.dev/observations";
-// The real client now appends ?place_id=<resolved country> (see app.js's
-// resolveUserPlace() wiring) — a glob suffix matches that query string
-// regardless of which country a given test's browser resolves to.
-const WORKER_URL_PATTERN = `${WORKER_URL}*`;
+const API_URL = "https://api.inaturalist.org/v2/observations";
+// The real client appends ?place_id=<resolved country> (see app.js's
+// resolveUserPlace() wiring) among other query params — a glob suffix
+// matches that regardless of which country a given test's browser resolves
+// to.
+const API_URL_PATTERN = `${API_URL}*`;
 
 let site;
 let browser;
@@ -45,37 +46,43 @@ async function mockPhotoHost(page) {
   );
 }
 
-// The production site talks only to the deployed Worker adapter, never
-// api.inaturalist.org directly — every test here intercepts that exact URL
-// and answers with a canned adapter-contract response, so nothing ever
-// reaches the real Worker or the real iNaturalist API from CI.
-async function mockWorkerAdapter(page, { observations = [], stale = false, status = 200 } = {}) {
+// The production site talks directly to api.inaturalist.org — no server
+// component sits in front of it (see README's Phase 14). Every test here
+// intercepts that exact URL and answers with a canned raw-v2-shaped
+// response, so nothing ever reaches the real iNaturalist API from CI.
+async function mockObservationsApi(page, { results = [], status = 200 } = {}) {
   await mockPhotoHost(page);
-  await page.route(WORKER_URL_PATTERN, (route) =>
+  await page.route(API_URL_PATTERN, (route) =>
     route.fulfill({
       status,
       contentType: "application/json",
-      body: JSON.stringify({ fetchedAt: new Date().toISOString(), stale, cursor: "999", observations })
+      body: JSON.stringify({ total_results: results.length, page: 1, per_page: 200, results })
     })
   );
 }
 
-function liveObservation(overrides = {}) {
-  const now = Date.now();
+// A raw iNaturalist v2 API result — the shape InatClient's mapRawObservationToContract
+// expects, not the already-normalized contract shape the old Worker adapter used to
+// hand back.
+function rawObservation(overrides = {}) {
+  const nowIso = new Date().toISOString();
   return {
-    id: "inat-999",
-    taxonId: 54321,
-    scientificName: "Testus mothus",
-    commonName: "Test Moth",
-    taxonRank: "species",
-    createdAtMs: now,
-    observedAtMs: now,
-    place: "Test Location, UK",
-    qualityGrade: "needs_id",
-    imageUrl: "https://inaturalist-open-data.s3.amazonaws.com/photos/1/medium.jpg",
-    imageAttribution: "(c) Test Person, some rights reserved (CC BY-NC)",
-    imageLicense: "cc-by-nc",
-    observationUrl: "https://www.inaturalist.org/observations/999",
+    id: 999,
+    created_at: nowIso,
+    observed_on: nowIso.slice(0, 10),
+    time_observed_at: nowIso,
+    uri: "https://www.inaturalist.org/observations/999",
+    quality_grade: "needs_id",
+    place_guess: "Test Location, UK",
+    taxon: { id: 54321, rank: "species", name: "Testus mothus", preferred_common_name: "Test Moth" },
+    photos: [
+      {
+        id: 1,
+        url: "https://inaturalist-open-data.s3.amazonaws.com/photos/1/square.jpg",
+        attribution: "(c) Test Person, some rights reserved (CC BY-NC)",
+        license_code: "cc-by-nc"
+      }
+    ],
     ...overrides
   };
 }
@@ -92,12 +99,12 @@ describe("UK Moths site", () => {
     });
     page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
     page.on("response", (response) => {
-      if (!response.ok() && !response.url().endsWith("/favicon.ico") && !response.url().startsWith(WORKER_URL)) {
+      if (!response.ok() && !response.url().endsWith("/favicon.ico") && !response.url().startsWith(API_URL)) {
         unexpectedResponses.push(`${response.status()} ${response.url()}`);
       }
     });
 
-    await mockWorkerAdapter(page, { observations: [liveObservation()] });
+    await mockObservationsApi(page, { results: [rawObservation()] });
 
     await page.goto(site.url, { waitUntil: "networkidle" });
     await page.click("#launch-switch");
@@ -123,7 +130,7 @@ describe("UK Moths site", () => {
 
   it("lists a live moth in the side panel, with its real thumbnail and observation link", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    await mockWorkerAdapter(page, { observations: [liveObservation()] });
+    await mockObservationsApi(page, { results: [rawObservation()] });
 
     await page.goto(site.url, { waitUntil: "networkidle" });
     await page.click("#launch-switch");
@@ -146,7 +153,7 @@ describe("UK Moths site", () => {
 
   it("freezes the whole scene while a moth is hovered/focused, and resumes once hover ends", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    await mockWorkerAdapter(page, { observations: [liveObservation()] });
+    await mockObservationsApi(page, { results: [rawObservation()] });
 
     await page.goto(site.url, { waitUntil: "networkidle" });
     await page.click("#launch-switch");
@@ -182,10 +189,13 @@ describe("UK Moths site", () => {
     // own (randomized per-id) speed and orbit radius make its motion alone
     // too noisy a signal to calibrate a reliable threshold against; several
     // at once average that out.
-    const manyObservations = Array.from({ length: 8 }, (_, index) =>
-      liveObservation({ id: `inat-${900 + index}`, taxonId: 50000 + index })
+    const manyResults = Array.from({ length: 8 }, (_, index) =>
+      rawObservation({
+        id: 900 + index,
+        taxon: { id: 50000 + index, rank: "species", name: "Testus mothus", preferred_common_name: "Test Moth" }
+      })
     );
-    await mockWorkerAdapter(page, { observations: manyObservations });
+    await mockObservationsApi(page, { results: manyResults });
 
     await page.goto(site.url, { waitUntil: "networkidle" });
     await page.click("#launch-switch");
@@ -228,14 +238,24 @@ describe("UK Moths site", () => {
     // gap versus a long (~2.5s, comparable to the hover below) gap. These
     // define what "barely moved" and "moved a lot" actually look like for
     // this specific scene, rather than guessing at an absolute pixel
-    // threshold that might not hold for every moth speed/position.
+    // threshold that might not hold for every moth speed/position. The short
+    // gap's own *real* elapsed wall-clock time (not the nominal 500ms asked
+    // for) is measured too, and used below to compute a motion-per-ms rate —
+    // a busy/shared CI runner can turn a "500ms" wait into something
+    // considerably longer (Node timer/IPC scheduling delay under load), and
+    // treating the nominal duration as exact was exactly what made this test
+    // flaky on GitHub's runners despite the underlying freeze/resume fix
+    // being correct.
     const baselineStart = await canvasFingerprint();
+    const shortWindowStartedAtMs = Date.now();
     await page.waitForTimeout(500);
     const baselineShort = await canvasFingerprint();
+    const shortWindowElapsedMs = Date.now() - shortWindowStartedAtMs;
     await page.waitForTimeout(2000);
     const baselineLong = await canvasFingerprint();
     const shortGapDiff = fingerprintDiff(baselineStart, baselineShort);
     const longGapDiff = fingerprintDiff(baselineStart, baselineLong);
+    const motionRatePerMs = shortGapDiff / shortWindowElapsedMs;
     assert.ok(
       longGapDiff > shortGapDiff,
       `expected more real motion over ~2.5s than ~0.5s of ordinary playback (short=${shortGapDiff}, long=${longGapDiff}) — otherwise this test can't tell a jump from normal motion`
@@ -269,34 +289,41 @@ describe("UK Moths site", () => {
     // ~500ms+ used elsewhere) — long enough for the next animation frame to
     // actually run, short enough that any real jump-forward (this hover
     // lasted ~2.8s total) would still be almost entirely un-recovered from.
+    const resumeWindowStartedAtMs = Date.now();
     await page.waitForTimeout(60);
     const justResumedFingerprint = await canvasFingerprint();
+    const resumeWindowElapsedMs = Date.now() - resumeWindowStartedAtMs;
     const resumeDiff = fingerprintDiff(frozenFingerprint, justResumedFingerprint);
 
     // resumeDiff is expected to include roughly hoverUiOnlyDiff (the popout/
-    // style toggle, present here too) plus only a normal short-interval
-    // amount of motion — nowhere near hoverUiOnlyDiff *plus* the ~2.5s worth
-    // of motion (longGapDiff) a real jump-forward would add on top.
+    // style toggle, present here too) plus only a normal amount of motion for
+    // however much real time actually elapsed in this sampling window
+    // (resumeWindowElapsedMs, per motionRatePerMs's own measured rate above —
+    // scaling against the *measured* window rather than assuming it was
+    // exactly the nominal 60ms is what keeps this reliable on a slower/busier
+    // CI runner, where that wait can genuinely take much longer). A real
+    // jump-forward bug adds on the order of the *entire* ~2.8s hover's worth
+    // of motion (comparable to longGapDiff) regardless of how long this last
+    // short window took, so it stays overwhelmingly larger than this budget
+    // even with a generous safety multiplier.
+    const normalMotionBudget = motionRatePerMs * resumeWindowElapsedMs * 5 + 20;
     assert.ok(
-      resumeDiff < hoverUiOnlyDiff + longGapDiff * 0.4,
-      `expected the scene to resume from almost exactly where it froze (hover-chrome-only diff=${hoverUiOnlyDiff}, plus normal short-interval motion), not jump forward by the ~2.8s the hover actually lasted (a ~2.5s jump would add on the order of longGapDiff=${longGapDiff} on top) — saw resumeDiff=${resumeDiff}`
+      resumeDiff < hoverUiOnlyDiff + normalMotionBudget,
+      `expected the scene to resume from almost exactly where it froze (hover-chrome-only diff=${hoverUiOnlyDiff}, plus a normal-motion budget of ${normalMotionBudget.toFixed(1)} for the ${resumeWindowElapsedMs}ms that actually elapsed), not jump forward by the ~2.8s the hover actually lasted (a real jump would add on the order of longGapDiff=${longGapDiff} on top, regardless of elapsed time here) — saw resumeDiff=${resumeDiff}`
     );
 
     await page.close();
   });
 
-  it("still shows moths after a reload, even though the Worker always returns the same full-window batch", async () => {
-    // Regression test: the Worker adapter is stateless and returns the
-    // *entire* current 24h window on every request, never an incremental
-    // delta (see mockWorkerAdapter's comment above). ObservationQueue used to
-    // persist its seen-ID dedup to localStorage across page loads, which
-    // meant a real visitor reloading (or simply revisiting) the site got
-    // zero new observations on the second load — every ID had already been
-    // marked "seen" on the first. The queue must not persist that dedup
-    // across a real page reload for this Worker-backed page, or a returning
-    // visitor sees nothing.
+  it("still shows moths after a reload", async () => {
+    // Regression test: ObservationQueue used to persist its seen-ID dedup to
+    // localStorage across page loads, which meant a real visitor reloading
+    // (or simply revisiting) the site got zero new observations on the
+    // second load — every ID had already been marked "seen" on the first.
+    // The production queue must not persist that dedup across a real page
+    // reload, or a returning visitor sees nothing.
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    await mockWorkerAdapter(page, { observations: [liveObservation()] });
+    await mockObservationsApi(page, { results: [rawObservation()] });
 
     await page.goto(site.url, { waitUntil: "networkidle" });
     await page.click("#launch-switch");
@@ -307,7 +334,7 @@ describe("UK Moths site", () => {
     assert.ok((await page.locator(".active-moths-card").count()) > 0, "expected a moth on the first load");
 
     // Same page context (same origin, same localStorage), same mocked
-    // response — reproducing a real reload with the Worker's real behavior.
+    // response — reproducing a real reload.
     await page.reload({ waitUntil: "networkidle" });
     await page.click("#launch-switch");
     await page.waitForTimeout(2000);
@@ -341,16 +368,20 @@ describe("UK Moths site", () => {
     // One handler, keyed by the request's own place_id — the UK default
     // starts immediately (before geolocation resolves) and must see UK data;
     // the switch that follows must see Testland's, never a mix of the two.
-    await page.route(WORKER_URL_PATTERN, (route) => {
+    await page.route(API_URL_PATTERN, (route) => {
       const placeId = new URL(route.request().url()).searchParams.get("place_id");
-      const observation =
+      const raw =
         placeId === "424242"
-          ? liveObservation({ id: "inat-testland", commonName: "Testland Moth", observationUrl: "https://www.inaturalist.org/observations/111" })
-          : liveObservation();
+          ? rawObservation({
+              id: 111,
+              uri: "https://www.inaturalist.org/observations/111",
+              taxon: { id: 54321, rank: "species", name: "Testus mothus", preferred_common_name: "Testland Moth" }
+            })
+          : rawObservation();
       return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ fetchedAt: new Date().toISOString(), stale: false, cursor: "1", observations: [observation] })
+        body: JSON.stringify({ total_results: 1, page: 1, per_page: 200, results: [raw] })
       });
     });
 
@@ -382,7 +413,7 @@ describe("UK Moths site", () => {
 
   it("shows a loading indicator for at least 3 seconds even when the real response arrives almost instantly, then hides it", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    await mockWorkerAdapter(page, { observations: [liveObservation()] }); // resolves essentially immediately
+    await mockObservationsApi(page, { results: [rawObservation()] }); // resolves essentially immediately
 
     await page.goto(site.url, { waitUntil: "networkidle" });
     await page.click("#launch-switch");
@@ -407,12 +438,12 @@ describe("UK Moths site", () => {
     // Long enough that the real response (not just the 3s minimum display
     // duration) is what's keeping the scene in "loading" for the whole
     // sampling window below.
-    await page.route(WORKER_URL_PATTERN, async (route) => {
+    await page.route(API_URL_PATTERN, async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 8000));
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ fetchedAt: new Date().toISOString(), stale: false, cursor: "999", observations: [] })
+        body: JSON.stringify({ total_results: 0, page: 1, per_page: 200, results: [] })
       });
     });
 
@@ -493,7 +524,7 @@ describe("UK Moths site", () => {
 
   it("keeps the debug readout hidden unless ?debug is on the URL", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    await mockWorkerAdapter(page, { observations: [liveObservation()] });
+    await mockObservationsApi(page, { results: [rawObservation()] });
 
     await page.goto(site.url, { waitUntil: "networkidle" });
     await page.click("#launch-switch");
@@ -505,7 +536,7 @@ describe("UK Moths site", () => {
     await page.close();
 
     const debugPage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    await mockWorkerAdapter(debugPage, { observations: [liveObservation()] });
+    await mockObservationsApi(debugPage, { results: [rawObservation()] });
 
     await debugPage.goto(`${site.url}?debug`, { waitUntil: "networkidle" });
     await debugPage.click("#launch-switch");
@@ -521,7 +552,7 @@ describe("UK Moths site", () => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
 
-    await mockWorkerAdapter(page, { observations: [liveObservation()] });
+    await mockObservationsApi(page, { results: [rawObservation()] });
 
     await page.goto(site.url, { waitUntil: "networkidle" });
     await page.click("#launch-switch");
@@ -533,7 +564,7 @@ describe("UK Moths site", () => {
     await page.close();
   });
 
-  it("degrades gracefully (no thrown errors, light still renders) when the adapter is unreachable", async () => {
+  it("degrades gracefully (no thrown errors, light still renders) when iNaturalist is unreachable", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     // Only pageerror (uncaught exceptions) is checked here, not console: a
     // deliberate non-2xx response makes Chromium itself log a benign
@@ -541,7 +572,7 @@ describe("UK Moths site", () => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
 
-    await mockWorkerAdapter(page, { status: 502 });
+    await mockObservationsApi(page, { status: 502 });
 
     await page.goto(site.url, { waitUntil: "networkidle" });
     await page.click("#launch-switch");
@@ -564,13 +595,13 @@ describe("UK Moths site", () => {
     await page.close();
   });
 
-  it("shows the Colombia fallback set with an explanatory banner when the very first load can't get live data at all", async () => {
+  it("shows the global fallback set with an explanatory banner when the very first load can't get live data at all", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
 
     await stubGeolocation(page); // keeps this on the UK default, so nothing switches mid-test
-    await mockWorkerAdapter(page, { status: 502 });
+    await mockObservationsApi(page, { status: 502 });
 
     await page.goto(site.url, { waitUntil: "networkidle" });
     await page.click("#launch-switch");
@@ -580,7 +611,7 @@ describe("UK Moths site", () => {
       () => !document.getElementById("fallback-status")?.classList.contains("is-hidden"),
       { timeout: 5000 }
     );
-    assert.match(await fallbackStatus.textContent(), /Colombia/, "expected the banner to name where the substitute moths are from");
+    assert.match(await fallbackStatus.textContent(), /around the world/, "expected the banner to explain what's being shown");
 
     await page.click("#active-moths-toggle");
     await page.waitForSelector(".active-moths-card", { timeout: 5000 });
@@ -598,7 +629,7 @@ describe("UK Moths site", () => {
 
     let callCount = 0;
     await mockPhotoHost(page);
-    await page.route(WORKER_URL_PATTERN, (route) => {
+    await page.route(API_URL_PATTERN, (route) => {
       callCount += 1;
       // First poll fails outright (trips fallback mode); the retry that
       // follows the client's own backoff succeeds with one real observation.
@@ -608,7 +639,7 @@ describe("UK Moths site", () => {
       return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ fetchedAt: new Date().toISOString(), stale: false, cursor: "999", observations: [liveObservation()] })
+        body: JSON.stringify({ total_results: 1, page: 1, per_page: 200, results: [rawObservation()] })
       });
     });
 

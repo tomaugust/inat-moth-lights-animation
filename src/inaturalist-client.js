@@ -1,18 +1,20 @@
-// Development-only direct iNaturalist client (inat_website.txt section 10,
-// Phase 3). Talks to the real v2 observations endpoint straight from the
-// browser — the Phase 0 spike confirmed CORS allows this for a prototype —
-// and hands normalized batches to a caller-supplied onBatch(), which is
-// expected to feed them through observation-adapter.js's
-// parseObservationsResponse() exactly like the recorded fixtures did in
-// Phase 2. This file only fetches and maps; it never touches the queue,
-// store or renderer directly (see 6.2: data acquisition and rendering stay
-// independent).
+// Direct iNaturalist client (originally a Phase 3 prototype, promoted to the
+// production data path in Phase 14 — see README.md). Talks to the real v2
+// observations endpoint straight from the browser — the Phase 0 spike
+// confirmed CORS allows this — and hands normalized batches to a
+// caller-supplied onBatch(), which is expected to feed them through
+// observation-adapter.js's parseObservationsResponse() exactly like the
+// recorded fixtures did in Phase 2. This file only fetches and maps; it
+// never touches the queue, store or renderer directly (see 6.2: data
+// acquisition and rendering stay independent).
 //
-// This is explicitly NOT the production architecture. A browser fetch()
-// cannot set a custom User-Agent header (browsers silently strip it), so the
-// "set a descriptive User-Agent" requirement from section 5.2 can only be
-// met once a server-side adapter (Phase 4's Cloudflare Worker) makes the
-// request instead of the browser.
+// A known, accepted limitation: a browser fetch() cannot set a custom
+// User-Agent header (browsers silently strip it), so this can never send the
+// descriptive User-Agent iNaturalist's API etiquette asks for the way a
+// server-side request could. Phase 4 built a Cloudflare Worker adapter
+// specifically to meet that (and to share one cache across every visitor);
+// Phase 14 later removed it in favor of this simpler, cache-free,
+// server-free design, accepting this one tradeoff in exchange.
 import { parseObservationsResponse } from "./observation-adapter.js";
 
 const API_BASE = "https://api.inaturalist.org/v2/observations";
@@ -109,7 +111,13 @@ export function mapRawObservationToContract(raw) {
     id: raw && raw.id != null ? `inat-${raw.id}` : "",
     taxonId: taxon ? taxon.id : null,
     scientificName: taxon ? taxon.name : "",
-    commonName: taxon ? taxon.preferred_common_name : "",
+    // An observation identified only to order level (i.e. just "Lepidoptera")
+    // has a preferred_common_name of literally "Butterflies and Moths" — true
+    // of the order as a whole, but a confusing, generic thing to show as one
+    // moth's name once the whole site's scope is moths only. Every finer rank
+    // (genus, family, superfamily, ...) still has its own real, specific
+    // common name, so this only needs to special-case "order" itself.
+    commonName: taxon && taxon.rank !== "order" ? taxon.preferred_common_name : "",
     taxonRank: taxon ? taxon.rank : "",
     createdAt: raw ? raw.created_at : null,
     observedAt: raw ? raw.time_observed_at || raw.observed_on : null,

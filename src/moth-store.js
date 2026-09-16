@@ -82,6 +82,8 @@ function buildLiveMoth(observation, style, isUnknown, entryTimeSeconds, canvasWi
     imageLicense: observation.imageLicense,
     inclinationDriftSpeed: style.inclinationDriftSpeed,
     label,
+    lat: observation.lat ?? null,
+    lon: observation.lon ?? null,
     nodeDriftSpeed: style.nodeDriftSpeed,
     noiseSeed: seed,
     observationUrl: observation.observationUrl,

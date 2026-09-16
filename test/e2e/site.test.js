@@ -4,13 +4,9 @@ import { after, before, describe, it } from "node:test";
 import { chromium } from "playwright";
 
 import { startStaticServer } from "../helpers/static-server.mjs";
-import { stubGeolocation } from "../helpers/geolocation.mjs";
+import { createMapProjector } from "../../src/robinson-projection.js";
 
 const API_URL = "https://api.inaturalist.org/v2/observations";
-// The real client appends ?place_id=<resolved country> (see app.js's
-// resolveUserPlace() wiring) among other query params — a glob suffix
-// matches that regardless of which country a given test's browser resolves
-// to.
 const API_URL_PATTERN = `${API_URL}*`;
 
 let site;
@@ -74,6 +70,7 @@ function rawObservation(overrides = {}) {
     uri: "https://www.inaturalist.org/observations/999",
     quality_grade: "needs_id",
     place_guess: "Test Location, UK",
+    location: "51.5074,-0.1278", // London — also exercises the world map's lat/lon plumbing by default
     taxon: { id: 54321, rank: "species", name: "Testus mothus", preferred_common_name: "Test Moth" },
     photos: [
       {
@@ -87,7 +84,7 @@ function rawObservation(overrides = {}) {
   };
 }
 
-describe("UK Moths site", () => {
+describe("World Moths site", () => {
   it("boots the animation with no console or page errors", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     const errors = [];
@@ -147,6 +144,50 @@ describe("UK Moths site", () => {
     const link = page.locator(".active-moths-card__link:not([hidden])").first();
     assert.equal(await link.getAttribute("href"), "https://www.inaturalist.org/observations/999");
     assert.equal(await link.getAttribute("target"), "_blank");
+
+    await page.close();
+  });
+
+  // The world map (Phase 15) plots each active moth at its own real reported
+  // location (rawObservation()'s default "location" field — London) and
+  // hover-links that marker to the same moth's card/orbit position. The
+  // marker's exact screen position is computed here with the same
+  // createMapProjector() app.js itself uses (same viewport size, same
+  // centerYRatio from config/site-config.json, same padding), rather than
+  // assumed or eyeballed.
+  it("hovering a moth's marker on the world map focuses the same moth as its card", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await mockObservationsApi(page, { results: [rawObservation()] });
+
+    await page.goto(site.url, { waitUntil: "networkidle" });
+    await page.click("#launch-switch");
+    await page.waitForTimeout(2000);
+
+    await page.click("#active-moths-toggle");
+    await page.waitForSelector(".active-moths-card", { timeout: 5000 });
+
+    const canvasRect = await page.evaluate(() => {
+      const canvas = document.getElementById("orbit-canvas");
+      const rect = canvas.getBoundingClientRect();
+      return { left: rect.left, top: rect.top, width: canvas.clientWidth, height: canvas.clientHeight };
+    });
+    const projector = createMapProjector({
+      width: canvasRect.width,
+      height: canvasRect.height,
+      offsetX: canvasRect.width / 2,
+      offsetY: canvasRect.height * 0.56, // config/site-config.json's scene.centerYRatio
+      padding: 24
+    });
+    const point = projector.project([-0.1278, 51.5074]); // rawObservation()'s default location, lon/lat order
+
+    await page.mouse.move(canvasRect.left + point.x, canvasRect.top + point.y);
+    await page.waitForTimeout(300);
+
+    assert.equal(
+      await page.locator(".active-moths-card").first().evaluate((el) => el.classList.contains("is-focused")),
+      true,
+      "expected hovering the moth's map marker to focus the same moth as its card"
+    );
 
     await page.close();
   });
@@ -233,32 +274,37 @@ describe("UK Moths site", () => {
       return sum;
     }
 
-    // Baselines from ordinary, never-frozen playback: how much the scene
-    // normally changes over a short (~500ms, comparable to one settle-tick)
-    // gap versus a long (~2.5s, comparable to the hover below) gap. These
-    // define what "barely moved" and "moved a lot" actually look like for
-    // this specific scene, rather than guessing at an absolute pixel
-    // threshold that might not hold for every moth speed/position. The short
-    // gap's own *real* elapsed wall-clock time (not the nominal 500ms asked
-    // for) is measured too, and used below to compute a motion-per-ms rate —
-    // a busy/shared CI runner can turn a "500ms" wait into something
-    // considerably longer (Node timer/IPC scheduling delay under load), and
-    // treating the nominal duration as exact was exactly what made this test
-    // flaky on GitHub's runners despite the underlying freeze/resume fix
-    // being correct.
+    // Baseline from ordinary, never-frozen playback: how much the scene
+    // normally changes per millisecond, used below to size the "normal
+    // motion" budget the actual freeze/resume check allows for. Measured
+    // over one longer (~2.5s) window rather than a short one deliberately —
+    // an early version of this test measured a separate ~500ms window and
+    // compared the two, but a window that short is dominated by whatever
+    // single moment it happens to catch (this scene deliberately varies
+    // speed/position per moth), making its own rate too noisy to calibrate
+    // against; a real 429-brightness-unit swing measured in one run's
+    // 500ms window, versus a legitimately much calmer ~2s stretch measured
+    // right after it in the same run, was exactly what made this test flaky
+    // — not a real jump, just a short window's own sampling noise. The
+    // longer window averages that out. Real elapsed wall-clock time (not
+    // the nominal 2000ms asked for) is measured too and used to compute the
+    // rate, since a busy/shared runner — including a heavily CPU-contended
+    // machine running several e2e files' browsers at once — can turn a
+    // nominal wait into something considerably longer.
     const baselineStart = await canvasFingerprint();
-    const shortWindowStartedAtMs = Date.now();
-    await page.waitForTimeout(500);
-    const baselineShort = await canvasFingerprint();
-    const shortWindowElapsedMs = Date.now() - shortWindowStartedAtMs;
+    const baselineWindowStartedAtMs = Date.now();
     await page.waitForTimeout(2000);
     const baselineLong = await canvasFingerprint();
-    const shortGapDiff = fingerprintDiff(baselineStart, baselineShort);
+    const baselineWindowElapsedMs = Date.now() - baselineWindowStartedAtMs;
     const longGapDiff = fingerprintDiff(baselineStart, baselineLong);
-    const motionRatePerMs = shortGapDiff / shortWindowElapsedMs;
+    const motionRatePerMs = longGapDiff / baselineWindowElapsedMs;
+    // A weak sanity check on purpose: only rules out a scene that's
+    // completely stalled (nothing moving at all, which would make every
+    // assertion below vacuously pass regardless of whether the freeze/resume
+    // fix actually works), not a specific "how much" threshold.
     assert.ok(
-      longGapDiff > shortGapDiff,
-      `expected more real motion over ~2.5s than ~0.5s of ordinary playback (short=${shortGapDiff}, long=${longGapDiff}) — otherwise this test can't tell a jump from normal motion`
+      longGapDiff > 20,
+      `expected the scene to visibly move at all over ~2s of ordinary playback (saw a diff of only ${longGapDiff} over ${baselineWindowElapsedMs}ms) — otherwise this test can't tell a jump from normal motion`
     );
 
     await page.click("#active-moths-toggle");
@@ -296,20 +342,37 @@ describe("UK Moths site", () => {
     const resumeDiff = fingerprintDiff(frozenFingerprint, justResumedFingerprint);
 
     // resumeDiff is expected to include roughly hoverUiOnlyDiff (the popout/
-    // style toggle, present here too) plus only a normal amount of motion for
-    // however much real time actually elapsed in this sampling window
-    // (resumeWindowElapsedMs, per motionRatePerMs's own measured rate above —
-    // scaling against the *measured* window rather than assuming it was
-    // exactly the nominal 60ms is what keeps this reliable on a slower/busier
-    // CI runner, where that wait can genuinely take much longer). A real
-    // jump-forward bug adds on the order of the *entire* ~2.8s hover's worth
-    // of motion (comparable to longGapDiff) regardless of how long this last
-    // short window took, so it stays overwhelmingly larger than this budget
-    // even with a generous safety multiplier.
-    const normalMotionBudget = motionRatePerMs * resumeWindowElapsedMs * 5 + 20;
+    // style toggle, present here too) plus only a modest amount of normal
+    // motion — but hoverUiOnlyDiff itself isn't a fixed constant. The popout
+    // is a sizeable box (title, description, sometimes a thumbnail) that
+    // covers a real chunk of the canvas, so its measured diff also picks up
+    // whatever ambient motion happens to pass behind that specific patch at
+    // that instant — a spatially concentrated effect, distinct from (and not
+    // reliably predicted by) longGapDiff's own whole-canvas average. Repeated
+    // real runs put this "toggle, wherever it happens to land" cost anywhere
+    // from several hundred to ~1600, fairly independent of how calm the rest
+    // of the canvas is, so the budget floors its own variance allowance at
+    // 1800 (comfortably above every such run observed) rather than scaling
+    // it off hoverUiOnlyDiff's own single sample, which can itself land on
+    // the low end. A normal-motion allowance sized against longGapDiff
+    // directly is added on top — the one number in this test actually
+    // measured over a long (~2s), well-sampled window — rather than by
+    // extrapolating motionRatePerMs (itself derived from that same long
+    // window) back out over this resume window's own ~60ms sample:
+    // multiplying a per-ms rate by a tiny, timing-jittery elapsed value is
+    // its own source of instability, and was what made an earlier version of
+    // this budget swing wildly run to run even with a 5x safety multiplier.
+    // A real jump-forward bug skips the scene ahead by the ~2.8s the hover
+    // actually lasted, which is comparable to (if not more than) the ~2s
+    // longGapDiff itself, added on top of hoverUiOnlyDiff — clearly past
+    // this budget even with the added toggle-cost slack, except during a
+    // coincidentally near-motionless baseline window where this test can't
+    // tell a jump from normal motion regardless (see the sanity check above).
+    const toggleCostAllowance = Math.max(hoverUiOnlyDiff, 1800);
+    const normalMotionBudget = toggleCostAllowance + longGapDiff * 0.5 + 20;
     assert.ok(
       resumeDiff < hoverUiOnlyDiff + normalMotionBudget,
-      `expected the scene to resume from almost exactly where it froze (hover-chrome-only diff=${hoverUiOnlyDiff}, plus a normal-motion budget of ${normalMotionBudget.toFixed(1)} for the ${resumeWindowElapsedMs}ms that actually elapsed), not jump forward by the ~2.8s the hover actually lasted (a real jump would add on the order of longGapDiff=${longGapDiff} on top, regardless of elapsed time here) — saw resumeDiff=${resumeDiff}`
+      `expected the scene to resume from almost exactly where it froze (hover-chrome-only diff=${hoverUiOnlyDiff}, plus a budget of ${normalMotionBudget.toFixed(1)} covering that same toggle cost's own variance plus half of the ~2s baseline's longGapDiff=${longGapDiff}), not jump forward by the ~2.8s the hover actually lasted (a real jump would add on the order of longGapDiff on top, well past this budget) — saw resumeDiff=${resumeDiff} (resume window ${resumeWindowElapsedMs}ms, motionRatePerMs=${motionRatePerMs.toFixed(3)})`
     );
 
     await page.close();
@@ -342,71 +405,6 @@ describe("UK Moths site", () => {
     await page.click("#active-moths-toggle");
     await page.waitForSelector(".active-moths-card", { timeout: 5000 });
     assert.ok((await page.locator(".active-moths-card").count()) > 0, "expected a moth again after reload");
-
-    await page.close();
-  });
-
-  it("starts with the UK default instantly, then switches to the visitor's real resolved country", async () => {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    await mockPhotoHost(page);
-    await stubGeolocation(page, { latitude: 48.8566, longitude: 2.3522 });
-    // Delayed so there's a reliable window to observe the UK default before
-    // the switch — resolveUserPlace() normally resolves fast enough (real
-    // permission already granted, or mocked as here) that the two states
-    // would otherwise race within a single test assertion.
-    await page.route("https://api.inaturalist.org/v1/places/nearby**", async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          total_results: 1,
-          results: { standard: [{ id: 424242, name: "Testland", admin_level: 0 }], community: [] }
-        })
-      });
-    });
-    // One handler, keyed by the request's own place_id — the UK default
-    // starts immediately (before geolocation resolves) and must see UK data;
-    // the switch that follows must see Testland's, never a mix of the two.
-    await page.route(API_URL_PATTERN, (route) => {
-      const placeId = new URL(route.request().url()).searchParams.get("place_id");
-      const raw =
-        placeId === "424242"
-          ? rawObservation({
-              id: 111,
-              uri: "https://www.inaturalist.org/observations/111",
-              taxon: { id: 54321, rank: "species", name: "Testus mothus", preferred_common_name: "Testland Moth" }
-            })
-          : rawObservation();
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ total_results: 1, page: 1, per_page: 200, results: [raw] })
-      });
-    });
-
-    await page.goto(site.url, { waitUntil: "networkidle" });
-    await page.click("#launch-switch");
-    // Comfortably before the delayed places/nearby response resolves (see
-    // above), even after the panel-open interaction below spends its own
-    // real wall-clock time — so this reliably observes the pre-switch UK
-    // default rather than racing the switch.
-    await page.waitForTimeout(1200);
-
-    assert.equal(await page.textContent("#animation-title"), "UK Moths", "should start with the UK default immediately");
-    await page.click("#active-moths-toggle");
-    await page.waitForSelector(".active-moths-card", { timeout: 5000 });
-    assert.equal(await page.locator(".active-moths-card__name").first().textContent(), "Test Moth");
-
-    await page.waitForFunction(() => document.getElementById("animation-title")?.textContent === "Testland Moths", {
-      timeout: 5000
-    });
-    await page.waitForFunction(
-      () => document.querySelector(".active-moths-card__name")?.textContent === "Testland Moth",
-      { timeout: 5000 }
-    );
-    const cardNames = await page.locator(".active-moths-card__name").allTextContents();
-    assert.deepEqual(cardNames, ["Testland Moth"], "the UK moth should be gone after switching, not left alongside Testland's");
 
     await page.close();
   });
@@ -600,7 +598,6 @@ describe("UK Moths site", () => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
 
-    await stubGeolocation(page); // keeps this on the UK default, so nothing switches mid-test
     await mockObservationsApi(page, { status: 502 });
 
     await page.goto(site.url, { waitUntil: "networkidle" });
@@ -625,7 +622,6 @@ describe("UK Moths site", () => {
 
   it("clears the fallback set and its banner the moment real data actually arrives", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    await stubGeolocation(page);
 
     let callCount = 0;
     await mockPhotoHost(page);

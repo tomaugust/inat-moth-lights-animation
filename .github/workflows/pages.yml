@@ -37,6 +37,7 @@ jobs:
           cp -r styles _site/styles
           cp -r config _site/config
           cp -r fixtures _site/fixtures
+          cp -r public _site/public
           touch _site/.nojekyll
 
       - name: Configure Pages

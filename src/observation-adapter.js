@@ -13,6 +13,17 @@ function toFiniteTaxonId(value) {
   return Number.isFinite(numeric) ? numeric : null;
 }
 
+function toFiniteCoordinate(value) {
+  // Number(null) is 0, not NaN — explicitly excluded so a genuinely absent
+  // coordinate stays null instead of silently becoming a real point at
+  // 0°N 0°E.
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
 function toValidTimestamp(value) {
   if (typeof value !== "string" || value.length === 0) {
     return null;
@@ -119,7 +130,13 @@ export function normalizeObservation(raw) {
     imageUrl: imageUrl && imageAttribution && imageLicense ? imageUrl : "",
     imageAttribution: imageUrl && imageAttribution && imageLicense ? imageAttribution : "",
     imageLicense: imageUrl && imageAttribution && imageLicense ? imageLicense : "",
-    observationUrl: toTrimmedString(raw.observationUrl)
+    observationUrl: toTrimmedString(raw.observationUrl),
+    // Null for the small real minority of observations with no location at
+    // all (obscured/private, or never set) — callers that plot a real
+    // location (the world map behind the light) treat that as "no known
+    // point for this one" and fall back gracefully rather than requiring it.
+    lat: toFiniteCoordinate(raw.lat),
+    lon: toFiniteCoordinate(raw.lon)
   };
 }
 

@@ -79,6 +79,20 @@ describe("normalizeObservation", () => {
       assert.notEqual(normalizeObservation({ ...validRaw, taxonRank: rank }), null, `expected ${rank} to be accepted`);
     });
   });
+
+  it("carries a real lat/lon through, or null when absent/invalid", () => {
+    const withLocation = normalizeObservation({ ...validRaw, lat: 51.5074, lon: -0.1278 });
+    assert.equal(withLocation.lat, 51.5074);
+    assert.equal(withLocation.lon, -0.1278);
+
+    const withoutLocation = normalizeObservation({ ...validRaw, lat: undefined, lon: undefined });
+    assert.equal(withoutLocation.lat, null);
+    assert.equal(withoutLocation.lon, null);
+
+    const withInvalidLocation = normalizeObservation({ ...validRaw, lat: "not-a-number", lon: null });
+    assert.equal(withInvalidLocation.lat, null);
+    assert.equal(withInvalidLocation.lon, null);
+  });
 });
 
 describe("parseObservationsResponse", () => {

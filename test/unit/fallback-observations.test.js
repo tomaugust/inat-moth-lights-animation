@@ -74,4 +74,19 @@ describe("fallback-observations: the last-resort static dataset", () => {
       assert.match(observation.id, /^fallback-inat-\d+$/);
     });
   });
+
+  // Backfilled (Phase 15) by re-querying the same captured window with the
+  // location field added, so the world map can plot the fallback set at real
+  // reported locations, not just play it through the light. A real minority
+  // has no location at all (obscured/private, or never set) — those are left
+  // null, which world-map.js already treats as "no known point", not a bug.
+  it("carries a real lat/lon for the large majority of entries", () => {
+    const withLocation = FALLBACK_OBSERVATIONS.filter(
+      (observation) => Number.isFinite(observation.lat) && Number.isFinite(observation.lon)
+    );
+    assert.ok(
+      withLocation.length > FALLBACK_OBSERVATIONS.length * 0.9,
+      `expected the large majority to have a real lat/lon, saw ${withLocation.length} of ${FALLBACK_OBSERVATIONS.length}`
+    );
+  });
 });

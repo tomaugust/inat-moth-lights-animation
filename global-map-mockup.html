@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Global moth map — concept mockup (dev only)</title>
+    <link rel="stylesheet" href="styles/main.css" />
+    <style>
+      body {
+        background: #050505;
+      }
+
+      .canvas-shell {
+        display: flex;
+      }
+
+      .mockup-status {
+        background: rgba(10, 10, 12, 0.55);
+        border-radius: 8px;
+        color: rgba(245, 241, 232, 0.8);
+        font-family: monospace;
+        font-size: 0.72rem;
+        left: 16px;
+        line-height: 1.5;
+        margin: 0;
+        padding: 10px 14px;
+        pointer-events: none;
+        position: fixed;
+        top: 16px;
+        white-space: pre;
+        z-index: 5;
+      }
+
+      .mockup-warning {
+        background: rgba(120, 40, 20, 0.55);
+        border-radius: 8px;
+        color: rgba(255, 235, 220, 0.95);
+        font-size: 0.78rem;
+        line-height: 1.5;
+        margin: 0;
+        max-width: 360px;
+        padding: 10px 14px;
+        pointer-events: none;
+        position: fixed;
+        right: 296px;
+        top: 16px;
+        z-index: 5;
+      }
+
+      .mockup-panel {
+        background: rgba(5, 5, 5, 0.72);
+        border-left: 1px solid rgba(255, 255, 255, 0.08);
+        bottom: 0;
+        overflow-y: auto;
+        padding: 16px;
+        position: fixed;
+        right: 0;
+        top: 0;
+        width: 280px;
+        z-index: 4;
+      }
+
+      .mockup-panel h2 {
+        color: rgba(245, 241, 232, 0.7);
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        margin: 0 0 10px;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="canvas-shell" aria-label="Global moth map concept mockup">
+        <canvas id="orbit-canvas"></canvas>
+        <pre class="mockup-status" id="demo-status">loading…</pre>
+        <p class="mockup-warning">
+          Concept mockup (dev only). Calls <code>api.inaturalist.org</code>
+          directly from your browser to show real, currently-arriving moth
+          records worldwide — not part of the deployed site.
+        </p>
+        <aside class="mockup-panel">
+          <h2>Recently arrived</h2>
+          <div class="active-moths-list" id="active-moths-list"></div>
+        </aside>
+      </section>
+    </main>
+
+    <script type="module" src="src/global-map-mockup.js"></script>
+  </body>
+</html>

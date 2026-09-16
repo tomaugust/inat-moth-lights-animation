@@ -4,10 +4,10 @@ import { chromium } from "playwright";
 
 import { startStaticServer } from "../helpers/static-server.mjs";
 
-const WORKER_URL = "https://inat-moth-lights-adapter.tomaugust1985.workers.dev/observations";
-// The real client now appends ?place_id=<resolved country> — see app.js's
+const API_URL = "https://api.inaturalist.org/v2/observations";
+// The real client appends ?place_id=<resolved country> — see app.js's
 // resolveUserPlace() wiring.
-const WORKER_URL_PATTERN = `${WORKER_URL}*`;
+const API_URL_PATTERN = `${API_URL}*`;
 
 let site;
 let browser;
@@ -34,30 +34,26 @@ after(async () => {
 describe("active moth cards: hides the thumbnail (only) when an observation has no photo", () => {
   it("hides the thumbnail but still shows the observation link for a moth with no image/license data", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    const now = Date.now();
-    await page.route(WORKER_URL_PATTERN, (route) =>
+    const nowIso = new Date().toISOString();
+    await page.route(API_URL_PATTERN, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          fetchedAt: new Date().toISOString(),
-          stale: false,
-          cursor: "1",
-          observations: [
+          total_results: 1,
+          page: 1,
+          per_page: 200,
+          results: [
             {
-              id: "inat-1",
-              taxonId: 111,
-              scientificName: "Nomo photonis",
-              commonName: "No Photo Moth",
-              taxonRank: "species",
-              createdAtMs: now,
-              observedAtMs: now,
-              place: "Test Location, UK",
-              qualityGrade: "needs_id",
-              imageUrl: "",
-              imageAttribution: "",
-              imageLicense: "",
-              observationUrl: "https://www.inaturalist.org/observations/1"
+              id: 1,
+              created_at: nowIso,
+              observed_on: nowIso.slice(0, 10),
+              time_observed_at: nowIso,
+              uri: "https://www.inaturalist.org/observations/1",
+              quality_grade: "needs_id",
+              place_guess: "Test Location, UK",
+              taxon: { id: 111, rank: "species", name: "Nomo photonis", preferred_common_name: "No Photo Moth" },
+              photos: []
             }
           ]
         })

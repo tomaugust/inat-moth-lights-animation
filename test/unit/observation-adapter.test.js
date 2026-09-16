@@ -65,6 +65,20 @@ describe("normalizeObservation", () => {
     assert.equal(normalizeObservation(null), null);
     assert.equal(normalizeObservation("inat-1"), null);
   });
+
+  it("rejects an observation identified coarser than family level", () => {
+    assert.equal(normalizeObservation({ ...validRaw, taxonRank: "order" }), null, "order (e.g. just \"Lepidoptera\") should be rejected");
+    assert.equal(normalizeObservation({ ...validRaw, taxonRank: "superfamily" }), null);
+    assert.equal(normalizeObservation({ ...validRaw, taxonRank: "suborder" }), null);
+    assert.equal(normalizeObservation({ ...validRaw, taxonRank: "" }), null, "no taxon at all should be rejected, not treated as displayable");
+    assert.equal(normalizeObservation({ ...validRaw, taxonRank: "not-a-real-rank" }), null, "an unrecognized rank name should be rejected, not silently admitted");
+  });
+
+  it("accepts family level and everything finer", () => {
+    ["family", "subfamily", "tribe", "subtribe", "genus", "subgenus", "complex", "species", "subspecies"].forEach((rank) => {
+      assert.notEqual(normalizeObservation({ ...validRaw, taxonRank: rank }), null, `expected ${rank} to be accepted`);
+    });
+  });
 });
 
 describe("parseObservationsResponse", () => {

@@ -6,23 +6,38 @@ import { MothStore } from "./moth-store.js";
 import { CONNECTION_STATES, DEFAULT_PLACE_ID, InatClient } from "./inaturalist-client.js";
 import { FALLBACK_COUNTRY_NAME, resolveUserPlace } from "./geolocation.js";
 import { parseObservationsResponse } from "./observation-adapter.js";
-import { FALLBACK_COUNTRY_NAME as FALLBACK_DATASET_COUNTRY, FALLBACK_OBSERVATIONS } from "./fallback-observations.js";
+import { FALLBACK_OBSERVATIONS } from "./fallback-observations.js";
 
-// The production site's one and only data source: the deployed Cloudflare
-// Worker adapter (worker/src/index.js), never api.inaturalist.org directly —
-// that's what gives every visitor a real User-Agent and a shared cache
-// instead of N independent browsers hammering iNaturalist. The Worker
-// caches per place_id (see contractKey() in worker/src/index.js), so each
-// visitor's own resolved country (resolveUserPlace(), below) is its own
-// independently-refreshed entry, not a redesign.
-const WORKER_OBSERVATIONS_URL = "https://inat-moth-lights-adapter.tomaugust1985.workers.dev/observations";
+// The production site's one and only data source: api.inaturalist.org
+// itself, called directly from this browser via InatClient's default direct
+// mode (see README's Phase 14) — there is no server component, no shared
+// cache, and no custom User-Agent (a browser fetch() can't set one). Each
+// visitor's own resolved country (resolveUserPlace(), below) is passed
+// straight through as InatClient's placeId option.
 
 // The last line of defense: a small, bundled-in-the-app dataset of real
 // iNaturalist observations (see fallback-observations.js), shown only when a
-// fresh page load can't get live data from anywhere — not the Worker's short
-// cache, not its 7-day stale-backup either (worker/src/index.js). Normalized
-// once here (module load), not per fallback trigger, since it never changes.
+// fresh page load can't get live data from anywhere — there's no server-side
+// cache standing in front of it anymore (Phase 14), so this is the only
+// thing left once iNaturalist itself is unreachable. Normalized once here
+// (module load), not per fallback trigger, since it never changes.
 const FALLBACK_NORMALIZED_OBSERVATIONS = parseObservationsResponse({ observations: FALLBACK_OBSERVATIONS }).observations;
+
+// Every queue this page ever constructs — the live feed's and the fallback
+// set's alike — runs at real, uncompressed time (sourceTimeScale: 1),
+// overriding ObservationQueue's own default (~1440x compression, tuned for
+// the old Worker's full-24h-window-per-poll behavior — see
+// observation-queue.js's DEFAULT_SOURCE_TIME_SCALE). Now that Phase 14's
+// direct client only ever returns a handful of genuinely-recent
+// observations per poll, real-time pacing is what actually makes the scene
+// read as a live feed: a moth appears roughly when it was really posted
+// relative to the others, not sped up into a time-lapse. This also means
+// the fallback set (a real, time-spread capture — see
+// fallback-observations.js) plays out over a comparably long stretch of
+// animation time instead of draining in seconds.
+function createQueue() {
+  return new ObservationQueue({ sourceTimeScale: 1 });
+}
 
 // The loading flicker/text always stays up at least this long, even if the
 // real response comes back almost instantly — see startClientForPlace's
@@ -41,24 +56,7 @@ function countryDescription(countryName) {
 // Shown in #debug-status purely so a screenshot from a real device proves
 // which deployed build that browser is actually running, rather than leaving
 // it ambiguous whether a cached older bundle is being served.
-const BUILD_ID = "2026-09-09a";
-
-// A failing fetch tells a browser page almost nothing: a CORS rejection, a
-// DNS/filter block and a refused connection are all the same opaque
-// TypeError. A no-cors request does distinguish them — it resolves (with an
-// unreadable opaque response) whenever the request actually reached the
-// server, and only rejects when the network itself couldn't. So: normal
-// fetch fails + this succeeds => CORS; both fail => the host is unreachable
-// from that device/network (worker.dev subdomains are a common target for
-// DNS-level filtering). Read only through #debug-status.
-async function probeAdapterReachability() {
-  try {
-    await fetch(WORKER_OBSERVATIONS_URL, { mode: "no-cors", cache: "no-store" });
-    return "reachable-so-cors-blocked";
-  } catch (error) {
-    return `unreachable-${error.name}`;
-  }
-}
+const BUILD_ID = "2026-09-16a";
 
 function formatObservedTime(observedAtMs) {
   if (!Number.isFinite(observedAtMs)) {
@@ -85,24 +83,19 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   const animationDescription = document.getElementById("animation-description");
   const audio = setupAudio();
 
-  // Deliberately in-memory only (no storage option) — the Worker adapter is
-  // stateless and returns the *entire* current 24h window on every poll,
-  // never an incremental delta. ObservationQueue's seen-ID dedup already
-  // (correctly) prevents re-enqueuing the same observation across polls
-  // within this one page's lifetime; persisting that dedup to localStorage
-  // across page loads (the option other callers use for a resumable
-  // cursor-based feed) would instead permanently blacklist every
-  // observation this browser has ever been shown, since the rolling 24h
-  // window mostly re-returns the same IDs on a later visit — silently
-  // starving a returning visitor of almost everything. A fresh load should
-  // replay the current window from scratch, matching the intended
-  // "living view" experience.
+  // Deliberately in-memory only (no storage option) — persisting the seen-ID
+  // dedup/cursor to localStorage across page loads (the option other callers
+  // use for a resumable cursor-based feed) would mean a returning visitor's
+  // fresh load resumes from wherever their last visit left off, potentially
+  // hours or days ago, rather than starting from what's actually recent —
+  // the opposite of the intended "living view" experience. A fresh load
+  // should always replay the current window from scratch.
   // Reassigned (not just mutated) if resolveUserPlace() later swaps to a
   // different country than the default this starts with — see below. `let`
   // rather than `const` because every downstream reader (tick, the side
   // panel, hit-testing) closes over this binding, so reassigning it here is
   // what makes them all pick up the fresh queue/store on their next call.
-  let queue = new ObservationQueue();
+  let queue = createQueue();
   let store = new MothStore();
   // A false autoplay is the one remaining kill-switch: the scene loads (just
   // the light, in whichever presentation mode) but never admits a moth. Real
@@ -478,8 +471,6 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   }
 
   let lastDebugUpdateSeconds = 0;
-  let probeResult = null;
-  let probeStarted = false;
   // Assigned synchronously by startClientForPlace() below (called
   // immediately, before tick()/updateDebugStatus() ever run) and reassigned
   // if resolveUserPlace() later swaps to a different country.
@@ -505,22 +496,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     if (client.lastError) {
       lines.push(`err=${client.lastError}`);
     }
-    if (probeResult) {
-      lines.push(`probe=${probeResult}`);
-    }
     debugStatus.textContent = lines.join("\n");
-  }
-
-  // Run the reachability probe once, the first time a poll actually fails —
-  // never on the happy path, so a working page makes no extra request.
-  function runReachabilityProbeOnce() {
-    if (probeStarted) {
-      return;
-    }
-    probeStarted = true;
-    probeAdapterReachability().then((result) => {
-      probeResult = result;
-    });
   }
 
   function tick(timestamp) {
@@ -718,27 +694,19 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
         return;
       }
       fallbackActive = true;
+      queue = createQueue();
+      store = new MothStore();
       queue.enqueue(FALLBACK_NORMALIZED_OBSERVATIONS);
       if (fallbackStatus) {
         fallbackStatus.textContent =
-          `It looks like live data is temporarily unavailable. While we wait, here's a look at ${FALLBACK_DATASET_COUNTRY} — one of the most moth-rich countries on Earth.`;
+          "It looks like live data is temporarily unavailable. While we wait, here's a look at moths recently shared from around the world.";
         fallbackStatus.classList.remove("is-hidden");
       }
     }
 
     client = new InatClient({
-      buildUrl: () => `${WORKER_OBSERVATIONS_URL}?place_id=${placeId}`,
-      upstreamShape: "adapter-contract",
+      placeId,
       getCursor: () => queue.cursor || null,
-      // InatClient's own default (15s) is too tight for this adapter: a
-      // cold-cache Worker refresh now paces up to 4 sequential upstream pages
-      // a second apart (see PAGE_DELAY_MS in worker/src/index.js) before
-      // returning a ~300-400KB response, measured at ~7-8s even from a fast
-      // connection — a real mobile connection can easily push that past 15s,
-      // aborting the fetch and leaving the scene empty until the next
-      // ~60s-backed-off retry. 45s mirrors the same margin already used for
-      // this exact scenario in .github/workflows/deploy-worker.yml's smoke test.
-      requestTimeoutSeconds: 45,
       onStateChange: (state) => {
         // STARTING is the synchronous initial state set the instant
         // client.start() runs, before any network activity — only a later,
@@ -747,18 +715,17 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
         if (state !== CONNECTION_STATES.STARTING) {
           hideLoadingNoSoonerThanMinimumDuration();
         }
-        if (state === CONNECTION_STATES.STALE || state === CONNECTION_STATES.OFFLINE) {
-          runReachabilityProbeOnce();
-        }
         if (state === CONNECTION_STATES.FATAL_SCHEMA_ERROR) {
-          console.error("iNaturalist adapter returned an unexpected response shape; live updates have stopped.");
+          console.error("iNaturalist returned an unexpected response shape; live updates have stopped.");
         }
-        // Every failure state, not just STALE/OFFLINE above (RATE_LIMITED and
-        // FATAL_SCHEMA_ERROR are just as much "no live data" from this
-        // visitor's point of view) — but only while this client has never
-        // once succeeded. Once real data has ever arrived, later failures
-        // fall back to the Worker's own stale-cache (worker/src/index.js),
-        // which is real (if aging) data rather than a static substitute.
+        // Every failure state (RATE_LIMITED and FATAL_SCHEMA_ERROR are just
+        // as much "no live data" from this visitor's point of view as
+        // STALE/OFFLINE) — but only while this client has never once
+        // succeeded. Once real data has ever arrived, later failures don't
+        // re-trigger the static fallback (there's no server-side cache left
+        // to fall back to either, see README's Phase 14) — they just mean no
+        // new observations until the next successful poll, while whatever
+        // was already admitted keeps playing out.
         if (
           state === CONNECTION_STATES.STALE ||
           state === CONNECTION_STATES.OFFLINE ||
@@ -770,15 +737,14 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
       },
       onBatch: (payload) => {
         hasReceivedLiveData = true;
-        // A real batch just arrived — even an empty (QUIET) one is real data
-        // from a working adapter, unlike the substitute fallback set. Swap
-        // back to a clean queue/store rather than mixing static Colombia
-        // moths in with live ones, which would be confusing (a card claiming
-        // to be a UK sighting sitting right next to one that was posted years
-        // ago in Colombia).
+        // A real batch just arrived — even an empty (QUIET) one is real data,
+        // unlike the substitute fallback set. Swap back to a clean queue/store
+        // rather than mixing static fallback moths in with live ones, which
+        // would be confusing (a card claiming to be a real-time sighting
+        // sitting right next to one from an unrelated captured window).
         if (fallbackActive) {
           fallbackActive = false;
-          queue = new ObservationQueue();
+          queue = createQueue();
           store = new MothStore();
           if (fallbackStatus) {
             fallbackStatus.classList.add("is-hidden");
@@ -819,7 +785,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     document.title = countryHeading(countryName);
 
     client.stop();
-    queue = new ObservationQueue();
+    queue = createQueue();
     store = new MothStore();
     // Cancel a still-pending "hide the loading indicator" timeout from the
     // client generation just stopped — left to fire, it would hide the *new*

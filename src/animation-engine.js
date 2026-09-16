@@ -166,7 +166,11 @@ function projectMoth(moth, animationTime, width, height, cx, cy, includeTrail = 
 
   if (animationTime < moth.entryTime + entryDuration) {
     const progress = easeInOut((animationTime - moth.entryTime) / entryDuration);
-    const start = pointBeyondCanvas(
+    // moth.entryPoint is an opt-in override (set by, e.g., the global-map
+    // mockup to fly a moth in from its real observed location instead of a
+    // random point beyond the canvas edge) — every other caller leaves it
+    // unset and gets the original behavior unchanged.
+    const start = moth.entryPoint || pointBeyondCanvas(
       orbit.x,
       orbit.y,
       width,
@@ -180,7 +184,10 @@ function projectMoth(moth, animationTime, width, height, cx, cy, includeTrail = 
     phase = "entering";
   } else if (animationTime > exitStart) {
     const progress = easeInOut((animationTime - exitStart) / exitDuration);
-    const end = pointBeyondCanvas(
+    // Same opt-in override as entryPoint above, for flying back out to a
+    // real location (typically the same point the moth entered from)
+    // instead of a random point beyond the canvas edge.
+    const end = moth.exitPoint || pointBeyondCanvas(
       orbit.x,
       orbit.y,
       width,

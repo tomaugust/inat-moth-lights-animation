@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { MothStore } from "../../src/moth-store.js";
 import { DEFAULT_SOURCE_TIME_SCALE, ObservationQueue, selectDiverseSample } from "../../src/observation-queue.js";
 
 function observation(id, createdAtMs, overrides = {}) {
@@ -237,5 +238,76 @@ describe("ObservationQueue persistence", () => {
       const queue = new ObservationQueue();
       queue.enqueue([observation("a", 0)]);
     });
+  });
+});
+
+// The pacing app.js's createQueue() configures for the live feed (real time,
+// with release-interval clamps sized for real time rather than the
+// compressed time-lapse defaults).
+const REAL_TIME_OPTIONS = { sourceTimeScale: 1, minReleaseIntervalSeconds: 0.75, maxReleaseIntervalSeconds: 30 };
+
+function seededShuffle(items, seed) {
+  const out = [...items];
+  let state = seed;
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    state = (state * 1664525 + 1013904223) % 4294967296;
+    const j = state % (i + 1);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+describe("ObservationQueue real-time entry order", () => {
+  it("admits moths strictly in upload (created_at) order, however the batches arrive and whatever the scene's capacity", () => {
+    const queue = new ObservationQueue({ ...REAL_TIME_OPTIONS, targetSampleSize: 1000 });
+    const store = new MothStore();
+
+    // 60 observations spread irregularly over ~13 real minutes, delivered the
+    // way successive polls do: each batch is a newer slice than the last
+    // (with a few repeats at the seam, which the queue must drop), and within
+    // a batch the API's own order can be anything.
+    const all = Array.from({ length: 60 }, (_, index) =>
+      speciesObservation("obs-" + index, 1_000_000 + index * 13_000 + (index % 7) * 900, 100 + (index % 9))
+    );
+    const batches = [
+      seededShuffle(all.slice(0, 25), 42),
+      seededShuffle(all.slice(20, 45), 7),
+      seededShuffle(all.slice(40), 99)
+    ];
+
+    const admitted = [];
+    let nextBatch = 0;
+    for (let t = 0; t < 2400; t += 0.05) {
+      if (nextBatch < batches.length && t >= nextBatch * 300) {
+        queue.enqueue(batches[nextBatch]);
+        nextBatch += 1;
+      }
+      queue.peekDue(t).forEach((item) => {
+        if (store.addObservation(item, t, 800, 600)) {
+          queue.acknowledge(item.id, t);
+          admitted.push(item);
+        }
+      });
+      store.holdLastMoth(t);
+      store.removeExpired(t);
+    }
+
+    assert.equal(admitted.length, 60, "every observation should be admitted exactly once");
+    for (let i = 1; i < admitted.length; i += 1) {
+      assert.ok(
+        admitted[i].createdAtMs >= admitted[i - 1].createdAtMs,
+        "out of order: " + admitted[i - 1].id + " then " + admitted[i].id
+      );
+    }
+  });
+
+  it("paces a real gap at close to that gap, not squashed to a few seconds", () => {
+    const queue = new ObservationQueue(REAL_TIME_OPTIONS);
+    queue.enqueue([observation("a", 0), observation("b", 20_000)]);
+
+    queue.acknowledge(queue.peekDue(0)[0].id, 0);
+    assert.equal(queue.peekDue(10).length, 0, "b was posted 20s after a, so it shouldn't be due after 10s");
+    assert.equal(queue.peekDue(20 * 0.65 - 0.01).length, 0, "even with the most jitter it can't be due before 13s");
+    assert.equal(queue.peekDue(20 * 1.35 + 0.01).length, 1);
   });
 });

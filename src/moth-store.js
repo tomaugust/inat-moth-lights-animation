@@ -5,7 +5,7 @@
 // dropped so a display left open for days stays bounded. The output shape
 // matches what animation-engine.js's createMoths() used to produce, so
 // projectMoth()/drawScene() need no changes to consume it.
-import { hashString, sampleBiasedApproachAngle, seededUnit } from "./animation-engine.js";
+import { getExitStartTime, hashString, sampleBiasedApproachAngle, seededUnit } from "./animation-engine.js";
 import { getSpeciesStyle } from "./species-style.js";
 
 // Lowered from 50/4-10s and doubled duration respectively after a real
@@ -26,6 +26,13 @@ const DEFAULT_OPTIONS = {
   // focus can never leak a moth forever.
   focusGracePeriodSeconds: 30
 };
+
+// See MothStore.holdLastMoth(): how far ahead of a moth's fly-out we check
+// whether anyone else would still be in the scene, and how much a held moth's
+// life is extended by each time it's kept.
+const HOLD_LOOKAHEAD_SECONDS = 0.25;
+const HOLD_EXTENSION_SECONDS = 2;
+const HOLD_MAX_EXTENSIONS_PER_CALL = 200;
 
 // species-style.js guarantees speed/size stay within these bounds for every
 // taxon, so orbit radius can be derived per-moth instead of relative to
@@ -71,6 +78,12 @@ function buildLiveMoth(observation, style, isUnknown, entryTimeSeconds, canvasWi
     chimeNote: style.chimeNote,
     chimeNotes: style.chimeNotes,
     color: style.color,
+    // Real wall-clock time the observation was uploaded (created_at) — the
+    // only time this site uses. entryTime/exitTime are monotonic seconds on
+    // the animation's own clock (no fixed relationship to a calendar time),
+    // so UI showing an actual time to the visitor (the cards, the pop-out)
+    // needs this instead.
+    createdAtMs: observation.createdAtMs ?? null,
     entryAngle: (sampleBiasedApproachAngle(seed, 173) * Math.PI) / 180,
     entryTime: entryTimeSeconds,
     erraticness: style.erraticness,
@@ -87,17 +100,16 @@ function buildLiveMoth(observation, style, isUnknown, entryTimeSeconds, canvasWi
     nodeDriftSpeed: style.nodeDriftSpeed,
     noiseSeed: seed,
     observationUrl: observation.observationUrl,
-    // Real wall-clock time the observation was uploaded/observed — entryTime/
-    // exitTime are monotonic seconds on the animation's own clock (no fixed
-    // relationship to a calendar time), so UI showing an actual time to the
-    // visitor (e.g. the active-moths card) needs this instead.
-    observedAtMs: observation.observedAtMs ?? observation.createdAtMs ?? null,
     orbitDirection: seededUnit(seed, 131) < 0.5 ? -1 : 1,
     place: observation.place,
     qualityGrade: observation.qualityGrade,
     radius,
     scientificName: observation.scientificName,
     commonName: observation.commonName,
+    // The record's own taxonomic resolution ("species", "genus", "family"…) —
+    // shown on the card and pop-out, so a moth identified only to family
+    // still gets a card that says exactly that.
+    taxonRank: observation.taxonRank,
     shadowBlur: style.shadowBlur,
     shadowColor: style.shadowColor,
     size: style.size,
@@ -140,14 +152,60 @@ export class MothStore {
     return true;
   }
 
-  // Drops moths whose exit time has passed. A focused moth is kept alive
-  // past its exit until focus clears or the grace period elapses, whichever
-  // is first. Returns the list of removed ids.
+  // Keeps the animation from ever going empty: a moth is only allowed to
+  // leave while at least one other moth is still in the scene and staying.
+  //
+  // "Leaving" starts at the moth's fly-out (getExitStartTime), well before
+  // it's removed, and it fades out as it goes — so waiting until removal to
+  // check would already be too late; the scene would have been visibly empty
+  // for the length of the fly-out. Instead, whenever a moth is within
+  // HOLD_LOOKAHEAD_SECONDS of starting to leave (or already past that point,
+  // e.g. after a backgrounded tab's clock jump) and nobody else is staying
+  // beyond that same horizon, its life is pushed later. It keeps being
+  // pushed until a newly admitted moth (or another that's further from
+  // leaving) takes over, at which point it's free to go on its next call.
+  //
+  // Two moths about to leave together can't both leave together: the one
+  // with the most life left is checked first, so it's the one that's kept
+  // (now "staying"), which lets the other go — rather than rescuing a moth
+  // that's already halfway through flying out, which would snap it back into
+  // orbit. The roles then simply repeat until a replacement arrives.
+  holdLastMoth(nowSeconds) {
+    const horizon = nowSeconds + HOLD_LOOKAHEAD_SECONDS;
+    const latestExitFirst = [...this.moths.values()].sort((a, b) => getExitStartTime(b) - getExitStartTime(a));
+
+    latestExitFirst.forEach((moth) => {
+      const othersStaying = () => {
+        for (const other of this.moths.values()) {
+          if (other !== moth && getExitStartTime(other) > horizon) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+      let extensions = 0;
+      while (getExitStartTime(moth) <= horizon && !othersStaying() && extensions < HOLD_MAX_EXTENSIONS_PER_CALL) {
+        moth.exitTime += HOLD_EXTENSION_SECONDS;
+        extensions += 1;
+      }
+    });
+  }
+
+  // Drops moths whose exit time has passed — but never the last one in the
+  // scene (holdLastMoth normally makes sure that can't come up; this is the
+  // backstop). A focused moth is kept alive past its exit until focus clears
+  // or the grace period elapses, whichever is first. Returns the list of
+  // removed ids.
   removeExpired(nowSeconds) {
     const removedIds = [];
 
     this.moths.forEach((moth, id) => {
       if (nowSeconds < moth.exitTime) {
+        return;
+      }
+
+      if (this.moths.size <= 1) {
         return;
       }
 

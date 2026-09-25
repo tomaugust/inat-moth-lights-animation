@@ -8,6 +8,9 @@ import {
   createMoths,
   easeInOut,
   formatClockTime,
+  formatIdentification,
+  formatPhotoCredit,
+  getExitStartTime,
   hashString,
   normalizeAnimationTime,
   projectMoth,
@@ -188,5 +191,48 @@ describe("projectMoth", () => {
     assert.ok(Number.isFinite(projected.x));
     assert.ok(Number.isFinite(projected.y));
     assert.ok(projected.opacity >= 0 && projected.opacity <= 1);
+  });
+});
+
+describe("getExitStartTime", () => {
+  it("is when the fly-out begins: the transition length before exitTime, and matches projectMoth's phases", () => {
+    setConfig(createSampleConfig());
+    const moth = { entryTime: 0, exitTime: 10, angle: 0, speed: 1, radius: 100, size: 3, shadowBlur: 0, erraticness: 0, orbitDirection: 1, inclinationDriftSpeed: 0, nodeDriftSpeed: 0, noiseSeed: 1, entryAngle: 0, exitAngle: 0 };
+    const exitStart = getExitStartTime(moth);
+    assert.ok(exitStart > 7 && exitStart < 9, "a 10s moth flies out for ~2s: " + exitStart);
+    assert.equal(projectMoth(moth, exitStart - 0.1, 800, 600, 400, 330, false).phase, "orbiting");
+    assert.equal(projectMoth(moth, exitStart + 0.1, 800, 600, 400, 330, false).phase, "exiting");
+  });
+
+  it("never starts before the moth entered", () => {
+    assert.equal(getExitStartTime({ entryTime: 5, exitTime: 5.5 }), 5);
+  });
+});
+
+describe("formatPhotoCredit", () => {
+  it("joins the upper-cased license code and the photographer", () => {
+    assert.equal(formatPhotoCredit({ imageLicense: "cc-by-nc", imageAttribution: "A. Person" }), "CC-BY-NC · A. Person");
+  });
+
+  it("is empty without an attribution, since a photo is never shown without one", () => {
+    assert.equal(formatPhotoCredit({ imageLicense: "cc-by", imageAttribution: "" }), "");
+    assert.equal(formatPhotoCredit({}), "");
+  });
+
+  it("still shows the attribution when the license is missing", () => {
+    assert.equal(formatPhotoCredit({ imageLicense: "", imageAttribution: "A. Person" }), "A. Person");
+  });
+});
+
+describe("formatIdentification", () => {
+  it("states the record's own taxonomic resolution", () => {
+    assert.equal(formatIdentification({ taxonRank: "species" }), "Identified to species");
+    assert.equal(formatIdentification({ taxonRank: "genus" }), "Identified to genus");
+    assert.equal(formatIdentification({ taxonRank: "family" }), "Identified to family");
+  });
+
+  it("is empty when the rank isn't known", () => {
+    assert.equal(formatIdentification({ taxonRank: "" }), "");
+    assert.equal(formatIdentification({}), "");
   });
 });

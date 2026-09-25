@@ -47,7 +47,7 @@ body {
 
 canvas {
   opacity: 1;
-  transition: opacity 760ms ease;
+  transition: opacity 760ms ease, filter 620ms ease;
   display: block;
   width: 100%;
   height: 100%;
@@ -67,7 +67,7 @@ canvas {
   z-index: 2;
 }
 
-/* The side panel (width 286px, its own opaque background) visually
+/* The side panel (width 340px, its own opaque background) visually
    overlaps the top-right heading when both are on screen at once — hide
    the heading while the panel is open rather than let text collide with
    it. */
@@ -123,6 +123,7 @@ body.launch-screen-active:not(.launch-controls-visible) .sound-toggle,
 body.launch-screen-active:not(.launch-controls-visible) .active-moths-toggle,
 body.launch-screen-active:not(.launch-controls-visible) .active-moths-panel,
 body.launch-screen-active:not(.launch-controls-visible) .loading-status,
+body.launch-screen-active:not(.launch-controls-visible) .loading-spinner,
 body.launch-screen-active:not(.launch-controls-visible) .fallback-status,
 body.launch-screen-active:not(.launch-controls-visible) .debug-status {
   opacity: 0;
@@ -131,11 +132,50 @@ body.launch-screen-active:not(.launch-controls-visible) .debug-status {
 
 /* Real observations can take a few seconds to arrive on a slow connection —
    without this, that window looks identical to a broken/empty page (just
-   the light, nothing else) instead of "still loading". Fades out once the
-   feed reports any real state (see app.js). Paired with the light itself
-   sputtering (see drawScene's isLoading in animation-engine.js) — this text
-   pulses along with it rather than sitting there static, so the two read as
-   one deliberate "still warming up" moment instead of two unrelated things. */
+   the light, nothing else) instead of "still loading". While it lasts
+   (.is-loading on .canvas-shell, cleared by app.js once the feed reports any
+   real state) the whole scene is greyed out and a spinner turns around the
+   light, with this text underneath pulsing gently. Nothing flashes: the
+   light itself stays steady. */
+.canvas-shell.is-loading canvas {
+  filter: grayscale(1) brightness(0.55);
+}
+
+/* left/top/size/margin are set by app.js (positionLoadingSpinner) so the ring
+   sits on the light; the values here are just a sane fallback. */
+.loading-spinner {
+  animation: loading-spinner-rotate 0.9s linear infinite;
+  border: 3px solid rgba(245, 241, 232, 0.22);
+  border-radius: 50%;
+  border-top-color: rgba(245, 241, 232, 0.92);
+  height: 46px;
+  left: 50%;
+  margin: -23px 0 0 -23px;
+  opacity: 0;
+  pointer-events: none;
+  position: fixed;
+  top: 50%;
+  transition: opacity 620ms ease;
+  width: 46px;
+  z-index: 10;
+}
+
+.canvas-shell.is-loading .loading-spinner {
+  opacity: 1;
+}
+
+@keyframes loading-spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation-duration: 2.4s;
+  }
+}
+
 .loading-status {
   animation: loading-status-pulse 1.8s ease-in-out infinite;
   bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(16px, 2.4vw, 30px));
@@ -304,7 +344,7 @@ body.launch-screen-active:not(.launch-controls-visible) .debug-status {
   top: 0;
   transform: translateX(100%);
   transition: opacity 520ms ease, transform 520ms ease;
-  width: 286px;
+  width: 340px;
   z-index: 11;
 }
 
@@ -343,15 +383,18 @@ body.launch-screen-active:not(.launch-controls-visible) .debug-status {
   color: rgba(245, 241, 232, 0.9);
   display: flex;
   flex-direction: column;
+  /* Never squashed to fit: the list scrolls instead. Shrunk cards (which
+     overflow: hidden) clip the text under the photo once a few are open. */
+  flex-shrink: 0;
   min-height: 58px;
   opacity: 1;
   position: relative;
   text-align: left;
   transform: translateX(0);
   overflow: hidden;
-  max-height: 260px;
+  max-height: 460px;
   transition: background 220ms ease, border-color 220ms ease, opacity 820ms ease, transform 820ms ease, max-height 820ms ease, min-height 820ms ease;
-  width: 258px;
+  width: 100%;
   will-change: transform, opacity;
   border-color: rgba(255, 255, 255, 0.32);
 }
@@ -389,9 +432,9 @@ body.launch-screen-active:not(.launch-controls-visible) .debug-status {
   cursor: pointer;
   display: grid;
   column-gap: 8px;
-  grid-template-columns: auto auto 1fr;
+  grid-template-columns: auto 1fr;
   padding: 9px 10px;
-  row-gap: 3px;
+  row-gap: 4px;
   width: 100%;
 }
 
@@ -400,56 +443,58 @@ body.launch-screen-active:not(.launch-controls-visible) .debug-status {
   outline-offset: -2px;
 }
 
+/* The photo runs the full width of the card, on top — big enough to
+   actually see the moth. Elements below are auto-placed, so with no photo
+   (hidden) the swatch/name simply move up to the first row. */
 .active-moths-card__thumb {
+  aspect-ratio: 4 / 3;
   border-radius: 6px;
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  height: 40px;
+  grid-column: 1 / -1;
+  height: auto;
+  margin-bottom: 2px;
+  max-height: 230px;
   object-fit: cover;
-  width: 40px;
+  width: 100%;
 }
 
 .active-moths-card__swatch {
   border-radius: 999px;
   box-shadow: 0 0 10px currentColor;
-  grid-column: 2;
-  grid-row: 1;
   height: 9px;
   margin-top: 5px;
   width: 9px;
 }
 
 .active-moths-card__name {
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  grid-column: 3;
-  grid-row: 1;
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
 
-.active-moths-card__time {
-  color: rgba(245, 241, 232, 0.58);
-  font-size: 0.72rem;
+/* The same facts the on-canvas hover pop-out shows: upload time, how
+   precisely it's identified, where, and the photo credit. */
+.active-moths-card__details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  grid-column: 1 / -1;
+}
+
+.active-moths-card__uploaded,
+.active-moths-card__identification,
+.active-moths-card__place {
+  color: rgba(245, 241, 232, 0.66);
+  font-size: 0.74rem;
   font-variant-numeric: tabular-nums;
-  grid-column: 3;
-  grid-row: 2;
-  line-height: 1.2;
+  line-height: 1.3;
 }
 
-/* No thumbnail: collapse back to the original two-column (swatch | text)
-   layout instead of leaving an empty image column's gap behind. */
-.active-moths-card__focus:has(.active-moths-card__thumb[hidden]) {
-  grid-template-columns: auto 1fr;
-}
-
-.active-moths-card__focus:has(.active-moths-card__thumb[hidden]) .active-moths-card__swatch {
-  grid-column: 1;
-}
-
-.active-moths-card__focus:has(.active-moths-card__thumb[hidden]) .active-moths-card__name,
-.active-moths-card__focus:has(.active-moths-card__thumb[hidden]) .active-moths-card__time {
-  grid-column: 2;
+.active-moths-card__credit {
+  color: rgba(245, 241, 232, 0.48);
+  font-size: 0.68rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .active-moths-card__meta {

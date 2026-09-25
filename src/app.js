@@ -1,5 +1,6 @@
 import { config, setConfig } from "./config-store.js";
-import { drawScene, projectMoth } from "./animation-engine.js";
+import { drawScene, formatIdentification, formatPhotoCredit, projectMoth } from "./animation-engine.js";
+import { formatUploadedTime } from "./observation-time.js";
 import { setupAudio } from "./audio-engine.js";
 import { ObservationQueue } from "./observation-queue.js";
 import { MothStore } from "./moth-store.js";
@@ -37,26 +38,28 @@ const FALLBACK_NORMALIZED_OBSERVATIONS = parseObservationsResponse({ observation
 // the fallback set (a real, time-spread capture — see
 // fallback-observations.js) plays out over a comparably long stretch of
 // animation time instead of draining in seconds.
+//
+// minReleaseIntervalSeconds/maxReleaseIntervalSeconds must come along with
+// sourceTimeScale: 1 — ObservationQueue's own defaults for those (0.05s/3s)
+// are sized for its ~1440x-compressed default scale (see that file's own
+// comment on them), not for real time. Left at those defaults, any real gap
+// between observations longer than 3s — the common case — gets clamped down
+// to 3s, which is exactly the "faster than real-time" bug this was meant to
+// fix: real-time sourceTimeScale with compressed-scale clamps still plays
+// faster than real time. 0.75s/30s are that same comment's own documented
+// pre-compression, real-time values.
 function createQueue() {
-  return new ObservationQueue({ sourceTimeScale: 1 });
+  return new ObservationQueue({
+    sourceTimeScale: 1,
+    minReleaseIntervalSeconds: 0.75,
+    maxReleaseIntervalSeconds: 30
+  });
 }
-
-// The loading flicker/text always stays up at least this long, even if the
-// real response comes back almost instantly — see startClient's
-// hideLoadingNoSoonerThanMinimumDuration().
-const MIN_LOADING_DURATION_MS = 3000;
 
 // Shown in #debug-status purely so a screenshot from a real device proves
 // which deployed build that browser is actually running, rather than leaving
 // it ambiguous whether a cached older bundle is being served.
-const BUILD_ID = "2026-09-16a";
-
-function formatObservedTime(observedAtMs) {
-  if (!Number.isFinite(observedAtMs)) {
-    return "";
-  }
-  return new Date(observedAtMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
+const BUILD_ID = "2026-09-25a";
 
 function setupOrbitAnimation(initialPresentationMode = "normal") {
   const canvas = document.getElementById("orbit-canvas");
@@ -65,6 +68,12 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   const activeMothsPanel = document.getElementById("active-moths-panel");
   const activeMothsList = document.getElementById("active-moths-list");
   const loadingStatus = document.getElementById("loading-status");
+  const loadingSpinner = document.getElementById("loading-spinner");
+  // While `.is-loading` is on this, the whole scene is greyed out and a
+  // spinner shows in the middle (styles/main.css) — set in index.html so the
+  // very first paint is already in the loading state, and cleared below once
+  // the first real response (plus the minimum display time) is in.
+  const canvasShell = document.querySelector(".canvas-shell");
   const fallbackStatus = document.getElementById("fallback-status");
   // Hidden by default — this diagnostic readout was added to debug a real
   // production incident and was never meant for every visitor to see. Opt
@@ -170,37 +179,23 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   let freezeOffsetMs = 0;
   let freezeBeganAtRealSeconds = null;
   let freezeBeganAtRealMs = null;
-  // Captured at the same instant as frozenTimestamp/frozenSeconds (see
-  // tick()) so a freeze that happens to straddle the loading→loaded
-  // transition still holds the light's appearance constant too — isLoading
-  // isn't driven by the frozen render clock (it's read straight off the DOM,
-  // see isLoadingData() below), so without capturing it here specifically, a
-  // scene could still visibly change while "frozen" at the exact moment the
-  // loading indicator's minimum display duration (see startClient) elapses
-  // mid-hover.
-  let frozenIsLoading = null;
   let presentationMode = initialPresentationMode;
   const canHover = window.matchMedia
     ? window.matchMedia("(hover: hover) and (pointer: fine)").matches
     : true;
   const hoverState = {
     hoveredMothId: null,
-    imageCache: new Map()
+    imageCache: new Map(),
+    // Width of the side panel while it's open (0 when closed), so the hover
+    // pop-out drawn on the canvas keeps clear of it instead of being
+    // covered — see drawHoverPopout's rightInset.
+    rightInset: 0
   };
   const activeCardRecords = new Map();
   const cardExitDelay = 1600;
 
   function nowSeconds() {
     return performance.now() / 1000;
-  }
-
-  // Derived from loadingStatus's own visibility rather than a separate flag,
-  // so the light's flicker (see drawScene's isLoading) can never drift out
-  // of sync with the loading text — the initial load, before any client
-  // exists (no "is-hidden" class yet), is naturally "loading" by this same
-  // definition.
-  function isLoadingData() {
-    return Boolean(loadingStatus && !loadingStatus.classList.contains("is-hidden"));
   }
 
   // The single source of truth for "what instant is the scene showing right
@@ -217,13 +212,11 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     return frozenTimestamp !== null ? frozenTimestamp : performance.now() - freezeOffsetMs;
   }
 
-  // See frozenIsLoading's own comment above for why this can't just be
-  // isLoadingData() directly while frozen.
-  function currentIsLoading() {
-    return frozenIsLoading !== null ? frozenIsLoading : isLoadingData();
-  }
-
-  function activeProjectedKnownMoths() {
+  // Every moth in the scene gets a card, whatever its taxonomic resolution —
+  // one identified only to genus or family shows under the name it does have,
+  // with its "Identified to …" line saying so. (This once skipped anything
+  // not identified to species, which left moths flying around with no card.)
+  function activeProjectedMoths() {
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
     const cx = width / 2;
@@ -232,7 +225,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
 
     return store.getActiveMoths()
       .map((moth) => projectMoth(moth, t, width, height, cx, cy, false))
-      .filter((moth) => moth && moth.species !== "unknown" && moth.opacity > 0.02)
+      .filter((moth) => moth && moth.opacity > 0.02)
       .sort((a, b) => a.entryTime - b.entryTime);
   }
 
@@ -256,7 +249,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   }
 
   function redrawNow() {
-    drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, currentRenderTimestamp(), currentSceneSeconds(), hoverState, presentationMode, currentIsLoading());
+    drawScene(context, store.getActiveMoths(), canvas.clientWidth, canvas.clientHeight, currentRenderTimestamp(), currentSceneSeconds(), hoverState, presentationMode);
   }
 
   // The card is a wrapper around two independent controls, not one big
@@ -290,10 +283,19 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     name.className = "active-moths-card__name";
     name.textContent = moth.speciesName || moth.label || moth.id;
 
-    const time = document.createElement("span");
-    time.className = "active-moths-card__time";
+    // The same facts the on-canvas hover pop-out shows (see
+    // drawHoverPopout in animation-engine.js): when it was uploaded, how
+    // precisely it's identified, where, and the photo credit.
+    const details = document.createElement("span");
+    details.className = "active-moths-card__details";
+    ["uploaded", "identification", "place", "credit"].forEach((field) => {
+      const line = document.createElement("span");
+      line.className = `active-moths-card__${field}`;
+      line.hidden = true;
+      details.append(line);
+    });
 
-    focusButton.append(thumb, swatch, name, time);
+    focusButton.append(thumb, swatch, name, details);
 
     const link = document.createElement("a");
     link.className = "active-moths-card__link";
@@ -341,7 +343,6 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   function updateActiveMothCard(card, moth) {
     const focusButton = card.querySelector(".active-moths-card__focus");
     const name = card.querySelector(".active-moths-card__name");
-    const time = card.querySelector(".active-moths-card__time");
     const swatch = card.querySelector(".active-moths-card__swatch");
     const thumb = card.querySelector(".active-moths-card__thumb");
     const link = card.querySelector(".active-moths-card__link");
@@ -357,8 +358,24 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     if (name) {
       name.textContent = displayName;
     }
-    if (time) {
-      time.textContent = formatObservedTime(moth.observedAtMs);
+    // updateActiveMothsPanel runs once per frame, so the formatted text is
+    // only rebuilt when something it's built from actually changed.
+    const detailsKey = [moth.createdAtMs, moth.taxonRank, moth.speciesDescription, moth.imageAttribution, moth.imageLicense].join("|");
+    if (card.dataset.detailsKey !== detailsKey) {
+      card.dataset.detailsKey = detailsKey;
+      const lines = {
+        uploaded: formatUploadedTime(moth),
+        identification: formatIdentification(moth),
+        place: moth.speciesDescription,
+        credit: formatPhotoCredit(moth)
+      };
+      Object.entries(lines).forEach(([field, text]) => {
+        const line = card.querySelector(`.active-moths-card__${field}`);
+        if (line) {
+          line.textContent = text || "";
+          line.hidden = !text;
+        }
+      });
     }
     if (swatch) {
       swatch.style.background = moth.color;
@@ -409,7 +426,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
       }
     });
 
-    const activeMoths = activeProjectedKnownMoths();
+    const activeMoths = activeProjectedMoths();
     const activeIds = new Set(activeMoths.map((moth) => moth.id));
 
     activeMoths.forEach((moth, index) => {
@@ -481,6 +498,22 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     canvas.height = Math.max(1, Math.floor(rect.height * scale));
     context.setTransform(scale, 0, 0, scale, 0, 0);
     rebuildMap();
+    positionLoadingSpinner(rect);
+  }
+
+  // The loading spinner is a ring around the light itself (the bulb's centre
+  // is where drawScene puts it), sized off the bulb so it stays a ring
+  // around it at any screen size.
+  function positionLoadingSpinner(rect) {
+    if (!loadingSpinner) {
+      return;
+    }
+    const diameter = config.light.size * 2 + 44;
+    loadingSpinner.style.width = diameter + "px";
+    loadingSpinner.style.height = diameter + "px";
+    loadingSpinner.style.left = rect.left + rect.width / 2 + "px";
+    loadingSpinner.style.top = rect.top + rect.height * config.scene.centerYRatio + "px";
+    loadingSpinner.style.margin = -diameter / 2 + "px 0 0 " + -diameter / 2 + "px";
   }
 
   // Preloads one real observation photo the first time it's admitted (rather
@@ -512,10 +545,6 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   // Assigned synchronously by startClient() below, called immediately —
   // before tick()/updateDebugStatus() ever run.
   let client = null;
-  // Handle for the pending "hide the loading indicator" timeout scheduled by
-  // startClient() below — kept at this outer scope so a later state change
-  // can cancel a still-pending one before it fires twice.
-  let hideLoadingTimeoutHandle = null;
 
   function updateDebugStatus(t) {
     if (!debugStatus || !client || t - lastDebugUpdateSeconds < 0.5) {
@@ -551,7 +580,6 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
       freezeBeganAtRealSeconds = nowSeconds();
       frozenTimestamp = timestamp - freezeOffsetMs;
       frozenSeconds = freezeBeganAtRealSeconds - freezeOffsetSeconds;
-      frozenIsLoading = isLoadingData();
     } else if (!isFrozen && frozenTimestamp !== null) {
       // Freeze just ended: fold its real duration into the running offset
       // so the live clock (nowSeconds()/performance.now() minus this
@@ -566,7 +594,6 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
       freezeBeganAtRealSeconds = null;
       frozenTimestamp = null;
       frozenSeconds = null;
-      frozenIsLoading = null;
     }
     const renderTimestamp = currentRenderTimestamp();
     const t = currentSceneSeconds();
@@ -582,6 +609,11 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
           preloadMothImage(observation.imageUrl);
         }
       });
+      // Before removal, not after: a moth begins visibly leaving (fading out,
+      // flying off) well before it's removed, so the check for "would this
+      // leave the scene empty?" has to happen ahead of that — see
+      // MothStore.holdLastMoth().
+      store.holdLastMoth(t);
       store.removeExpired(t);
     }
 
@@ -614,7 +646,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     // where the existing canvas is transparent or partially so, which is
     // exactly "behind the light and moths" — including the light visibly
     // obscuring the map underneath it, an accepted tradeoff of this design.
-    drawScene(context, activeMoths, canvas.clientWidth, canvas.clientHeight, renderTimestamp, t, hoverState, presentationMode, currentIsLoading());
+    drawScene(context, activeMoths, canvas.clientWidth, canvas.clientHeight, renderTimestamp, t, hoverState, presentationMode);
     if (projector) {
       context.save();
       context.globalCompositeOperation = "destination-over";
@@ -643,7 +675,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
 
     return store.getActiveMoths()
       .map((moth) => projectMoth(moth, t, width, height, cx, cy, false))
-      .filter((moth) => moth && moth.species !== "unknown" && moth.opacity > 0.05)
+      .filter((moth) => moth && moth.opacity > 0.05)
       .map((moth) => {
         const distance = Math.hypot(pointerX - moth.x, pointerY - moth.y);
         const hitRadius = Math.max(14, moth.size * 2.4 + moth.shadowBlur * 0.12);
@@ -720,6 +752,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     activeMothsToggle.addEventListener("click", () => {
       const isOpen = !activeMothsPanel.classList.contains("is-open");
       activeMothsPanel.classList.toggle("is-open", isOpen);
+      hoverState.rightInset = isOpen ? activeMothsPanel.offsetWidth : 0;
       activeMothsToggle.classList.toggle("is-open", isOpen);
       activeMothsToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
       activeMothsToggle.setAttribute("aria-label", isOpen ? "Hide active moths" : "Show active moths");
@@ -742,28 +775,17 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   function startClient() {
     let hasReceivedLiveData = false;
     let fallbackActive = false;
-    const loadingStartedAtMs = performance.now();
 
-    // The loading flicker/text must stay up for at least MIN_LOADING_DURATION_MS
-    // even if the very first response comes back almost instantly (a warm
-    // cache, or a fast connection) — a flash of flicker lasting a few hundred
-    // milliseconds reads as a glitch, not a deliberate "still loading" cue,
-    // and is more likely to be jarring than a longer, calmer one. Cancels
-    // and replaces any timeout already pending from an earlier call so only
-    // the latest client generation's own minimum applies.
-    function hideLoadingNoSoonerThanMinimumDuration() {
-      if (!loadingStatus) {
-        return;
-      }
-      if (hideLoadingTimeoutHandle !== null) {
-        window.clearTimeout(hideLoadingTimeoutHandle);
-      }
-      const elapsedMs = performance.now() - loadingStartedAtMs;
-      const remainingMs = Math.max(0, MIN_LOADING_DURATION_MS - elapsedMs);
-      hideLoadingTimeoutHandle = window.setTimeout(() => {
-        hideLoadingTimeoutHandle = null;
+    // Ends the loading state (greyed-out scene, spinner, caption) the moment
+    // the first fetch has resolved one way or the other — no minimum display
+    // time, so a fast response is shown as fast as it arrives.
+    function finishLoading() {
+      if (loadingStatus) {
         loadingStatus.classList.add("is-hidden");
-      }, remainingMs);
+      }
+      if (canvasShell) {
+        canvasShell.classList.remove("is-loading");
+      }
     }
 
     function enterFallbackModeIfNeeded() {
@@ -783,6 +805,13 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
 
     client = new InatClient({
       placeId: null,
+      // Live feel: the first request only asks for the last couple of minutes
+      // of uploads (later ones continue from the cursor, so they only return
+      // what's new), and it checks twice as often as the client's default.
+      // Playback follows each observation's upload time, so this is what
+      // keeps what's on screen close to what was just posted.
+      initialLookbackMinutes: 2,
+      pollIntervalSeconds: 30,
       getCursor: () => queue.cursor || null,
       onStateChange: (state) => {
         // STARTING is the synchronous initial state set the instant
@@ -790,7 +819,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
         // real state (success or failure) means the first fetch has actually
         // resolved, which is what "no longer loading" should mean here.
         if (state !== CONNECTION_STATES.STARTING) {
-          hideLoadingNoSoonerThanMinimumDuration();
+          finishLoading();
         }
         if (state === CONNECTION_STATES.FATAL_SCHEMA_ERROR) {
           console.error("iNaturalist returned an unexpected response shape; live updates have stopped.");

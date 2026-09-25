@@ -182,6 +182,31 @@ describe("buildQueryUrl", () => {
     }
   });
 
+  it("with initialLookbackMinutes, only the first (cursor-less) request uses the short window", () => {
+    const nowMs = Date.UTC(2026, 5, 15, 12, 0, 0);
+    const shortOptions = { ...options, now: () => nowMs, initialLookbackMinutes: 2 };
+
+    const first = new URL(buildQueryUrl(shortOptions, null)).searchParams;
+    assert.equal(first.get("created_d1"), new Date(nowMs - 2 * 60 * 1000).toISOString());
+    assert.equal(first.get("order"), "desc");
+
+    const later = new URL(buildQueryUrl(shortOptions, "12345")).searchParams;
+    assert.equal(later.get("id_above"), "12345");
+    assert.equal(
+      later.get("created_d1"),
+      new Date(nowMs - 24 * 60 * 60 * 1000).toISOString(),
+      "a request continuing from a cursor keeps the wide safety bound, so a delayed poll can't miss anything"
+    );
+  });
+
+  it("ignores an invalid initialLookbackMinutes and uses the normal lookback", () => {
+    const nowMs = Date.UTC(2026, 5, 15, 12, 0, 0);
+    for (const badValue of [0, -1, null, undefined, "soon"]) {
+      const params = new URL(buildQueryUrl({ ...options, now: () => nowMs, initialLookbackMinutes: badValue }, null)).searchParams;
+      assert.equal(params.get("created_d1"), new Date(nowMs - 24 * 60 * 60 * 1000).toISOString());
+    }
+  });
+
   it("excludes butterflies (without_taxon_id) when withoutTaxonId is set", () => {
     const url = buildQueryUrl({ ...options, withoutTaxonId: DEFAULT_WITHOUT_TAXON_ID }, null);
     assert.match(url, new RegExp(`without_taxon_id=${DEFAULT_WITHOUT_TAXON_ID}`));

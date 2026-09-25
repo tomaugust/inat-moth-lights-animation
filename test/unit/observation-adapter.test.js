@@ -47,9 +47,10 @@ describe("normalizeObservation", () => {
     assert.equal(invalidTaxon.taxonId, null);
   });
 
-  it("falls back observedAt to createdAt when missing", () => {
-    const observation = normalizeObservation({ ...validRaw, observedAt: undefined });
-    assert.equal(observation.observedAtMs, observation.createdAtMs);
+  it("ignores the observed (photographed) time entirely — only the upload time is kept", () => {
+    const observation = normalizeObservation({ ...validRaw, observedAt: "2019-01-01T00:00:00Z" });
+    assert.equal("observedAtMs" in observation, false);
+    assert.equal(observation.createdAtMs, Date.parse(validRaw.createdAt));
   });
 
   it("drops an incomplete photo instead of rendering a broken one", () => {

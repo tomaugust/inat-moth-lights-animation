@@ -1,4 +1,5 @@
 import { config } from "./config-store.js";
+import { formatUploadedTime } from "./observation-time.js";
 
 function createMoths(config, width, height) {
   const maxMothSize = config.moths.reduce((largest, moth) => Math.max(largest, moth.size), 0);
@@ -151,13 +152,25 @@ function orbitPosition(moth, animationTime, cx, cy) {
   };
 }
 
+// How long a moth takes to fly in, and (the same amount) to fly back out.
+function mothTransitionDuration(moth) {
+  return Math.min(6, Math.max(2, (moth.exitTime - moth.entryTime) * 0.22));
+}
+
+// The instant a moth begins its fly-out (and starts fading), as opposed to
+// exitTime, when it's fully gone. Exported so moth-store.js can tell when a
+// moth is about to visibly leave the scene — see MothStore.holdLastMoth().
+function getExitStartTime(moth) {
+  return Math.max(moth.entryTime, moth.exitTime - mothTransitionDuration(moth));
+}
+
 function projectMoth(moth, animationTime, width, height, cx, cy, includeTrail = true) {
   if (animationTime < moth.entryTime || animationTime > moth.exitTime) {
     return null;
   }
 
   const orbit = orbitPosition(moth, animationTime, cx, cy);
-  const entryDuration = Math.min(6, Math.max(2, (moth.exitTime - moth.entryTime) * 0.22));
+  const entryDuration = mothTransitionDuration(moth);
   // Position eases in over the whole, slower entryDuration above, but
   // opacity ramps up several times faster — matching world-map.js's own
   // PULSE_SPEED_MULTIPLIER-scaled arrival pulse — so a moth reads as
@@ -166,8 +179,8 @@ function projectMoth(moth, animationTime, width, height, cx, cy, includeTrail = 
   // Applies to every moth's arrival, not just ones with a real map location,
   // for one consistent, snappier-looking entrance either way.
   const opacityFadeInDuration = entryDuration / 5;
-  const exitDuration = Math.min(6, Math.max(2, (moth.exitTime - moth.entryTime) * 0.22));
-  const exitStart = Math.max(moth.entryTime, moth.exitTime - exitDuration);
+  const exitDuration = mothTransitionDuration(moth);
+  const exitStart = getExitStartTime(moth);
   let x = orbit.x;
   let y = orbit.y;
   let phase = "orbiting";
@@ -432,10 +445,6 @@ function drawEntryLabels(context, moths, animationTime, width, height) {
 
   const activeLabels = moths
     .map((moth) => {
-      if (moth.species === "unknown") {
-        return null;
-      }
-
       const labelDuration = config.animation.speciesTagDuration;
       const age = animationTime - moth.entryTime;
       if (age < 0 || age > labelDuration) {
@@ -544,45 +553,6 @@ function lightFlicker(elapsed) {
   return wave * 0.72 + shimmer * 0.28;
 }
 
-// A deliberately irregular "the bulb might be broken" flicker, distinct from
-// lightFlicker's smooth ambient shimmer above — three incommensurate-frequency
-// waves combined into an uneven dim-and-brighten drift while real data hasn't
-// arrived yet (see drawLight), as a visual cue that something is still
-// loading, distinct from the steady-state glow.
-//
-// elapsed is in MILLISECONDS here (drawScene/drawLight are called with
-// performance.now(), not a seconds-based clock — see lightFlicker's own
-// config.light.flickerSpeed: 0.006 above, which is rad/ms for exactly this
-// reason). A much earlier version used coefficients sized as if elapsed were
-// in seconds (e.g. 13.7): at 13.7 *rad per millisecond* that's ~2,180 Hz, so
-// far past any visible frequency that consecutive animation frames sampled
-// essentially uncorrelated phases of it — indistinguishable from a rapid,
-// per-frame-random strobe, which is exactly the photosensitive-seizure risk
-// WCAG 2.3.1's general flash threshold (max 3 flashes/second) exists to rule
-// out.
-//
-// These coefficients are real millisecond-scaled values, tuned to sit
-// comfortably under that 3-flashes/second ceiling while still reading as a
-// genuine, noticeable flicker rather than a slow ambient breathing (an
-// intermediate version undershot this badly — the dip was so gentle and slow
-// it was reported as barely visible). The fastest, 0.008796 rad/ms, is
-// 0.008796 × 1000 / 2π ≈ 1.4 Hz — under half the WCAG ceiling, comfortable
-// safety margin, confirmed by simulation (~1.4 brightness-crossings/second
-// over a 20s run). Brightness swings roughly 0.23-0.92 (deeper than an
-// earlier 0.4-1.0 attempt) so the dips are actually visible, not subtle.
-//
-// Maps the combined wave directly to brightness (no clamping out either
-// half into a flat dip, unlike an earlier version) so there is no stretch,
-// at any point in the cycle, where the light sits still — it's always
-// visibly in motion, just never faster than the safe ceiling above.
-function brokenLightFlicker(elapsed) {
-  const noise =
-    Math.sin(elapsed * 0.008796) * 0.5 +
-    Math.sin(elapsed * 0.004398 + 2.1) * 0.3 +
-    Math.sin(elapsed * 0.002199 + 4.4) * 0.2;
-  return 0.6 + noise * 0.4;
-}
-
 function drawRoundedRect(context, x, y, width, height, radius) {
   const corner = Math.min(radius, width * 0.5, height * 0.5);
   context.beginPath();
@@ -638,22 +608,19 @@ function drawLightFixture(context, cx, cy) {
   context.restore();
 }
 
-// isLoading swaps the subtle always-on ambient shimmer for a much more
-// pronounced "the bulb might be broken" sputter (brokenLightFlicker above) —
-// a deliberate visual cue that something is still loading, on both the glow
-// and the bulb itself, rather than the scene just silently sitting there
-// looking finished when it isn't. Never fully blacks out (a floor on every
-// alpha/radius below) so it still reads as "flickering", not "gone".
-function drawLight(context, cx, cy, elapsed, isLoading = false) {
-  const flicker = isLoading ? brokenLightFlicker(elapsed) : lightFlicker(elapsed);
+// Always the same subtle ambient shimmer — there's deliberately no separate
+// "loading" look here any more (an earlier version sputtered the light like a
+// failing bulb while data loaded). The loading state is a greyed-out scene
+// with a central spinner instead, done in CSS/DOM (see .is-loading in
+// styles/main.css), so the light itself never flashes.
+function drawLight(context, cx, cy, elapsed) {
+  const flicker = lightFlicker(elapsed);
   const flickerStrength = Math.max(0, config.light.flickerStrength);
-  const glowPulse = isLoading ? flicker : 1 - flickerStrength + flicker * flickerStrength * 2;
-  const glowRadius = isLoading
-    ? config.light.glowRadius * (0.5 + flicker * 0.5)
-    : config.light.glowRadius * (1 - flickerStrength * 0.7 + flicker * flickerStrength * 1.4);
+  const glowPulse = 1 - flickerStrength + flicker * flickerStrength * 2;
+  const glowRadius = config.light.glowRadius * (1 - flickerStrength * 0.7 + flicker * flickerStrength * 1.4);
 
   context.save();
-  context.globalAlpha = isLoading ? Math.max(0.1, Math.min(1, glowPulse)) : Math.max(0.35, Math.min(1, glowPulse));
+  context.globalAlpha = Math.max(0.35, Math.min(1, glowPulse));
   const halo = context.createRadialGradient(cx, cy, 0, cx, cy, glowRadius);
   halo.addColorStop(0, config.light.glowColor);
   halo.addColorStop(0.28, config.light.haloColor);
@@ -667,10 +634,10 @@ function drawLight(context, cx, cy, elapsed, isLoading = false) {
   drawLightFixture(context, cx, cy);
 
   context.save();
-  context.globalAlpha = isLoading ? Math.max(0.18, flicker) : 1;
+  context.globalAlpha = 1;
   context.fillStyle = config.light.color;
   context.shadowColor = config.light.glowColor;
-  context.shadowBlur = isLoading ? config.light.shadowBlur * Math.max(0.2, flicker) : config.light.shadowBlur;
+  context.shadowBlur = config.light.shadowBlur;
   context.beginPath();
   context.arc(cx, cy, config.light.size, 0, Math.PI * 2);
   context.fill();
@@ -696,7 +663,19 @@ function wrapTextLines(context, text, maxWidth) {
     lines.push(line);
   }
 
-  return lines;
+  // A single word wider than the column (a long name, a long unbroken
+  // attribution) can't be wrapped, so it's cut short with an ellipsis rather
+  // than spilling out of whatever box it's drawn in.
+  return lines.map((text) => {
+    if (context.measureText(text).width <= maxWidth) {
+      return text;
+    }
+    let cut = text;
+    while (cut.length > 1 && context.measureText(cut + "…").width > maxWidth) {
+      cut = cut.slice(0, -1);
+    }
+    return cut + "…";
+  });
 }
 
 function drawCoverImage(context, image, x, y, width, height) {
@@ -718,21 +697,39 @@ function drawCoverImage(context, image, x, y, width, height) {
   context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
 }
 
-// entryTime/exitTime are seconds on the animation's own clock — a monotonic
-// performance.now()-based clock for live moths, with no fixed relationship
-// to a calendar time, so formatClockTime(entryTime) would print a
-// meaningless value for them. observedAtMs (a real epoch timestamp,
-// carried through by moth-store.js) is used when present; the old
-// entryTime/exitTime range remains the fallback for moths that don't carry
-// it (e.g. the static demo config's fixed timeline).
-function formatActiveRange(moth) {
-  if (Number.isFinite(moth.observedAtMs)) {
-    return new Date(moth.observedAtMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  }
-  return formatClockTime(moth.entryTime) + " - " + formatClockTime(moth.exitTime);
+// "Identified to family" — the record's own taxonomic resolution, so a moth
+// that iNaturalist could only place at genus or family level says exactly
+// that instead of implying a species. Shared by the pop-out and the cards.
+function formatIdentification(moth) {
+  return moth.taxonRank ? `Identified to ${moth.taxonRank}` : "";
 }
 
-function drawHoverPopout(context, moth, width, height, animationTime, imageCache) {
+// The short facts under a moth's name, one per line, shared by the pop-out
+// and (built separately in app.js from the same helpers) the cards. entryTime/
+// exitTime are seconds on the animation's own clock — a monotonic
+// performance.now()-based clock for live moths, with no fixed relationship to
+// a calendar time — so the real upload time (see observation-time.js) is what
+// gets shown; the old entryTime/exitTime range remains the fallback for moths
+// that don't carry it (e.g. the static demo config's fixed timeline).
+function formatPopoutDetails(moth) {
+  const lines = [formatUploadedTime(moth), formatIdentification(moth)].filter(Boolean);
+  return lines.length > 0 ? lines : [formatClockTime(moth.entryTime) + " - " + formatClockTime(moth.exitTime)];
+}
+
+// "CC-BY-NC · A. Person" — the license code and the photographer's
+// attribution. Only present when the adapter confirmed a licensed, attributed
+// photo (see observation-adapter.js) — an image without both is never shown
+// at all. Shared by the hover pop-out and the side-panel cards.
+function formatPhotoCredit(moth) {
+  return moth.imageAttribution
+    ? [moth.imageLicense ? moth.imageLicense.toUpperCase() : null, moth.imageAttribution].filter(Boolean).join(" · ")
+    : "";
+}
+
+// rightInset: how much of the canvas's right edge something else (the open
+// side panel) covers, so the pop-out stays clear of it instead of sliding
+// underneath.
+function drawHoverPopout(context, moth, width, height, animationTime, imageCache, rightInset = 0) {
   if (!moth) {
     return;
   }
@@ -741,7 +738,8 @@ function drawHoverPopout(context, moth, width, height, animationTime, imageCache
   const descriptionStyle = descriptionElement ? window.getComputedStyle(descriptionElement) : null;
   const fontSize = descriptionStyle ? parseFloat(descriptionStyle.fontSize) : 15;
   const speciesName = moth.speciesName || moth.label || moth.species || moth.id;
-  const activeRange = formatActiveRange(moth);
+  const detailTexts = formatPopoutDetails(moth);
+  const usableWidth = width - Math.max(0, rightInset);
   const paddingX = 12;
   const paddingY = 9;
   const gap = 7;
@@ -755,44 +753,47 @@ function drawHoverPopout(context, moth, width, height, animationTime, imageCache
   const imageHeight = hasImage ? 72 : 0;
   const textWidth = 188;
   const description = moth.speciesDescription || "";
-  // Only present when the adapter confirmed a licensed, attributed photo (see
-  // observation-adapter.js) — an image without both is never shown at all.
-  const attributionText = moth.imageAttribution
-    ? [moth.imageLicense ? moth.imageLicense.toUpperCase() : null, moth.imageAttribution].filter(Boolean).join(" · ")
-    : "";
+  const attributionText = formatPhotoCredit(moth);
 
+  // Every piece of text is wrapped (or, for a single over-long word,
+  // truncated) to the same fixed column, and the box is sized from that
+  // column plus the photo beside it — never from how wide a line happened to
+  // measure. Sizing the box from a raw line width (as this once did) let a
+  // long name or detail line run out past the box's right edge, since text
+  // starts to the right of the photo.
   context.save();
-  context.font = titleFont;
-  const titleWidth = context.measureText(speciesName).width;
-  context.font = detailFont;
-  const detailWidth = context.measureText(activeRange).width;
-  context.font = descriptionFont;
-  const descriptionLines = wrapTextLines(context, description, textWidth);
-  context.font = attributionFont;
-  const attributionLines = attributionText ? wrapTextLines(context, attributionText, textWidth) : [];
+  const wrap = (text, font) => {
+    context.font = font;
+    return wrapTextLines(context, text, textWidth);
+  };
+  const titleLines = wrap(speciesName, titleFont);
+  const detailLines = detailTexts.flatMap((text) => wrap(text, detailFont));
+  const descriptionLines = wrap(description, descriptionFont);
+  const attributionLines = attributionText ? wrap(attributionText, attributionFont) : [];
 
-  const titleLineHeight = fontSize;
-  const detailLineHeight = fontSize * 0.82;
+  const titleLineHeight = fontSize * 1.1;
+  const detailLineHeight = fontSize * 0.82 * 1.2;
   const descriptionLineHeight = fontSize * 1.05;
   const attributionLineHeight = fontSize * 0.68 * 1.15;
+  const detailBlockHeight = detailLines.length > 0 ? gap + detailLines.length * detailLineHeight : 0;
   const descriptionBlockHeight = descriptionLines.length > 0 ? gap + descriptionLines.length * descriptionLineHeight : 0;
   const attributionBlockHeight = attributionLines.length > 0 ? gap + attributionLines.length * attributionLineHeight : 0;
 
   const contentGap = hasImage ? 10 : 0;
   const bodyWidth = imageWidth + contentGap + textWidth;
-  const textBlockHeight = titleLineHeight + gap + detailLineHeight + descriptionBlockHeight + attributionBlockHeight;
+  const textBlockHeight = titleLines.length * titleLineHeight + detailBlockHeight + descriptionBlockHeight + attributionBlockHeight;
   const bodyHeight = Math.max(imageHeight, textBlockHeight);
-  const boxWidth = Math.ceil(Math.max(titleWidth, detailWidth, bodyWidth) + paddingX * 2);
+  const boxWidth = Math.ceil(bodyWidth + paddingX * 2);
   const boxHeight = Math.ceil(bodyHeight + paddingY * 2);
   const offset = Math.max(20, moth.size * 3.2);
   let x = moth.x + offset;
   let y = moth.y - boxHeight - offset * 0.42;
 
-  if (x + boxWidth > width - 12) {
+  if (x + boxWidth > usableWidth - 12) {
     x = moth.x - boxWidth - offset;
   }
 
-  x = Math.max(12, Math.min(width - boxWidth - 12, x));
+  x = Math.max(12, Math.min(usableWidth - boxWidth - 12, x));
   y = Math.max(12, Math.min(height - boxHeight - 68, y));
 
   context.fillStyle = "rgba(8, 8, 10, 0.72)";
@@ -850,12 +851,20 @@ function drawHoverPopout(context, moth, width, height, animationTime, imageCache
 
   context.font = titleFont;
   context.fillStyle = colorWithAlpha(moth.color, 0.96);
-  context.fillText(speciesName, textX, contentY);
-  context.font = detailFont;
-  context.fillStyle = "rgba(255, 255, 255, 0.72)";
-  context.fillText(activeRange, textX, contentY + titleLineHeight + gap);
+  titleLines.forEach((line, index) => {
+    context.fillText(line, textX, contentY + index * titleLineHeight);
+  });
+  let cursorY = contentY + titleLines.length * titleLineHeight;
 
-  let cursorY = contentY + titleLineHeight + gap + detailLineHeight;
+  if (detailLines.length > 0) {
+    cursorY += gap;
+    context.font = detailFont;
+    context.fillStyle = "rgba(255, 255, 255, 0.72)";
+    detailLines.forEach((line, index) => {
+      context.fillText(line, textX, cursorY + index * detailLineHeight);
+    });
+    cursorY += detailLines.length * detailLineHeight;
+  }
 
   if (descriptionLines.length > 0) {
     cursorY += gap;
@@ -907,7 +916,7 @@ function drawProjectedMothLayer(context, moths, hoverState, lightX, lightY, widt
   moths.forEach((moth) => drawMoth(context, moth, getMothDrawState(moth, hoverState)));
 }
 
-function drawScene(context, moths, width, height, elapsed, animationTime, hoverState = null, presentationMode = "normal", isLoading = false) {
+function drawScene(context, moths, width, height, elapsed, animationTime, hoverState = null, presentationMode = "normal") {
   context.clearRect(0, 0, width, height);
 
   const cx = width / 2;
@@ -923,15 +932,15 @@ function drawScene(context, moths, width, height, elapsed, animationTime, hoverS
 
   drawGround(context, width, height, cx, cy);
   if (isLightOnly) {
-    drawLight(context, cx, cy, elapsed, isLoading);
+    drawLight(context, cx, cy, elapsed);
     return;
   }
 
   drawProjectedMothLayer(context, projectedMoths.filter((moth) => moth.depth < 0), hoverState, cx, cy, width, height);
-  drawLight(context, cx, cy, elapsed, isLoading);
+  drawLight(context, cx, cy, elapsed);
   drawProjectedMothLayer(context, projectedMoths.filter((moth) => moth.depth >= 0), hoverState, cx, cy, width, height);
   drawEntryLabels(context, projectedMoths, animationTime, width, height);
-  drawHoverPopout(context, hoveredMoth, width, height, animationTime, hoverState ? hoverState.imageCache : null);
+  drawHoverPopout(context, hoveredMoth, width, height, animationTime, hoverState ? hoverState.imageCache : null, hoverState ? hoverState.rightInset : 0);
 }
 
 function parseClockTime(value) {
@@ -973,6 +982,9 @@ export {
   drawScene,
   easeInOut,
   formatClockTime,
+  formatIdentification,
+  formatPhotoCredit,
+  getExitStartTime,
   hashString,
   normalizeAnimationTime,
   projectMoth,

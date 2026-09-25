@@ -20,7 +20,7 @@ import { parseObservationsResponse } from "./observation-adapter.js";
 const API_BASE = "https://api.inaturalist.org/v2/observations";
 
 const FIELDS =
-  "(id:!t,uuid:!t,created_at:!t,observed_on:!t,time_observed_at:!t,uri:!t,quality_grade:!t," +
+  "(id:!t,uuid:!t,created_at:!t,uri:!t,quality_grade:!t," +
   "place_guess:!t,location:!t,taxon:(id:!t,rank:!t,name:!t,preferred_common_name:!t)," +
   "photos:(id:!t,url:!t,attribution:!t,license_code:!t))";
 
@@ -73,6 +73,14 @@ const DEFAULT_OPTIONS = {
   withoutTaxonId: DEFAULT_WITHOUT_TAXON_ID,
   placeId: DEFAULT_PLACE_ID,
   lookbackHours: DEFAULT_LOOKBACK_HOURS,
+  // When set (minutes), the very first request — the one with no cursor yet —
+  // only asks for uploads from this recent a window, instead of the full
+  // lookbackHours. Every later request continues from the cursor (id_above),
+  // so it only ever returns what's new, and keeps the wider lookbackHours as
+  // its hard bound. A live feed wants this: the newest ~200 records of a
+  // 24-hour window can be half an hour old, which then plays back as a
+  // permanent lag behind "now".
+  initialLookbackMinutes: null,
   photoLicenses: DEFAULT_PHOTO_LICENSES,
   pageSize: 200,
   pollIntervalSeconds: 60,
@@ -139,7 +147,6 @@ export function mapRawObservationToContract(raw) {
     commonName: taxon && taxon.rank !== "order" ? taxon.preferred_common_name : "",
     taxonRank: taxon ? taxon.rank : "",
     createdAt: raw ? raw.created_at : null,
-    observedAt: raw ? raw.time_observed_at || raw.observed_on : null,
     place: raw ? raw.place_guess : "",
     qualityGrade: raw ? raw.quality_grade : "",
     imageUrl: photo ? toMediumPhotoUrl(photo.url) : "",
@@ -151,7 +158,7 @@ export function mapRawObservationToContract(raw) {
   };
 }
 
-function setSharedParams(params, options) {
+function setSharedParams(params, options, lookbackMsOverride = null) {
   params.set("taxon_id", String(options.taxonId));
   // Excludes butterflies (see DEFAULT_WITHOUT_TAXON_ID) so the feed is moths
   // only. Conditional (unlike taxon_id above) so a caller can still pass
@@ -170,8 +177,9 @@ function setSharedParams(params, options) {
   // Unconditional and defensively defaulted (never skipped, never disabled
   // by a falsy/zero/missing option) — see DEFAULT_LOOKBACK_HOURS above.
   const lookbackHours = Number(options.lookbackHours) > 0 ? Number(options.lookbackHours) : DEFAULT_LOOKBACK_HOURS;
+  const lookbackMs = lookbackMsOverride !== null ? lookbackMsOverride : lookbackHours * 60 * 60 * 1000;
   const nowMs = typeof options.now === "function" ? options.now() : Date.now();
-  params.set("created_d1", new Date(nowMs - lookbackHours * 60 * 60 * 1000).toISOString());
+  params.set("created_d1", new Date(nowMs - lookbackMs).toISOString());
   params.set("photos", "true");
   params.set("photo_license", options.photoLicenses.join(","));
   params.set("per_page", String(options.pageSize));
@@ -180,7 +188,9 @@ function setSharedParams(params, options) {
 
 export function buildQueryUrl(options, cursor) {
   const params = new URLSearchParams();
-  setSharedParams(params, options);
+  const initialLookbackMinutes = Number(options.initialLookbackMinutes);
+  const useInitialLookback = !cursor && initialLookbackMinutes > 0;
+  setSharedParams(params, options, useInitialLookback ? initialLookbackMinutes * 60 * 1000 : null);
 
   if (cursor) {
     params.set("id_above", String(cursor));

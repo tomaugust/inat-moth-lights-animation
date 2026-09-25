@@ -110,7 +110,6 @@ export function normalizeObservation(raw) {
     return null;
   }
 
-  const observedAtMs = toValidTimestamp(raw.observedAt) ?? createdAtMs;
   const imageUrl = toTrimmedString(raw.imageUrl);
   const imageAttribution = toTrimmedString(raw.imageAttribution);
   const imageLicense = toTrimmedString(raw.imageLicense);
@@ -122,7 +121,6 @@ export function normalizeObservation(raw) {
     commonName: toTrimmedString(raw.commonName),
     taxonRank: toTrimmedString(raw.taxonRank),
     createdAtMs,
-    observedAtMs,
     place: toTrimmedString(raw.place) || "Unknown location",
     qualityGrade: toTrimmedString(raw.qualityGrade),
     // An observation only "has" a photo once all three fields are present;

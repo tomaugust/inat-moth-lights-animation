@@ -148,6 +148,198 @@ describe("World Moths site", () => {
     await page.close();
   });
 
+  it("shows on each side-panel card the upload time, identification level, place and credit, with a large photo — and ignores when the moth was photographed", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    const uploaded = new Date();
+    const photographedEarlier = new Date(uploaded.getTime() - 3 * 24 * 60 * 60 * 1000);
+    await mockObservationsApi(page, {
+      results: [
+        rawObservation({
+          created_at: uploaded.toISOString(),
+          time_observed_at: photographedEarlier.toISOString(),
+          observed_on: photographedEarlier.toISOString().slice(0, 10)
+        })
+      ]
+    });
+
+    await page.goto(site.url, { waitUntil: "networkidle" });
+    await page.click("#launch-switch");
+    await page.waitForTimeout(2000);
+    await page.click("#active-moths-toggle");
+    await page.waitForSelector(".active-moths-card", { timeout: 5000 });
+
+    const card = page.locator(".active-moths-card").first();
+    assert.match(await card.locator(".active-moths-card__name").textContent(), /Test Moth/);
+    const clock = (date) => date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const shown = await card.locator(".active-moths-card__uploaded").textContent();
+    assert.ok(
+      shown === "Uploaded " + clock(uploaded) || shown === "Uploaded " + clock(new Date(uploaded.getTime() + 60000)),
+      "expected the upload time (" + clock(uploaded) + "), saw " + shown
+    );
+    assert.equal(await card.locator(".active-moths-card__identification").textContent(), "Identified to species");
+    assert.equal(await card.locator(".active-moths-card__place").textContent(), "Observed near Test Location, UK");
+    assert.equal(await card.locator(".active-moths-card__credit").textContent(), "CC-BY-NC · (c) Test Person, some rights reserved (CC BY-NC)");
+    assert.doesNotMatch(await card.textContent(), /photographed/i, "the photographed time should not appear anywhere");
+
+    const thumb = await card.locator(".active-moths-card__thumb").boundingBox();
+    assert.ok(thumb.width >= 250 && thumb.height >= 150, "the photo should be large, saw " + thumb.width + "x" + thumb.height);
+
+    await page.close();
+  });
+
+  it("gives every moth a card, including one identified only to family level, showing exactly that", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await mockObservationsApi(page, {
+      results: [
+        rawObservation({
+          id: 5001,
+          taxon: { id: 47254, rank: "family", name: "Noctuidae", preferred_common_name: "Owlet Moths" }
+        })
+      ]
+    });
+
+    await page.goto(site.url, { waitUntil: "networkidle" });
+    await page.click("#launch-switch");
+    await page.waitForTimeout(2000);
+    await page.click("#active-moths-toggle");
+    await page.waitForSelector(".active-moths-card", { timeout: 5000 });
+
+    const card = page.locator(".active-moths-card").first();
+    assert.equal(await card.locator(".active-moths-card__name").textContent(), "Owlet Moths");
+    assert.equal(await card.locator(".active-moths-card__identification").textContent(), "Identified to family");
+
+    await page.close();
+  });
+
+  it("never squashes cards when several are open: each keeps all its content and the list scrolls instead", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    const now = Date.now();
+    const results = [8, 6, 4, 2].map((secondsAgo, index) =>
+      rawObservation({ id: 6000 + index, created_at: new Date(now - secondsAgo * 1000).toISOString() })
+    );
+    await mockObservationsApi(page, { results });
+
+    await page.goto(site.url, { waitUntil: "networkidle" });
+    await page.click("#launch-switch");
+    await page.waitForTimeout(2000);
+    await page.click("#active-moths-toggle");
+    await page.mouse.move(5, 5); // hovering a card would freeze the scene
+    await page.waitForFunction(() => document.querySelectorAll(".active-moths-card:not(.is-leaving)").length >= 3, null, { timeout: 30000 });
+    await page.waitForTimeout(1200); // let the entry transition finish
+
+    const clipped = await page.evaluate(() =>
+      [...document.querySelectorAll(".active-moths-card:not(.is-leaving)")]
+        .filter((card) => card.scrollHeight > card.clientHeight + 1)
+        .map((card) => card.dataset.mothId + " (content " + card.scrollHeight + "px in a card " + card.clientHeight + "px tall)")
+    );
+    assert.deepEqual(clipped, [], "cards were squashed so their content is cut off");
+
+    await page.close();
+  });
+
+  it("keeps every line of the hover pop-out inside its box, however long the name, place and credit are", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await mockObservationsApi(page, {
+      results: [
+        rawObservation({
+          id: 5002,
+          place_guess: "A Very Long Place Name, With Many Parts, In Some Remote Region, Of Some Far Away Country",
+          taxon: { id: 61234, rank: "species", name: "Extraordinarius longissimus", preferred_common_name: "Extraordinarily Long-Winged Speckled Brown Woodland Moth" },
+          photos: [
+            {
+              id: 1,
+              url: "https://inaturalist-open-data.s3.amazonaws.com/photos/1/square.jpg",
+              attribution: "(c) Bartholomew-Christopherson-Wolfeschlegelsteinhausenbergerdorff, some rights reserved (CC BY-NC-SA)",
+              license_code: "cc-by-nc-sa"
+            }
+          ]
+        })
+      ]
+    });
+
+    await page.goto(site.url, { waitUntil: "networkidle" });
+    await page.click("#launch-switch");
+    await page.waitForTimeout(2000);
+    await page.click("#active-moths-toggle");
+    await page.waitForSelector(".active-moths-card", { timeout: 5000 });
+
+    // Record, from inside the page, the pop-out's box edges and every line of
+    // text drawn on top of it. Its box is the one filled with this exact
+    // translucent black; its four corners are quadratic curves whose control
+    // points sit on the box's edges.
+    await page.evaluate(() => {
+      const proto = window.CanvasRenderingContext2D.prototype;
+      const state = { quads: [], boxes: [], texts: [] };
+      window.__popout = state;
+      const { beginPath, quadraticCurveTo, fill, fillText } = proto;
+      proto.beginPath = function () {
+        state.quads = [];
+        return beginPath.call(this);
+      };
+      proto.quadraticCurveTo = function (cx, cy, x, y) {
+        state.quads.push([cx, cy, x, y]);
+        return quadraticCurveTo.call(this, cx, cy, x, y);
+      };
+      proto.fill = function (...args) {
+        if (this.fillStyle === "rgba(8, 8, 10, 0.72)" && state.quads.length === 4) {
+          const xs = state.quads.map((q) => q[0]);
+          const ys = state.quads.map((q) => q[1]);
+          state.boxes = [{ left: Math.min(...xs), right: Math.max(...xs), top: Math.min(...ys), bottom: Math.max(...ys) }];
+          state.texts = [];
+        }
+        return fill.apply(this, args);
+      };
+      proto.fillText = function (text, x, y, ...rest) {
+        if (state.boxes.length > 0) {
+          state.texts.push({ text, x, y, width: this.measureText(text).width });
+        }
+        return fillText.call(this, text, x, y, ...rest);
+      };
+    });
+
+    await page.locator(".active-moths-card").first().hover();
+    await page.waitForTimeout(800);
+
+    const { boxes, texts } = await page.evaluate(() => window.__popout);
+    assert.equal(boxes.length, 1, "expected the pop-out to have been drawn");
+    const box = boxes[0];
+    assert.ok(texts.length >= 4, "expected several lines of text in the pop-out, saw " + texts.length);
+    for (const line of texts) {
+      assert.ok(line.x >= box.left, JSON.stringify(line.text) + " starts left of the box");
+      assert.ok(
+        line.x + line.width <= box.right - 8,
+        JSON.stringify(line.text) + " runs out of the box (right edge " + box.right + ", text ends at " + (line.x + line.width) + ")"
+      );
+      assert.ok(line.y <= box.bottom, JSON.stringify(line.text) + " is below the box");
+    }
+
+    await page.close();
+  });
+
+  it("never lets the scene go empty: the only moth stays instead of leaving, even well past its longest possible lifetime", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await mockObservationsApi(page, { results: [rawObservation()] });
+
+    await page.goto(site.url, { waitUntil: "networkidle" });
+    await page.click("#launch-switch");
+    await page.waitForTimeout(2000);
+    await page.click("#active-moths-toggle");
+    await page.waitForSelector(".active-moths-card", { timeout: 5000 });
+
+    // Hovering a card freezes the whole scene (so nothing could leave for
+    // the wrong reason): move the pointer well clear of the panel first.
+    await page.mouse.move(5, 5);
+    assert.equal(await page.locator(".active-moths-card").first().evaluate((el) => el.classList.contains("is-focused")), false);
+
+    // A moth lives 8-20s (moth-store.js); with nothing to replace it, it must
+    // still be here — visible, not mid-exit — long after that.
+    await page.waitForTimeout(26000);
+    const cards = page.locator(".active-moths-card:not(.is-leaving)");
+    assert.equal(await cards.count(), 1, "the only moth should still be in the scene");
+
+    await page.close();
+  });
+
   // The world map (Phase 15) plots each active moth at its own real reported
   // location (rawObservation()'s default "location" field — London) and
   // hover-links that marker to the same moth's card/orbit position. The
@@ -409,28 +601,21 @@ describe("World Moths site", () => {
     await page.close();
   });
 
-  it("shows a loading indicator for at least 3 seconds even when the real response arrives almost instantly, then hides it", async () => {
+  it("ends the loading state as soon as the first response arrives — there is no minimum display time", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     await mockObservationsApi(page, { results: [rawObservation()] }); // resolves essentially immediately
 
     await page.goto(site.url, { waitUntil: "networkidle" });
     await page.click("#launch-switch");
-    await page.waitForTimeout(1800); // well past the fast response, still short of the 3s minimum
 
-    const loading = page.locator("#loading-status");
-    assert.equal(
-      await loading.evaluate((el) => el.classList.contains("is-hidden")),
-      false,
-      "the minimum display duration should keep this visible even though real data already arrived"
-    );
-    assert.match(await loading.textContent(), /loading/i);
-
-    await page.waitForSelector("#loading-status.is-hidden", { timeout: 2500 });
+    // The old 3s minimum would still have this up well past 2s.
+    await page.waitForSelector("#loading-status.is-hidden", { timeout: 2000 });
+    assert.equal(await page.locator(".canvas-shell").evaluate((el) => el.classList.contains("is-loading")), false);
 
     await page.close();
   });
 
-  it("flickers the light slowly and smoothly while loading — no fast strobing — then holds steady once data arrives", async () => {
+  it("greys out the scene and shows a spinner around the light while loading — the light does not flicker — then restores everything once data arrives", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     await mockPhotoHost(page);
     // Long enough that the real response (not just the 3s minimum display
@@ -447,75 +632,45 @@ describe("World Moths site", () => {
 
     await page.goto(site.url, { waitUntil: "networkidle" });
     await page.click("#launch-switch");
-    await page.waitForTimeout(500);
 
-    // Sampled at the light's own center pixel (not the surrounding glow),
-    // which the always-on ambient shimmer never touches (see drawLight) —
-    // any real swing here can only be the loading-only broken-bulb effect.
-    function lightBrightness() {
-      return page.evaluate(() => {
-        const canvas = document.getElementById("orbit-canvas");
-        const context = canvas.getContext("2d");
-        const cx = Math.round(canvas.width / 2);
-        const cy = Math.round(canvas.height * 0.56);
-        const [r, g, b] = context.getImageData(cx, cy, 1, 1).data;
-        return r + g + b;
-      });
-    }
+    const styleOf = (selector, property) =>
+      page.evaluate(([sel, prop]) => window.getComputedStyle(document.querySelector(sel))[prop], [selector, property]);
 
-    // SAFETY: sampled close together (50ms apart — 20x/second, denser than
-    // any real display refresh a viewer would perceive as separate frames),
-    // no consecutive pair should differ by a large amount. A fast strobe
-    // (the actual bug report this fix addresses) would show huge consecutive
-    // deltas here; a slow, smooth drift — confirmed at ~44 max in manual
-    // measurement against this exact implementation — never does.
-    const fineSamples = [];
+    // The spinner and its caption only appear once the launch animation has
+    // finished revealing the controls.
+    await page.waitForFunction(() => parseFloat(window.getComputedStyle(document.getElementById("loading-spinner")).opacity) > 0.99, null, { timeout: 5000 });
+    assert.equal(await page.locator(".canvas-shell").evaluate((el) => el.classList.contains("is-loading")), true);
+    assert.match(await styleOf("#orbit-canvas", "filter"), /grayscale/, "the whole scene should be greyed out while loading");
+    assert.match(await page.locator("#loading-status").textContent(), /loading/i);
+
+    // The spinner is a ring around the light: centred on the bulb (horizontal
+    // centre, centerYRatio 0.56 down the screen) and wider than the bulb.
+    const box = await page.locator("#loading-spinner").boundingBox();
+    assert.ok(Math.abs(box.x + box.width / 2 - 640) < 2 && Math.abs(box.y + box.height / 2 - 448) < 2, "spinner should be centred on the light, saw " + JSON.stringify(box));
+    assert.ok(box.width > 36 + 20, "the ring should be clearly wider than the 36px bulb, saw " + box.width);
+
+    // No flashing: the light's centre pixel (the bulb itself, which the
+    // ambient shimmer never touches) stays put across a full second of
+    // samples, where the old loading effect swung it by hundreds.
+    const samples = [];
     for (let i = 0; i < 20; i += 1) {
-      fineSamples.push(await lightBrightness());
+      samples.push(
+        await page.evaluate(() => {
+          const canvas = document.getElementById("orbit-canvas");
+          const [r, g, b] = canvas.getContext("2d").getImageData(Math.round(canvas.width / 2), Math.round(canvas.height * 0.56), 1, 1).data;
+          return r + g + b;
+        })
+      );
       await page.waitForTimeout(50);
     }
-    let maxConsecutiveDelta = 0;
-    for (let i = 1; i < fineSamples.length; i += 1) {
-      maxConsecutiveDelta = Math.max(maxConsecutiveDelta, Math.abs(fineSamples[i] - fineSamples[i - 1]));
-    }
-    assert.ok(
-      maxConsecutiveDelta < 150,
-      `expected only gradual, smooth changes 50ms apart (no strobing), saw a jump of ${maxConsecutiveDelta} (samples: ${fineSamples})`
-    );
+    const range = Math.max(...samples) - Math.min(...samples);
+    assert.ok(range < 30, "expected a steady light while loading, saw range " + range + " (samples: " + samples + ")");
 
-    // STILL VISIBLY FLICKERING: sampled over a much longer window (6s) than
-    // the fine-grained safety check above, since a full dim-and-brighten
-    // cycle now takes seconds, not milliseconds. brokenLightFlicker maps its
-    // wave continuously to brightness (no flat plateau at either extreme —
-    // an earlier version clamped out its positive half, which sat completely
-    // flat at full brightness for up to 2 real seconds at a stretch,
-    // confirmed by measurement, and was reported as "the flicker doesn't
-    // seem to work" for a visit whose loading window landed in one of those
-    // stretches), so any few-second window reliably shows real, continuous
-    // movement regardless of when the page happened to start relative to it.
-    const coarseSamples = [];
-    for (let i = 0; i < 24; i += 1) {
-      coarseSamples.push(await lightBrightness());
-      await page.waitForTimeout(250);
-    }
-    const coarseRange = Math.max(...coarseSamples) - Math.min(...coarseSamples);
-    assert.ok(
-      coarseRange > 150,
-      `expected a real (if slow) brightness swing while loading, saw range ${coarseRange} (samples: ${coarseSamples})`
-    );
-
-    await page.waitForSelector("#loading-status.is-hidden", { timeout: 6000 });
-
-    const steadySamples = [];
-    for (let i = 0; i < 5; i += 1) {
-      steadySamples.push(await lightBrightness());
-      await page.waitForTimeout(150);
-    }
-    const steadyRange = Math.max(...steadySamples) - Math.min(...steadySamples);
-    assert.ok(
-      steadyRange < 60,
-      `expected the light to hold roughly steady once loaded, saw range ${steadyRange} (samples: ${steadySamples})`
-    );
+    // Data arrives: everything is restored.
+    await page.waitForSelector("#loading-status.is-hidden", { timeout: 9000 });
+    assert.equal(await page.locator(".canvas-shell").evaluate((el) => el.classList.contains("is-loading")), false);
+    await page.waitForFunction(() => window.getComputedStyle(document.getElementById("orbit-canvas")).filter === "none", null, { timeout: 3000 });
+    await page.waitForFunction(() => parseFloat(window.getComputedStyle(document.getElementById("loading-spinner")).opacity) < 0.01, null, { timeout: 3000 });
 
     await page.close();
   });

@@ -14,17 +14,18 @@
       </div>
     </div>
     <main class="app-shell">
-      <section class="canvas-shell" aria-label="Orbit animation over a world map">
+      <section class="canvas-shell is-loading" aria-label="Orbit animation over a world map">
         <canvas id="orbit-canvas"></canvas>
         <div class="animation-heading" aria-label="Animation details">
           <h1 id="animation-title">World Moths</h1>
           <p id="animation-description">A living view of moth sightings recently shared on iNaturalist from around the world, mapped to where each one was reported — recently shared records, not real-time abundance or movement.</p>
         </div>
+        <div class="loading-spinner" id="loading-spinner" aria-hidden="true"></div>
         <p class="loading-status" id="loading-status" role="status">The light is still warming up — loading recent sightings…</p>
         <p class="fallback-status is-hidden" id="fallback-status" role="status"></p>
         <p class="debug-status" id="debug-status" aria-hidden="true"></p>
         <button class="active-moths-toggle" id="active-moths-toggle" type="button" aria-label="Show active moths" aria-expanded="false" aria-controls="active-moths-panel"></button>
-        <aside class="active-moths-panel" id="active-moths-panel" aria-label="Active known moths">
+        <aside class="active-moths-panel" id="active-moths-panel" aria-label="Active moths">
           <h2 class="active-moths-panel__title">Active moths</h2>
           <div class="active-moths-list" id="active-moths-list"></div>
         </aside>

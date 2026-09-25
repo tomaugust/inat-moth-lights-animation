@@ -103,6 +103,21 @@ describe("moths.live site", () => {
     await page.close();
   });
 
+  it("links the author credit and the favicon", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await mockObservationsApi(page, { results: [] });
+    await page.goto(site.url, { waitUntil: "networkidle" });
+
+    assert.equal(await page.locator(".credit").textContent(), "Created by Tom August");
+    assert.equal(await page.locator(".credit a").getAttribute("href"), "https://www.ceh.ac.uk/staff/tom-august");
+    assert.equal(await page.locator('link[rel="icon"]').getAttribute("href"), "favicon.svg");
+    const favicon = await page.request.get(new URL("favicon.svg", site.url).href);
+    assert.equal(favicon.status(), 200);
+    assert.equal(favicon.headers()["content-type"], "image/svg+xml");
+
+    await page.close();
+  });
+
   it("boots the animation with no console or page errors", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     const errors = [];

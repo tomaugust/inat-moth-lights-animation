@@ -208,6 +208,14 @@ The Robinson-projection world map explored as a standalone concept prototype (`g
 - **The side-panel list has a clearly visible vertical scrollbar** (always shown, `scrollbar-width: auto` with lighter colours, plus WebKit pseudo-elements only where the standard properties aren't supported), replacing a barely-visible thin one. Cards never shrink to fit (Phase 16), so with many moths the list scrolls. Headless Chrome hides scrollbars by default, so a visual check needs `ignoreDefaultArgs: ["--hide-scrollbars"]`.
 - **The main screen has no heading, just a description**: "This animation shows observations of moths around the world in real time. Each moth represents a real moth observed on iNaturalist somewhere in the world" (`#animation-description` in `index.html`; the old `<h1>` and its styles are gone). The browser tab's page `<title>` is "moths.live". A browser test checks all three. This replaces the earlier "World Moths" heading and its longer "recently shared records, not real-time abundance" caveat.
 
+## Phase 18: branding — a rocker light switch, an author credit, a favicon and the moths.live title
+
+- **The launch-screen switch is a UK-style rocker light switch** (`.launch-screen__switch` in `styles/main.css`): the button is a 150px white faceplate and its `::after` is the rocker, tilted with `perspective() rotateX()` — top edge raised while off, pressed in (`.is-on`) once clicked. Only CSS changed; the click and Enter/Space handling in `setupLaunchScreen` is as before.
+- **A small "Created by Tom August" credit sits bottom left** (`.credit`, linking to https://www.ceh.ac.uk/staff/tom-august in a new tab), mirroring the sound toggle's inset at bottom right.
+- **The site has a favicon** (`favicon.svg`, linked from `index.html`): flat silhouettes on the dark rounded square — a 60% grey (#999) light bulb and a cream moth flying diagonally down to the right, with a dotted trail behind it from over the bulb. It is SVG only, which every current browser supports for tab icons; there are no PNG/ICO fallbacks or apple-touch-icon yet.
+- **The page title is "moths.live"** (the custom domain in `CNAME`), replacing "Luma".
+- An e2e test checks the credit's text and link, the favicon link, and that `favicon.svg` is served.
+
 ## Testing
 
 ```sh

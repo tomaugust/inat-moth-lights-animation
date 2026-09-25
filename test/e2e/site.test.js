@@ -4,6 +4,8 @@ import { after, before, describe, it } from "node:test";
 import { chromium } from "playwright";
 
 import { startStaticServer } from "../helpers/static-server.mjs";
+import { hashString, seededUnit } from "../../src/animation-engine.js";
+import { MothStore } from "../../src/moth-store.js";
 import { createMapProjector } from "../../src/robinson-projection.js";
 
 const API_URL = "https://api.inaturalist.org/v2/observations";
@@ -84,7 +86,23 @@ function rawObservation(overrides = {}) {
   };
 }
 
-describe("World Moths site", () => {
+describe("Luma site", () => {
+  it("shows just the description on the main screen — no heading — and Luma as the page title", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await mockObservationsApi(page, { results: [] });
+    await page.goto(site.url, { waitUntil: "networkidle" });
+
+    assert.equal(await page.title(), "Luma");
+    assert.equal(await page.locator("h1").count(), 0, "there should be no visible heading");
+    assert.equal(await page.locator("#animation-title").count(), 0);
+    assert.equal(
+      await page.locator("#animation-description").textContent(),
+      "This animation shows observations of moths around the world in real time. Each moth represents a real moth observed on iNaturalist somewhere in the world"
+    );
+
+    await page.close();
+  });
+
   it("boots the animation with no console or page errors", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     const errors = [];
@@ -211,7 +229,7 @@ describe("World Moths site", () => {
     await page.close();
   });
 
-  it("never squashes cards when several are open: each keeps all its content and the list scrolls instead", async () => {
+  it("never squashes cards when several are open: each keeps all its content and the list gets a visible vertical scrollbar", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     const now = Date.now();
     const results = [8, 6, 4, 2].map((secondsAgo, index) =>
@@ -233,6 +251,185 @@ describe("World Moths site", () => {
         .map((card) => card.dataset.mothId + " (content " + card.scrollHeight + "px in a card " + card.clientHeight + "px tall)")
     );
     assert.deepEqual(clipped, [], "cards were squashed so their content is cut off");
+
+    // ...and the overflow is handled by a visible vertical scrollbar on the list.
+    const list = await page.evaluate(() => {
+      const el = document.getElementById("active-moths-list");
+      const style = window.getComputedStyle(el);
+      return { scrollable: el.scrollHeight > el.clientHeight, overflowY: style.overflowY, scrollbarWidth: style.scrollbarWidth };
+    });
+    assert.equal(list.scrollable, true, "with several tall cards the list should be taller than the panel and scroll");
+    assert.equal(list.overflowY, "scroll", "the scrollbar should always be shown");
+    assert.equal(list.scrollbarWidth, "auto", "a full-size scrollbar, not the barely-visible thin one");
+
+    await page.close();
+  });
+
+  it("darkens the map towards its edges (the map only), leaving its middle untouched", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await mockObservationsApi(page, { results: [] });
+    await page.goto(site.url, { waitUntil: "networkidle" });
+
+    // Render the map layer directly, twice — with and without the vignette —
+    // and compare the same land pixels (read from the map's own canvas, so
+    // the light's glow and the moths can't affect the result). Land is
+    // #161616 (22) on a #050505 (5) background.
+    const result = await page.evaluate(async () => {
+      const world = await import("/src/world-map.js");
+      const { createMapProjector } = await import("/src/robinson-projection.js");
+      const borders = await world.loadWorldBorders();
+      const width = 1280;
+      const height = 800;
+      const projector = createMapProjector({ width, height, offsetX: width / 2, offsetY: height * 0.56, padding: 24 });
+      const withVignette = world.renderMapToOffscreenCanvas(borders, projector, width, height);
+      const withoutVignette = world.renderMapToOffscreenCanvas(borders, projector, width, height, { vignette: false });
+      const sample = (canvas, lon, lat) => {
+        const { x, y } = projector.project([lon, lat]);
+        const data = canvas.getContext("2d").getImageData(Math.round(x) - 2, Math.round(y) - 2, 5, 5).data;
+        let sum = 0;
+        for (let i = 0; i < data.length; i += 4) sum += data[i];
+        return sum / 25;
+      };
+      return {
+        centreWith: sample(withVignette, 20, 5), // central Africa
+        centreWithout: sample(withoutVignette, 20, 5),
+        edgeWith: sample(withVignette, -152, 64), // Alaska, near the map's edge
+        edgeWithout: sample(withoutVignette, -152, 64)
+      };
+    });
+
+    assert.ok(result.edgeWithout > 15 && result.centreWithout > 15, "expected both sample points to be land: " + JSON.stringify(result));
+    assert.ok(result.edgeWith < result.edgeWithout * 0.5, "land near the edge should be darkened: " + JSON.stringify(result));
+    assert.ok(Math.abs(result.centreWith - result.centreWithout) < 1, "the middle of the map should be untouched: " + JSON.stringify(result));
+
+    await page.close();
+  });
+
+  it("flaps the moths' wings even when the system asks for reduced motion", async () => {
+    // A machine with Windows animations switched off reports "prefers-reduced-
+    // motion: reduce"; the wings once stood still under it, so on such a
+    // machine the moths never flapped at all.
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: "reduce" });
+    assert.equal(await page.evaluate(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches), true);
+    await page.addInitScript(() => {
+      window.__wingScales = [];
+      const scale = window.CanvasRenderingContext2D.prototype.scale;
+      window.CanvasRenderingContext2D.prototype.scale = function (x, y) {
+        // A wing is drawn under scale(1, thickness): its height folds and opens as it
+        // flaps. (The body's own scale is (facing, 1), so it never matches.)
+        if (x === 1 && y !== 1) {
+          window.__wingScales.push(y);
+        }
+        return scale.call(this, x, y);
+      };
+    });
+    await mockObservationsApi(page, { results: [rawObservation()] });
+    await page.goto(site.url, { waitUntil: "networkidle" });
+    assert.equal(await page.evaluate(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches), true);
+    await page.click("#launch-switch");
+    await page.waitForFunction(() => document.querySelector("#loading-status").classList.contains("is-hidden"));
+    await page.waitForTimeout(3000); // let the moth arrive and start orbiting
+    await page.evaluate(() => {
+      window.__wingScales = [];
+    });
+    await page.waitForTimeout(1500);
+
+    // Each wing is drawn with a vertical scale that swings from about +1 (raised)
+    // through 0 (folded flat against the body) to about -0.6 (hanging below it).
+    const wingScales = await page.evaluate(() => window.__wingScales);
+    assert.ok(wingScales.length > 20, "expected the moth's wings to be drawn, saw " + wingScales.length + " wing draws");
+    const distinct = new Set(wingScales.map((y) => y.toFixed(3))).size;
+    assert.ok(distinct > 20, "the wings should be flapping, but saw only " + distinct + " distinct wing heights: they are held still");
+    assert.ok(Math.max(...wingScales) - Math.min(...wingScales) > 1, "the flap should be a big fold-and-open");
+
+    await page.close();
+  });
+
+  it("renders the arrival woooow as a deep tone that fades out as the ripple ring does", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await mockObservationsApi(page, { results: [] });
+    await page.goto(site.url, { waitUntil: "networkidle" });
+
+    // Render one voice offline in the browser's real Web Audio engine, driven
+    // exactly as the app drives it (age 0 to a little past the ripple), and
+    // measure the samples.
+    const measured = await page.evaluate(async () => {
+      const audio = await import("/src/audio-engine.js");
+      const world = await import("/src/world-map.js");
+      const sampleRate = 22050;
+      const context = new window.OfflineAudioContext(1, sampleRate * 4, sampleRate);
+      const voice = audio.createArrivalVoice(context, context.destination, audio.noteToFrequency("C2"), 0);
+      for (let age = 0; age <= world.RIPPLE_DURATION_SECONDS + 0.4; age += 0.01) {
+        voice.apply(age, age, 1);
+      }
+      voice.stop(world.RIPPLE_DURATION_SECONDS + 0.5);
+      const data = (await context.startRendering()).getChannelData(0);
+      const rms = (from, to) => {
+        let sum = 0;
+        const a = Math.floor(from * sampleRate);
+        const b = Math.floor(to * sampleRate);
+        for (let i = a; i < b; i += 1) sum += data[i] * data[i];
+        return Math.sqrt(sum / (b - a));
+      };
+      let crossings = 0;
+      const start = Math.floor(0.3 * sampleRate);
+      const end = Math.floor(1.3 * sampleRate);
+      for (let i = start + 1; i < end; i += 1) if ((data[i - 1] < 0) !== (data[i] < 0)) crossings += 1;
+      let peak = 0;
+      for (let i = 0; i < data.length; i += 1) peak = Math.max(peak, Math.abs(data[i]));
+      return {
+        first20ms: rms(0, 0.02),
+        early: rms(0.15, 0.4),
+        middle: rms(1.0, 1.3),
+        late: rms(2.0, 2.3),
+        end: rms(2.85, 3.0),
+        after: rms(3.2, 3.9),
+        crossingsPerSecond: crossings / 1.0,
+        peak,
+        duration: world.RIPPLE_DURATION_SECONDS
+      };
+    });
+
+    assert.ok(measured.early > 0.02, "should be clearly audible: " + JSON.stringify(measured));
+    assert.ok(measured.first20ms < measured.early * 0.4, "should swell in, not click: " + JSON.stringify(measured));
+    assert.ok(measured.middle < measured.early && measured.late < measured.middle && measured.end < measured.late, "should keep fading: " + JSON.stringify(measured));
+    assert.ok(measured.after < 0.002, "silent once the ring has gone: " + JSON.stringify(measured));
+    assert.ok(measured.crossingsPerSecond < 700, "should be a deep tone, not a high one: " + JSON.stringify(measured));
+    assert.ok(measured.peak < 0.9, "should not clip: " + JSON.stringify(measured));
+
+    await page.close();
+  });
+
+  it("plays the arrival woooow when a new moth appears with the sound on (and nothing before it is on)", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await page.addInitScript(() => {
+      // The woooow is the only thing that uses a sawtooth oscillator (the chimes
+      // and the drone are sines): count them.
+      window.__sawtoothStarts = 0;
+      const start = window.OscillatorNode.prototype.start;
+      window.OscillatorNode.prototype.start = function (...args) {
+        if (this.type === "sawtooth") window.__sawtoothStarts += 1;
+        return start.apply(this, args);
+      };
+    });
+    await mockPhotoHost(page);
+    await page.route(API_URL_PATTERN, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 2500)); // the moth arrives well after we switch sound on
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ total_results: 1, page: 1, per_page: 200, results: [rawObservation()] })
+      });
+    });
+
+    await page.goto(site.url, { waitUntil: "networkidle" });
+    await page.click("#launch-switch");
+    await page.waitForTimeout(2200);
+    assert.equal(await page.evaluate(() => window.__sawtoothStarts), 0, "nothing plays before the sound is on");
+    await page.click("#sound-toggle");
+    await page.waitForFunction(() => document.querySelector("#loading-status").classList.contains("is-hidden"), null, { timeout: 8000 });
+    await page.waitForTimeout(1000);
+    assert.ok((await page.evaluate(() => window.__sawtoothStarts)) >= 1, "expected a woooow when the moth arrived with the sound on");
 
     await page.close();
   });
@@ -316,9 +513,17 @@ describe("World Moths site", () => {
     await page.close();
   });
 
-  it("never lets the scene go empty: the only moth stays instead of leaving, even well past its longest possible lifetime", async () => {
+  it("never lets the scene go empty: the only moth stays instead of leaving, even well past its stay", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    await mockObservationsApi(page, { results: [rawObservation()] });
+    // A moth's stay is fixed per observation id (between the store's min and
+    // max, 24-60s), so use an id whose stay is very nearly the shortest
+    // possible rather than waiting out a whole minute. The check below is
+    // what tells you if the store's numbers change and this needs a new id.
+    const SHORT_STAY_ID = 8583;
+    const { minMothDurationSeconds, maxMothDurationSeconds } = new MothStore().options;
+    const stayLimit = minMothDurationSeconds + (maxMothDurationSeconds - minMothDurationSeconds) * seededUnit(hashString("inat-" + SHORT_STAY_ID), 999);
+    assert.ok(stayLimit < minMothDurationSeconds + 2, "id " + SHORT_STAY_ID + " no longer has a short stay (" + stayLimit.toFixed(1) + "s) — pick another");
+    await mockObservationsApi(page, { results: [rawObservation({ id: SHORT_STAY_ID })] });
 
     await page.goto(site.url, { waitUntil: "networkidle" });
     await page.click("#launch-switch");
@@ -331,32 +536,32 @@ describe("World Moths site", () => {
     await page.mouse.move(5, 5);
     assert.equal(await page.locator(".active-moths-card").first().evaluate((el) => el.classList.contains("is-focused")), false);
 
-    // A moth lives 8-20s (moth-store.js); with nothing to replace it, it must
-    // still be here — visible, not mid-exit — long after that.
-    await page.waitForTimeout(26000);
+    // With nothing to replace it, it must still be here — visible, not
+    // mid-exit — well after its stay is up.
+    await page.waitForTimeout((Math.ceil(stayLimit) + 8) * 1000);
     const cards = page.locator(".active-moths-card:not(.is-leaving)");
     assert.equal(await cards.count(), 1, "the only moth should still be in the scene");
 
     await page.close();
   });
 
-  // The world map (Phase 15) plots each active moth at its own real reported
-  // location (rawObservation()'s default "location" field — London) and
-  // hover-links that marker to the same moth's card/orbit position. The
-  // marker's exact screen position is computed here with the same
+  // A moth's origin is marked on the map by its rings (the arrival ripple, then a
+  // small breathing ring); hovering one focuses the same moth as its card. The
+  // ring's exact screen position is computed here with the same
   // createMapProjector() app.js itself uses (same viewport size, same
   // centerYRatio from config/site-config.json, same padding), rather than
   // assumed or eyeballed.
-  it("hovering a moth's marker on the world map focuses the same moth as its card", async () => {
+  it("hovering a moth's ring on the world map focuses the same moth as its card", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     await mockObservationsApi(page, { results: [rawObservation()] });
 
     await page.goto(site.url, { waitUntil: "networkidle" });
     await page.click("#launch-switch");
-    await page.waitForTimeout(2000);
-
+    await page.waitForFunction(() => document.querySelector("#loading-status").classList.contains("is-hidden"));
     await page.click("#active-moths-toggle");
     await page.waitForSelector(".active-moths-card", { timeout: 5000 });
+    await page.mouse.move(5, 5);
+    await page.waitForTimeout(3600); // the arrival ripple is over; the small breathing ring is what remains
 
     const canvasRect = await page.evaluate(() => {
       const canvas = document.getElementById("orbit-canvas");
@@ -372,14 +577,20 @@ describe("World Moths site", () => {
     });
     const point = projector.project([-0.1278, 51.5074]); // rawObservation()'s default location, lon/lat order
 
+    assert.equal(await page.locator(".active-moths-card").first().evaluate((el) => el.classList.contains("is-focused")), false, "not focused before hovering");
     await page.mouse.move(canvasRect.left + point.x, canvasRect.top + point.y);
     await page.waitForTimeout(300);
 
     assert.equal(
       await page.locator(".active-moths-card").first().evaluate((el) => el.classList.contains("is-focused")),
       true,
-      "expected hovering the moth's map marker to focus the same moth as its card"
+      "expected hovering the moth's ring to focus the same moth as its card"
     );
+
+    // Moving off it lets go again.
+    await page.mouse.move(canvasRect.left + 30, canvasRect.top + canvasRect.height - 30);
+    await page.waitForTimeout(300);
+    assert.equal(await page.locator(".active-moths-card").first().evaluate((el) => el.classList.contains("is-focused")), false);
 
     await page.close();
   });

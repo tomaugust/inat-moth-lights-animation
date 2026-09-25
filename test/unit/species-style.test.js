@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 
-import { clearSpeciesStyleCache, getSpeciesStyle } from "../../src/species-style.js";
+import { clearSpeciesStyleCache, getSpeciesStyle, PALETTE } from "../../src/species-style.js";
 
 beforeEach(() => {
   clearSpeciesStyleCache();
@@ -47,5 +47,39 @@ describe("getSpeciesStyle", () => {
     first.chimeNotes.push("Z9");
     const second = getSpeciesStyle(48662);
     assert.ok(!second.chimeNotes.includes("Z9"));
+  });
+});
+
+describe("the moth colour palette", () => {
+  it("is exactly the five chosen colours: white, pine blue, french blue, jungle green, yellow green", () => {
+    assert.deepEqual([...PALETTE], ["#ffffff", "#387d7a", "#334195", "#26a96c", "#97cc04"]);
+  });
+
+  it("colours every identified moth with one of those five, and uses all of them", () => {
+    const seen = new Set();
+    for (let taxonId = 1; taxonId <= 300; taxonId += 1) {
+      const { color } = getSpeciesStyle(taxonId);
+      assert.ok(PALETTE.includes(color), "unexpected colour " + color + " for taxon " + taxonId);
+      seen.add(color);
+    }
+    assert.equal(seen.size, PALETTE.length, "every colour should turn up: " + [...seen]);
+  });
+
+  it("keeps unidentified moths grey, outside the palette", () => {
+    assert.ok(!PALETTE.includes(getSpeciesStyle(null).color));
+  });
+
+  it("gives each moth a glow in its own colour, so the darker blues stay visible on the dark map", () => {
+    const expected = {
+      "#ffffff": "rgba(255, 255, 255, 0.55)",
+      "#387d7a": "rgba(56, 125, 122, 0.55)",
+      "#334195": "rgba(51, 65, 149, 0.55)",
+      "#26a96c": "rgba(38, 169, 108, 0.55)",
+      "#97cc04": "rgba(151, 204, 4, 0.55)"
+    };
+    for (let taxonId = 1; taxonId <= 60; taxonId += 1) {
+      const style = getSpeciesStyle(taxonId);
+      assert.equal(style.shadowColor, expected[style.color], "glow for " + style.color);
+    }
   });
 });

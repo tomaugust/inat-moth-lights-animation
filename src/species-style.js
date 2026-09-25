@@ -1,12 +1,26 @@
 // Deterministic per-taxon visual/audio styling, generated from the taxon ID
 // instead of a hand-maintained species list. A global live stream will
 // constantly encounter taxa nobody curated in advance, so every finite taxon
-// ID hashes to the same restrained near-white/cream/coral/lime/lavender
-// palette used by the original curated config, and every unidentified or
-// coarse-rank observation gets one subdued grey profile instead.
+// ID hashes to one of the five colours in PALETTE below, and every
+// unidentified or coarse-rank observation gets one subdued grey profile
+// instead.
 import { hashString, seededUnit } from "./animation-engine.js";
 
-const PALETTE = ["#ffffff", "#ffe1ca", "#ff9a88", "#e1ff6b", "#a7b0ff"];
+// The moths' colours: white, pine blue, french blue, jungle green and yellow
+// green. Exported so a test (and anything else that needs to know) can check
+// against the one list.
+export const PALETTE = Object.freeze(["#ffffff", "#387d7a", "#334195", "#26a96c", "#97cc04"]);
+
+// The soft glow round a moth, in its own colour. It was one fixed cream for
+// every moth when the palette was all pale; with two fairly dark blues in the
+// palette a colour-matched glow is what keeps them legible against the dark
+// map.
+const GLOW_ALPHA = 0.55;
+
+function glowColor(hex) {
+  const value = Number.parseInt(hex.slice(1), 16);
+  return `rgba(${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255}, ${GLOW_ALPHA})`;
+}
 
 // A C-major-pentatonic-ish note pool across a few octaves, matching the notes
 // used by the original hand-authored species config.
@@ -47,8 +61,10 @@ function buildStyleForTaxon(seed) {
     }
   }
 
+  const color = pickFrom(PALETTE, seed, 1);
+
   return {
-    color: pickFrom(PALETTE, seed, 1),
+    color,
     chimeNote: chimeNotes[0],
     chimeNotes,
     speed: lerp(0.4, 1.8, seededUnit(seed, 3)),
@@ -56,7 +72,7 @@ function buildStyleForTaxon(seed) {
     trailLength: Math.round(lerp(5, 10, seededUnit(seed, 5))),
     erraticness: lerp(1.2, 3.2, seededUnit(seed, 6)),
     shadowBlur: Math.round(lerp(7, 9, seededUnit(seed, 7))),
-    shadowColor: "rgba(247, 239, 217, 0.22)",
+    shadowColor: glowColor(color),
     inclinationDriftSpeed: lerp(0.1, 0.5, seededUnit(seed, 8)),
     nodeDriftSpeed: lerp(0.1, 0.5, seededUnit(seed, 9))
   };

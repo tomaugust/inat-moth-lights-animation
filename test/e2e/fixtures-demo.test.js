@@ -72,8 +72,8 @@ describe("Phase 2 fixtures demo", () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     await page.goto(`${site.url}fixtures-demo.html`, { waitUntil: "networkidle" });
 
-    // Sample the active count a few times across the moths' 4-10s lifetime
-    // window: it should never exceed the configured cap, and it should be
+    // Sample the active count a few times across the moths' 8-20s lifetime
+    // window (this demo pins its own short stays; see fixtures-demo.js): it should never exceed the configured cap, and it should be
     // able to go back down (proving expired moths are actually removed, not
     // just capped from above).
     const samples = [];

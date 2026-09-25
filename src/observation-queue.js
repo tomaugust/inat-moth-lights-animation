@@ -81,13 +81,13 @@ export const DEFAULT_SOURCE_TIME_SCALE = 1 / 1440;
 
 const DEFAULT_OPTIONS = {
   seenIdCapacity: 2000,
-  // Sized against moth-store.js's maxActiveMoths (10) and its 8-20s duration
-  // range (avg 14s): sustainable throughput is roughly maxActiveMoths /
-  // averageDurationSeconds ≈ 0.71/s, so a comfortable ~60s cycle drains
-  // about 43 observations — 45 keeps a small, deliberate buffer rather than
-  // ever running the display dry. Must be updated together with those two
-  // moth-store.js values if either changes, or an abundant window's backlog
-  // will again take far longer than the intended cycle time to fully drain.
+  // Sized against moth-store.js's maxActiveMoths (10) and its duration range.
+  // It was 45 when moths stayed 8-20s (avg 14s: sustainable throughput
+  // maxActiveMoths / averageDurationSeconds ≈ 0.71/s, so a ~60s cycle drained
+  // about 43). At the current 24-60s (avg 42s) throughput is ≈ 0.24/s, so 45
+  // is now about a three-minute buffer — still fine, since the live feed
+  // (~6 uploads a minute) is well under that and this only bites when a
+  // backlog builds up. Revisit together with those moth-store.js values.
   targetSampleSize: 45,
   // Absolute floor/ceiling on the *compressed* gap, after sourceTimeScale
   // and jitter are applied. These must scale down together with

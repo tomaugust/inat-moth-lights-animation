@@ -75,14 +75,6 @@ canvas {
   opacity: 0;
 }
 
-.animation-heading h1 {
-  color: #f5f1e8;
-  font-size: clamp(1.25rem, 2.4vw, 2.35rem);
-  font-weight: 650;
-  line-height: 1.05;
-  margin: 0 0 8px;
-}
-
 .animation-heading p {
   color: #f5f1e8;
   font-size: clamp(0.78rem, 1.1vw, 0.98rem);
@@ -370,10 +362,40 @@ body.launch-screen-active:not(.launch-controls-visible) .debug-status {
   gap: 8px;
   min-height: 0;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: scroll;
   padding: 2px 2px 2px 0;
-  scrollbar-color: rgba(245, 241, 232, 0.28) transparent;
-  scrollbar-width: thin;
+  /* A clearly visible vertical scrollbar, always shown: with many moths in
+     the scene the cards are taller than the panel and the list scrolls
+     (cards never shrink to fit — see .active-moths-card). The old "thin" bar
+     in a barely-there colour was easy to miss entirely. Overlay-scrollbar
+     platforms (phones, macOS) may still hide it until you scroll. */
+  scrollbar-color: rgba(245, 241, 232, 0.55) rgba(255, 255, 255, 0.08);
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+}
+
+/* Safari (older versions) ignores scrollbar-color/-width, so it gets the
+   equivalent via the WebKit pseudo-elements. Everywhere else those
+   pseudo-elements would override the standard properties above, so they're
+   only applied where the standard ones aren't supported. */
+@supports not (scrollbar-color: auto) {
+  .active-moths-list::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  .active-moths-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+  }
+
+  .active-moths-list::-webkit-scrollbar-thumb {
+    background: rgba(245, 241, 232, 0.55);
+    border-radius: 6px;
+  }
+
+  .active-moths-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(245, 241, 232, 0.8);
+  }
 }
 
 .active-moths-card {

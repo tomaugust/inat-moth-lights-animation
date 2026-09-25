@@ -8,18 +8,18 @@
 import { getExitStartTime, hashString, sampleBiasedApproachAngle, seededUnit } from "./animation-engine.js";
 import { getSpeciesStyle } from "./species-style.js";
 
-// Lowered from 50/4-10s and doubled duration respectively after a real
-// abundant-data review: with 50 concurrent moths lasting only 4-10s each,
-// individual species cards flew by too fast to actually read. 10 at up to
-// 20s each is a deliberate legibility choice, not a technical limit — see
-// observation-queue.js's targetSampleSize, which is sized against these same
-// two numbers (must be updated together; see the comment there) so an
-// abundant window's backlog still drains in roughly the intended cycle time
-// instead of the lower throughput here turning into an ever-growing queue.
+// Lowered from 50 concurrent moths at 4-10s each after a real abundant-data
+// review: they flew by too fast to read. 10 at once is a deliberate legibility
+// choice, not a technical limit. Each moth then stayed 8-20s, and Phase 17
+// tripled that to 24-60s (average 42s) because, with the live feed's real
+// pace (a handful of uploads a minute), 8-20s left the scene sparse. Longer
+// stays mean more moths at once (about 0.24 admitted per second at most,
+// 10 / 42s, still comfortably above the live feed's ~0.1/s) — see
+// observation-queue.js's targetSampleSize, sized against these numbers.
 const DEFAULT_OPTIONS = {
   maxActiveMoths: 10,
-  minMothDurationSeconds: 8,
-  maxMothDurationSeconds: 20,
+  minMothDurationSeconds: 24,
+  maxMothDurationSeconds: 60,
   orbitRadiusScale: 0.92,
   // How long a focused (hovered/tapped) moth is kept alive past its natural
   // exit time before it is force-removed regardless of focus, so a forgotten

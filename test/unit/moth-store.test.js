@@ -263,3 +263,17 @@ describe("MothStore.holdLastMoth", () => {
     assert.deepEqual(store.getActiveMoths().map((moth) => moth.id), ["c"], "a should have left once c arrived");
   });
 });
+
+describe("MothStore default stay length", () => {
+  it("keeps each moth for 24-60 seconds, averaging about 42 (three times the earlier 8-20s)", () => {
+    const store = new MothStore({ maxActiveMoths: 1000 });
+    for (let i = 0; i < 400; i += 1) {
+      store.addObservation(observation("stay-" + i), 0, 800, 600);
+    }
+    const lifetimes = store.getActiveMoths().map((moth) => moth.exitTime - moth.entryTime);
+    assert.ok(Math.min(...lifetimes) >= 24, "shortest was " + Math.min(...lifetimes));
+    assert.ok(Math.max(...lifetimes) <= 60, "longest was " + Math.max(...lifetimes));
+    const average = lifetimes.reduce((sum, life) => sum + life, 0) / lifetimes.length;
+    assert.ok(average > 38 && average < 46, "average was " + average.toFixed(1));
+  });
+});

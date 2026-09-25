@@ -8,7 +8,7 @@ import { CONNECTION_STATES, InatClient } from "./inaturalist-client.js";
 import { parseObservationsResponse } from "./observation-adapter.js";
 import { FALLBACK_OBSERVATIONS } from "./fallback-observations.js";
 import { createMapProjector } from "./robinson-projection.js";
-import { drawArrivalPulses, drawMapPoints, findMapPointAt, loadWorldBorders, renderMapToOffscreenCanvas } from "./world-map.js";
+import { drawMothRings, findMothRingAt, loadWorldBorders, renderMapToOffscreenCanvas } from "./world-map.js";
 
 // The production site's one and only data source: api.inaturalist.org
 // itself, called directly from this browser via InatClient's default direct
@@ -653,14 +653,14 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
       if (mapCanvas) {
         context.drawImage(mapCanvas, 0, 0, canvas.clientWidth, canvas.clientHeight);
       }
-      drawMapPoints(context, projector, activeMoths, hoverState.hoveredMothId);
       context.restore();
       // Normal (source-over) compositing, on top of everything drawn above —
-      // see drawArrivalPulses's own comment for why this can't share the
-      // destination-over pass the steady point markers use.
-      drawArrivalPulses(context, projector, activeMoths, t);
+      // see drawMothRings's own comment for why this can't share the
+      // destination-over pass the map uses.
+      drawMothRings(context, projector, activeMoths, t, hoverState.hoveredMothId);
     }
     audio.update(activeMoths, deltaSeconds);
+    audio.updateArrivals(activeMoths, t);
     updateActiveMothsPanel();
     updateDebugStatus(t);
     requestAnimationFrame(tick);
@@ -696,16 +696,15 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   }
 
   // Checks the orbiting light show first (a moth's own position on the
-  // canvas), then falls back to its steady marker on the world map behind it
-  // (world-map.js's findMapPointAt) — so hovering either one focuses the
-  // same moth, and the smaller background map marker never steals a hit
-  // from the light show sitting on top of it.
-  function findHoveredMothOrPoint(pointerX, pointerY) {
+  // canvas), then falls back to its rings on the world map behind it
+  // (world-map.js's findMothRingAt) — so hovering either one focuses the same
+  // moth, and a ring never steals a hit from a moth flying over it.
+  function findHoveredMothOrRing(pointerX, pointerY) {
     const hoveredMoth = findHoveredMoth(pointerX, pointerY);
     if (hoveredMoth) {
       return hoveredMoth;
     }
-    return projector ? findMapPointAt(projector, store.getActiveMoths(), pointerX, pointerY) : null;
+    return projector ? findMothRingAt(projector, store.getActiveMoths(), currentSceneSeconds(), pointerX, pointerY) : null;
   }
 
   function updateHover(event) {
@@ -716,7 +715,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     const rect = canvas.getBoundingClientRect();
     const pointerX = event.clientX - rect.left;
     const pointerY = event.clientY - rect.top;
-    const hoveredMoth = findHoveredMothOrPoint(pointerX, pointerY);
+    const hoveredMoth = findHoveredMothOrRing(pointerX, pointerY);
 
     if (!hoveredMoth) {
       clearHover();
@@ -734,7 +733,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     const rect = canvas.getBoundingClientRect();
     const pointerX = event.clientX - rect.left;
     const pointerY = event.clientY - rect.top;
-    const tappedMoth = findHoveredMothOrPoint(pointerX, pointerY);
+    const tappedMoth = findHoveredMothOrRing(pointerX, pointerY);
 
     event.preventDefault();
 

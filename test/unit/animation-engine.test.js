@@ -11,6 +11,7 @@ import {
   formatIdentification,
   formatPhotoCredit,
   getExitStartTime,
+  getMothSprite,
   hashString,
   normalizeAnimationTime,
   projectMoth,
@@ -234,5 +235,152 @@ describe("formatIdentification", () => {
   it("is empty when the rank isn't known", () => {
     assert.equal(formatIdentification({ taxonRank: "" }), "");
     assert.equal(formatIdentification({}), "");
+  });
+});
+
+describe("getMothSprite (the side-on flapping moth)", () => {
+  const moth = (overrides = {}) => ({ size: 3, noiseSeed: 4242, trail: [], ...overrides });
+  const degrees = (radians) => (radians * 180) / Math.PI;
+  const trailFrom = (x0, y0, dx, dy) => [0, 1, 2, 3, 4].map((i) => ({ x: x0 + dx * i, y: y0 + dy * i }));
+
+  it("is big enough to read as a moth, and bigger for bigger species", () => {
+    const small = getMothSprite(moth({ size: 2 }), 0).length;
+    const large = getMothSprite(moth({ size: 5 }), 0).length;
+    assert.ok(small >= 15, "smallest was " + small);
+    assert.ok(large > small);
+    assert.ok(large <= 25, "largest was " + large);
+  });
+
+  it("flaps through a big swing: wings raised high at the top of the stroke, and hanging below the body at the bottom", () => {
+    const angles = [];
+    for (let t = 0; t < 2; t += 0.005) {
+      angles.push(degrees(getMothSprite(moth(), t).wingAngle));
+    }
+    const up = Math.max(...angles);
+    const down = Math.min(...angles);
+    assert.ok(up > 75 && up <= 80 + 1e-6, "top of the upstroke was " + up);
+    assert.ok(down < -75 && down >= -80 - 1e-6, "bottom of the downstroke was " + down);
+    assert.ok(up - down > 150, "the swing should be big enough to read as a flap: " + (up - down) + " degrees");
+    assert.ok(Math.abs(up + down) < 5, "and symmetric: as far below the body as above it (" + up + " / " + down + ")");
+  });
+
+  it("flaps at a readable rate — a few beats a second, not a blur", () => {
+    const beats = (seed) => {
+      let count = 0;
+      let previous = getMothSprite(moth({ noiseSeed: seed }), 0).wingAngle;
+      let rising = false;
+      for (let t = 0.001; t < 4; t += 0.001) {
+        const value = getMothSprite(moth({ noiseSeed: seed }), t).wingAngle;
+        if (value > previous) rising = true;
+        else if (rising && value < previous) {
+          count += 1;
+          rising = false;
+        }
+        previous = value;
+      }
+      return count / 4;
+    };
+    [1, 99, 12345, 777777].forEach((seed) => {
+      const hz = beats(seed);
+      assert.ok(hz >= 4.75 && hz <= 9.5, "seed " + seed + " flaps at " + hz + " Hz");
+    });
+  });
+
+  it("folds rather than hinges: the wing's height is squashed as it swings down to the body, then opens out below it", () => {
+    const squashes = [];
+    for (let t = 0; t < 2; t += 0.001) {
+      const sprite = getMothSprite(moth(), t);
+      assert.ok(Math.abs(sprite.wingSquash - Math.sin(sprite.wingAngle)) < 1e-12, "squash should be sin(elevation)");
+      squashes.push(sprite.wingSquash);
+    }
+    assert.ok(Math.max(...squashes) > 0.97, "fully raised should be (nearly) full height: " + Math.max(...squashes));
+    assert.ok(Math.min(...squashes) < -0.97, "it should hang fully below the body at the bottom, as high as it goes above: " + Math.min(...squashes));
+    assert.ok(Math.min(...squashes.map(Math.abs)) < 0.03, "it should pass through (nearly) flat against the body");
+    for (let i = 1; i < squashes.length; i += 1) {
+      assert.ok(Math.abs(squashes[i] - squashes[i - 1]) < 0.09, "squash jumped: " + squashes[i - 1] + " -> " + squashes[i]);
+    }
+    // Both sides of the body get used, and it's the sign that says which.
+    assert.ok(squashes.some((q) => q > 0.3) && squashes.some((q) => q < -0.3));
+  });
+
+  it("makes some moths broad-winged and some narrow-winged, each within a believable range", () => {
+    const ratios = [1, 2, 3, 99, 4242, 12345, 777777, 31337, 271828].map((seed) => getMothSprite(moth({ noiseSeed: seed }), 0).wingRatio);
+    ratios.forEach((ratio) => assert.ok(ratio >= 0.8 && ratio <= 1.1 + 1e-9, "wing ratio " + ratio));
+    assert.ok(Math.max(...ratios) - Math.min(...ratios) > 0.1, "wings should differ between moths: " + ratios.map((r) => r.toFixed(2)));
+    assert.equal(getMothSprite(moth({ noiseSeed: 5 }), 0).wingRatio, getMothSprite(moth({ noiseSeed: 5 }), 9).wingRatio, "but stay the same for one moth");
+  });
+
+  it("bobs the body as it flaps: down on the upstroke, up on the downstroke, only a little", () => {
+    let highestWing = null;
+    let lowestWing = null;
+    for (let t = 0; t < 1; t += 0.001) {
+      const sprite = getMothSprite(moth(), t);
+      assert.ok(Math.abs(sprite.bob) <= 0.04 + 1e-9, "bob was " + sprite.bob);
+      if (!highestWing || sprite.wingAngle > highestWing.wingAngle) highestWing = sprite;
+      if (!lowestWing || sprite.wingAngle < lowestWing.wingAngle) lowestWing = sprite;
+    }
+    assert.ok(highestWing.bob > 0.03, "body should be at its lowest when the wings are at the top: " + highestWing.bob);
+    assert.ok(lowestWing.bob < -0.03, "and at its highest when they're at the bottom: " + lowestWing.bob);
+  });
+
+  it("gives each moth its own rhythm, so they don't all flap in step", () => {
+    const a = getMothSprite(moth({ noiseSeed: 1 }), 0.3).wingAngle;
+    const b = getMothSprite(moth({ noiseSeed: 987654 }), 0.3).wingAngle;
+    assert.notEqual(a, b);
+  });
+
+  it("is a pure function of the scene clock, so a hover-freeze holds the wings still", () => {
+    assert.deepEqual(getMothSprite(moth(), 12.34), getMothSprite(moth(), 12.34));
+  });
+
+  it("flaps regardless of any 'reduce motion' setting — there is no still-wing mode", () => {
+    // getMothSprite takes only the moth and the clock; the wings move with the clock.
+    assert.equal(getMothSprite.length, 2);
+    const angles = new Set();
+    for (let t = 0; t < 1; t += 0.02) {
+      angles.add(getMothSprite(moth(), t).wingAngle);
+    }
+    assert.ok(angles.size > 30, "only " + angles.size + " distinct wing angles over a second");
+  });
+
+  it("faces right when travelling right and left when travelling left — mirrored, never upside down", () => {
+    assert.equal(getMothSprite(moth({ trail: trailFrom(0, 0, 5, 0) }), 0).facing, 1);
+    assert.equal(getMothSprite(moth({ trail: trailFrom(50, 0, -5, 0) }), 0).facing, -1);
+    assert.equal(getMothSprite(moth(), 0).facing, 1, "faces right before it has moved");
+  });
+
+  it("turns through edge-on, gradually, as its horizontal direction reverses — it does not flip in one step", () => {
+    // Horizontal travel across the trail window sweeping from fast-right to fast-left (6px or more is fully turned).
+    const facings = [];
+    for (let dx = 8; dx >= -8; dx -= 0.05) {
+      facings.push(getMothSprite(moth({ trail: trailFrom(100, 0, dx / 3, 0) }), 0).facing);
+    }
+    assert.equal(facings[0], 1, "starts fully facing right");
+    assert.equal(facings[facings.length - 1], -1, "ends fully facing left");
+    for (let i = 1; i < facings.length; i += 1) {
+      assert.ok(facings[i] <= facings[i - 1] + 1e-12, "should only ever turn one way");
+      assert.ok(Math.abs(facings[i] - facings[i - 1]) < 0.1, "flipped abruptly: " + facings[i - 1] + " -> " + facings[i]);
+    }
+    assert.ok(facings.some((f) => Math.abs(f) < 0.05), "it should pass through (nearly) edge-on");
+    assert.ok(facings.some((f) => f > 0.3 && f < 0.7), "and be seen partly turned along the way");
+  });
+
+  it("is edge-on when it has no sideways travel at all, e.g. moving straight down", () => {
+    assert.equal(getMothSprite(moth({ trail: trailFrom(0, 0, 0, 5) }), 0).facing, 0);
+  });
+
+  it("tilts nose-up when climbing and nose-down when diving, the same whichever way it faces", () => {
+    const level = getMothSprite(moth({ trail: trailFrom(0, 0, 5, 0) }), 0).pitch;
+    const divingRight = getMothSprite(moth({ trail: trailFrom(0, 0, 5, 3) }), 0).pitch;
+    const divingLeft = getMothSprite(moth({ trail: trailFrom(50, 0, -5, 3) }), 0).pitch;
+    const climbingRight = getMothSprite(moth({ trail: trailFrom(0, 0, 5, -3) }), 0).pitch;
+    assert.equal(level, 0);
+    assert.ok(divingRight > 0 && climbingRight < 0);
+    assert.ok(Math.abs(divingRight - divingLeft) < 1e-9, "diving is nose-down whichever way it faces");
+  });
+
+  it("never tilts past about 30 degrees, however steep the climb or dive", () => {
+    const steep = getMothSprite(moth({ trail: trailFrom(0, 0, 0.1, 50) }), 0).pitch;
+    assert.ok(Math.abs(degrees(steep)) <= 32, "pitch was " + degrees(steep));
   });
 });

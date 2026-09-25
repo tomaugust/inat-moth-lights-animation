@@ -42,7 +42,10 @@ async function main() {
   const statusElement = document.getElementById("demo-status");
 
   const queue = new ObservationQueue({ storage: getStorage() });
-  const store = new MothStore();
+  // This demo exists to show moths entering and leaving, so it keeps the
+  // original short stays (8-20s) rather than the production site's longer
+  // 24-60s (Phase 17), which would make an exit take up to a minute to see.
+  const store = new MothStore({ minMothDurationSeconds: 8, maxMothDurationSeconds: 20 });
 
   let fixtureIndex = 0;
   let fixtureCycle = 0;

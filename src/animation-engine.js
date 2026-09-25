@@ -172,12 +172,13 @@ function projectMoth(moth, animationTime, width, height, cx, cy, includeTrail = 
   const orbit = orbitPosition(moth, animationTime, cx, cy);
   const entryDuration = mothTransitionDuration(moth);
   // Position eases in over the whole, slower entryDuration above, but
-  // opacity ramps up several times faster — matching world-map.js's own
-  // PULSE_SPEED_MULTIPLIER-scaled arrival pulse — so a moth reads as
-  // emerging out of that pulse, already close to fully visible, rather than
-  // still fading in long after the pulse itself has faded away and gone.
-  // Applies to every moth's arrival, not just ones with a real map location,
-  // for one consistent, snappier-looking entrance either way.
+  // opacity ramps up several times faster (about a second, for the usual 6s
+  // fly-in), so a moth reads as emerging out of the first ring of the
+  // arrival ripple (world-map.js's computeMothRings), already close to fully
+  // visible while that ring is still bright, rather than still fading in
+  // long after the ripple has died away. Applies to every moth's arrival,
+  // not just ones with a real map location, for one consistent, snappier
+  // entrance either way.
   const opacityFadeInDuration = entryDuration / 5;
   const exitDuration = mothTransitionDuration(moth);
   const exitStart = getExitStartTime(moth);
@@ -407,7 +408,199 @@ function drawMothShadow(context, moth, lightX, lightY, width, height, dimFactor 
   context.restore();
 }
 
-function drawMoth(context, moth, state = "normal") {
+// ---------------------------------------------------------------------------
+// Moths are drawn as simple flapping moths seen from the SIDE — the same
+// side-on view as the hanging light they orbit. The shapes follow photographs
+// of moths in flight (rosy maple, ermine, a hummingbird hawk-moth):
+//   - a stout, fluffy thorax with a small head, an abdomen tapering back and
+//     drooping, feathery antennae in a V pointing forward and up, and short
+//     legs dangling underneath;
+//   - the body held nose-up in flight, not level;
+//   - big wings attached at the top of the thorax — a forewing with a nearly
+//     straight leading edge, a rounded tip and a convex back edge, plus a
+//     separate rounded hindwing beneath it — raised high in a V at the top of
+//     the stroke (the far wing behind and higher than the near one);
+//   - wings that FOLD rather than hinge: a moth flaps about the long axis of
+//     its body, so from the side a raised wing looks tall, foreshortens as it
+//     swings down toward the viewer until it is squashed flat against the
+//     body (edge-on), then opens out again below the body. (A first version
+//     rotated the wing rigidly about its shoulder, like a hinge in the plane
+//     of the picture, which is not what a side view of a flap looks like.)
+//     So the wing's height is scaled by the sine of its elevation, not turned;
+//   - some moths broad-winged, some narrow-winged.
+// The geometry is a pure function of the moth and the scene clock so it can be
+// unit-tested; drawMoth just paints it.
+// ---------------------------------------------------------------------------
+
+// Body length in pixels: a moth's species-derived size (2-5) is far too small
+// to read as a moth if used directly, so it's scaled up while still varying
+// by species — the smallest come out about 16px long, the largest about 24px.
+const MOTH_LENGTH_BASE = 11;
+const MOTH_LENGTH_PER_SIZE = 2.5;
+// Wing length as a multiple of body length, varying per moth from narrow,
+// hawk-moth-like wings to broad, rosy-maple-like ones.
+const WING_RATIO_MIN = 0.8;
+const WING_RATIO_MAX = 1.1;
+// Wingbeats per second — stylised and slower than a real moth's, so each
+// stroke is readable — varying a little by moth so they don't all beat
+// together.
+const FLAP_MIN_HZ = 5.25;
+const FLAP_MAX_HZ = 9;
+// The near wing's elevation about the body's long axis: 0 is straight out to
+// the side (toward the viewer, so edge-on and squashed flat), positive is above
+// the body and negative below it. This is the top of the upstroke and the
+// bottom of the downstroke, in radians. A big swing on purpose — it's what
+// makes it read as flapping. It flaps whatever the
+// visitor's "reduce motion" setting says: the moths orbit and the rings pulse
+// regardless, and a ~20px wing is not the kind of large, sweeping or flashing
+// motion that setting is about. (An earlier version held the wings still under
+// that setting, and on a machine with Windows animations switched off — which
+// reports it — the moths simply never flapped.)
+const WING_UP_ANGLE = (80 * Math.PI) / 180;
+const WING_DOWN_ANGLE = (-80 * Math.PI) / 180;
+// The wing's length axis, when fully raised, in degrees above the body's
+// backward-pointing axis — nearly straight up, swept a little back. Folding
+// squashes this vertically; it doesn't turn it.
+const WING_AXIS_ANGLE = (75 * Math.PI) / 180;
+// The thinnest a folding wing is ever drawn, as a fraction of its full height,
+// so it never disappears entirely while edge-on against the body.
+const MIN_WING_THICKNESS = 0.05;
+// The body bobs a little as it flaps: dropping on the upstroke, rising on the
+// downstroke, by this fraction of its length either side of the middle.
+const BOB_AMPLITUDE = 0.04;
+// A flying moth holds its body nose-up rather than level (drawMoth applies
+// this on top of the climb/dive pitch below).
+const BODY_TILT = 0.45;
+// How much the moth tilts (nose up/down) to follow its climbing or diving,
+// at most, in radians.
+const MAX_PITCH = 0.55;
+// How much horizontal travel (in pixels, across the few trail samples used for
+// facing) it takes to be fully turned to one side. Below that the moth is only
+// partly turned — its whole sprite squeezed narrower — so as it reverses
+// direction it turns through edge-on, like a real turn seen from the side,
+// instead of flipping in one frame.
+const TURN_FULL_TRAVEL = 6;
+// The narrowest a turning moth is ever drawn, as a fraction of full width, so
+// it never vanishes entirely at the exact moment it's edge-on.
+const MIN_TURN_WIDTH = 0.08;
+
+// { length, wingRatio, wingAngle, wingSquash, bob, facing, pitch } for a projected moth at
+// scene time animationTime:
+//   length     body length in pixels, scaling the whole sprite;
+//   wingRatio  wing length as a multiple of body length (narrow to broad);
+//   wingAngle  the near wing's elevation in radians (swinging between
+//              WING_DOWN_ANGLE and WING_UP_ANGLE as it flaps);
+//   wingSquash sin(wingAngle): the wing's height as a fraction of full, with
+//              the sign saying which side of the body — +1 fully raised, 0
+//              squashed flat against the body, negative hanging below it;
+//   bob        how far the body is displaced down at this instant, as a
+//              fraction of its length (negative = up);
+//   facing     -1..+1: +1 fully facing right (travelling right on screen),
+//              -1 fully facing left, and in between while it's turning, with 0
+//              exactly edge-on. The sprite is squeezed by this, and mirrored
+//              below zero — never upside down, since the view is side-on;
+//   pitch      radians of nose-down tilt, from how steeply it's climbing or
+//              diving (positive = diving).
+// Facing and pitch come from the moth's own trail (recent positions); it
+// faces right and level until it has moved.
+function getMothSprite(moth, animationTime) {
+  const seed = moth.noiseSeed || 0;
+  const length = MOTH_LENGTH_BASE + moth.size * MOTH_LENGTH_PER_SIZE;
+  const wingRatio = WING_RATIO_MIN + (WING_RATIO_MAX - WING_RATIO_MIN) * seededUnit(seed, 57);
+  const frequency = FLAP_MIN_HZ + (FLAP_MAX_HZ - FLAP_MIN_HZ) * seededUnit(seed, 55);
+  const phase = seededUnit(seed, 56);
+  const wave = 0.5 + 0.5 * Math.cos(2 * Math.PI * (frequency * animationTime + phase));
+  const wingAngle = WING_DOWN_ANGLE + (WING_UP_ANGLE - WING_DOWN_ANGLE) * wave;
+  const wingSquash = Math.sin(wingAngle);
+  const bob = (wave - 0.5) * 2 * BOB_AMPLITUDE;
+
+  let facing = 1;
+  let pitch = 0;
+  const trail = moth.trail;
+  if (trail && trail.length >= 2) {
+    // A few samples back rather than the very last two, so tiny frame-to-frame
+    // wobble doesn't make the moth flip or twitch.
+    const from = trail[Math.max(0, trail.length - 4)];
+    const to = trail[trail.length - 1];
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const turned = Math.max(-1, Math.min(1, dx / TURN_FULL_TRAVEL));
+    facing = Math.sign(turned) * easeInOut(Math.abs(turned));
+    if (Math.abs(dx) > 0.05 || Math.abs(dy) > 0.05) {
+      pitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, Math.atan2(dy, Math.abs(dx))));
+    }
+  }
+
+  return { length, wingRatio, wingAngle, wingSquash, bob, facing, pitch };
+}
+
+// A forewing, from its shoulder at the origin, pointing along local +x. The
+// leading edge (local +y side) is nearly straight, the tip rounded, and the
+// trailing edge (local -y side) a convex sweep back to the body. wingLength is
+// the shoulder-to-tip length.
+function traceForewing(context, wingLength) {
+  context.beginPath();
+  context.moveTo(0, wingLength * 0.02);
+  context.quadraticCurveTo(wingLength * 0.5, wingLength * 0.1, wingLength * 0.98, wingLength * 0.02);
+  context.bezierCurveTo(wingLength * 1.04, -wingLength * 0.1, wingLength * 0.95, -wingLength * 0.38, wingLength * 0.62, -wingLength * 0.52);
+  context.quadraticCurveTo(wingLength * 0.25, -wingLength * 0.48, 0, -wingLength * 0.1);
+  context.closePath();
+}
+
+// A smaller, rounded hindwing, on the same axes.
+function traceHindwing(context, wingLength) {
+  context.beginPath();
+  context.moveTo(0, -wingLength * 0.02);
+  context.bezierCurveTo(wingLength * 0.3, wingLength * 0.05, wingLength * 0.75, -wingLength * 0.05, wingLength * 0.72, -wingLength * 0.3);
+  context.bezierCurveTo(wingLength * 0.6, -wingLength * 0.5, wingLength * 0.2, -wingLength * 0.42, 0, -wingLength * 0.1);
+  context.closePath();
+}
+
+// Both wings of one side (forewing and, lower and further back, hindwing),
+// folding about the shoulder: squash is the wing's height as a fraction of
+// full (+1 fully raised, 0 flat against the body, negative hanging below it),
+// applied as a vertical scale after the wing is laid out along its raised
+// axis — so it flattens and re-opens rather than rotating.
+// hindwingLag is how much further down/back the hindwing sits than the
+// forewing at any moment, in radians.
+function fillWingPair(context, wingLength, squash) {
+  const hindwingLag = 0.5;
+  const thickness = (squash < 0 ? -1 : 1) * Math.max(MIN_WING_THICKNESS, Math.abs(squash));
+  context.save();
+  // Vertical squash (negative = flipped below the body), then lay the wing out
+  // along its raised axis: local +x points back and (nearly) up.
+  context.scale(1, thickness);
+  context.rotate(Math.PI + WING_AXIS_ANGLE);
+  traceHindwingAt(context, wingLength, hindwingLag);
+  traceForewing(context, wingLength);
+  context.fill();
+  // Fine edge and veins, so the wing reads as a wing and not a leaf.
+  context.shadowBlur = 0;
+  context.strokeStyle = "rgba(255, 255, 255, 0.4)";
+  context.lineWidth = 0.9;
+  context.stroke();
+  context.strokeStyle = "rgba(255, 255, 255, 0.2)";
+  context.lineWidth = 0.7;
+  context.beginPath();
+  context.moveTo(0, 0);
+  context.lineTo(wingLength * 0.9, -wingLength * 0.16);
+  context.moveTo(0, -wingLength * 0.04);
+  context.lineTo(wingLength * 0.68, -wingLength * 0.44);
+  context.stroke();
+  context.restore();
+}
+
+// Fills the hindwing (rotated lag radians further back than the forewing) —
+// split out so fillWingPair keeps the forewing's path current for its outline.
+function traceHindwingAt(context, wingLength, lag) {
+  context.save();
+  context.rotate(-lag);
+  traceHindwing(context, wingLength);
+  context.fill();
+  context.restore();
+}
+
+function drawMoth(context, moth, state = "normal", animationTime = 0) {
   if (moth.opacity <= 0.01) {
     return;
   }
@@ -415,15 +608,106 @@ function drawMoth(context, moth, state = "normal") {
   const dimFactor = state === "dimmed" ? 0.24 : 1;
   const focusFactor = state === "focused" ? 1.18 : 1;
   const opacityFactor = state === "focused" ? 1 : moth.opacity;
+  const sprite = getMothSprite(moth, animationTime);
+  const length = sprite.length * focusFactor;
+  const wingLength = length * sprite.wingRatio;
+  const baseAlpha = opacityFactor * dimFactor;
 
   context.save();
-  context.globalAlpha = opacityFactor * dimFactor;
+  context.translate(moth.x, moth.y + sprite.bob * length);
+  // Squeeze horizontally while turning and mirror to face left when travelling
+  // left (the sprite is drawn facing right), then tilt: nose-up for flight,
+  // plus the climb or dive.
+  context.scale((sprite.facing < 0 ? -1 : 1) * Math.max(MIN_TURN_WIDTH, Math.abs(sprite.facing)), 1);
+  context.rotate(sprite.pitch - BODY_TILT);
+
+  // The near wings, in the moth's colour, with the glow. While they hang below
+  // the body they're drawn BEFORE it, so the body stays in front of them;
+  // otherwise on top.
+  const wingsBelow = sprite.wingSquash < 0;
+  const drawNearWings = () => {
+    context.save();
+    context.fillStyle = moth.color;
+    context.shadowColor = moth.shadowColor;
+    context.shadowBlur = moth.shadowBlur * focusFactor;
+    context.globalAlpha = baseAlpha;
+    context.translate(length * 0.02, -length * 0.1);
+    fillWingPair(context, wingLength, sprite.wingSquash);
+    context.restore();
+  };
+
+  // The far wings first, behind the body: a little smaller and dimmer, raised
+  // a bit higher than the near ones (as they appear in photographs), for depth.
   context.fillStyle = moth.color;
   context.shadowColor = moth.shadowColor;
-  context.shadowBlur = moth.shadowBlur * focusFactor;
+  context.shadowBlur = moth.shadowBlur * focusFactor * 0.6;
+  context.globalAlpha = baseAlpha * 0.55;
+  context.save();
+  context.translate(length * 0.03, -length * 0.1);
+  fillWingPair(context, wingLength * 0.88, Math.sin(sprite.wingAngle + 0.14));
+  context.restore();
+
+  if (wingsBelow) {
+    drawNearWings();
+  }
+
+  // Legs, dangling under the thorax.
+  context.shadowBlur = 0;
+  context.globalAlpha = baseAlpha * 0.7;
+  context.strokeStyle = "rgba(255, 255, 255, 0.65)";
+  context.lineWidth = 0.8;
   context.beginPath();
-  context.arc(moth.x, moth.y, moth.size * focusFactor, 0, Math.PI * 2);
+  context.moveTo(length * 0.08, length * 0.1);
+  context.lineTo(length * 0.05, length * 0.27);
+  context.moveTo(length * 0.0, length * 0.11);
+  context.lineTo(length * -0.05, length * 0.28);
+  context.moveTo(length * -0.07, length * 0.1);
+  context.lineTo(length * -0.12, length * 0.25);
+  context.stroke();
+
+  // The abdomen, tapering back and drooping; then the stout, fluffy thorax and
+  // small head (a soft glow in the moth's colour stands in for the fuzz).
+  context.globalAlpha = baseAlpha * 0.9;
+  context.fillStyle = "rgba(255, 246, 228, 0.9)";
+  context.beginPath();
+  context.moveTo(-length * 0.06, -length * 0.09);
+  context.bezierCurveTo(-length * 0.3, -length * 0.14, -length * 0.55, -length * 0.06, -length * 0.66, length * 0.12);
+  context.bezierCurveTo(-length * 0.5, length * 0.17, -length * 0.25, length * 0.16, -length * 0.06, length * 0.11);
+  context.closePath();
   context.fill();
+  // Faint bands across it, as on the banded abdomens in photographs.
+  context.strokeStyle = "rgba(40, 25, 10, 0.3)";
+  context.lineWidth = 1;
+  context.beginPath();
+  [0.2, 0.32, 0.44].forEach((along) => {
+    const centre = along * 0.28;
+    context.moveTo(-length * along, -length * (0.11 - centre * 0.1));
+    context.lineTo(-length * (along + 0.02), length * (0.13 + centre * 0.1));
+  });
+  context.stroke();
+  context.shadowColor = moth.color;
+  context.shadowBlur = 4;
+  context.beginPath();
+  context.ellipse(length * 0.02, 0, length * 0.2, length * 0.14, 0, 0, Math.PI * 2);
+  context.fill();
+  context.beginPath();
+  context.arc(length * 0.25, -length * 0.02, length * 0.075, 0, Math.PI * 2);
+  context.fill();
+
+  // Feathery antennae, in a V pointing forward and up.
+  context.shadowBlur = 0;
+  context.strokeStyle = "rgba(255, 255, 255, 0.7)";
+  context.lineWidth = 0.9;
+  context.beginPath();
+  context.moveTo(length * 0.28, -length * 0.07);
+  context.quadraticCurveTo(length * 0.44, -length * 0.22, length * 0.56, -length * 0.17);
+  context.moveTo(length * 0.26, -length * 0.08);
+  context.quadraticCurveTo(length * 0.3, -length * 0.3, length * 0.42, -length * 0.36);
+  context.stroke();
+
+  if (!wingsBelow) {
+    drawNearWings();
+  }
   context.restore();
 
   if (state === "focused") {
@@ -432,7 +716,7 @@ function drawMoth(context, moth, state = "normal") {
     context.strokeStyle = colorWithAlpha(moth.color, 0.55);
     context.lineWidth = 1.2;
     context.beginPath();
-    context.arc(moth.x, moth.y, moth.size * 2.2, 0, Math.PI * 2);
+    context.arc(moth.x, moth.y, Math.max(moth.size * 2.2, length * 0.9), 0, Math.PI * 2);
     context.stroke();
     context.restore();
   }
@@ -902,7 +1186,7 @@ function getMothDrawState(moth, hoverState) {
   return moth.id === hoverState.hoveredMothId ? "focused" : "dimmed";
 }
 
-function drawProjectedMothLayer(context, moths, hoverState, lightX, lightY, width, height) {
+function drawProjectedMothLayer(context, moths, hoverState, lightX, lightY, width, height, animationTime) {
   moths.forEach((moth) => {
     const state = getMothDrawState(moth, hoverState);
     drawMothShadow(context, moth, lightX, lightY, width, height, state === "dimmed" ? 0.22 : 1);
@@ -913,7 +1197,7 @@ function drawProjectedMothLayer(context, moths, hoverState, lightX, lightY, widt
     drawTrail(context, moth, state === "dimmed" ? 0.18 : 1, state === "focused");
   });
 
-  moths.forEach((moth) => drawMoth(context, moth, getMothDrawState(moth, hoverState)));
+  moths.forEach((moth) => drawMoth(context, moth, getMothDrawState(moth, hoverState), animationTime));
 }
 
 function drawScene(context, moths, width, height, elapsed, animationTime, hoverState = null, presentationMode = "normal") {
@@ -936,9 +1220,9 @@ function drawScene(context, moths, width, height, elapsed, animationTime, hoverS
     return;
   }
 
-  drawProjectedMothLayer(context, projectedMoths.filter((moth) => moth.depth < 0), hoverState, cx, cy, width, height);
+  drawProjectedMothLayer(context, projectedMoths.filter((moth) => moth.depth < 0), hoverState, cx, cy, width, height, animationTime);
   drawLight(context, cx, cy, elapsed);
-  drawProjectedMothLayer(context, projectedMoths.filter((moth) => moth.depth >= 0), hoverState, cx, cy, width, height);
+  drawProjectedMothLayer(context, projectedMoths.filter((moth) => moth.depth >= 0), hoverState, cx, cy, width, height, animationTime);
   drawEntryLabels(context, projectedMoths, animationTime, width, height);
   drawHoverPopout(context, hoveredMoth, width, height, animationTime, hoverState ? hoverState.imageCache : null, hoverState ? hoverState.rightInset : 0);
 }
@@ -985,6 +1269,7 @@ export {
   formatIdentification,
   formatPhotoCredit,
   getExitStartTime,
+  getMothSprite,
   hashString,
   normalizeAnimationTime,
   projectMoth,

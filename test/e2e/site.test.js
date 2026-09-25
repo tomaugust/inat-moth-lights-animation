@@ -86,13 +86,13 @@ function rawObservation(overrides = {}) {
   };
 }
 
-describe("Luma site", () => {
-  it("shows just the description on the main screen — no heading — and Luma as the page title", async () => {
+describe("moths.live site", () => {
+  it("shows just the description on the main screen — no heading — and moths.live as the page title", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     await mockObservationsApi(page, { results: [] });
     await page.goto(site.url, { waitUntil: "networkidle" });
 
-    assert.equal(await page.title(), "Luma");
+    assert.equal(await page.title(), "moths.live");
     assert.equal(await page.locator("h1").count(), 0, "there should be no visible heading");
     assert.equal(await page.locator("#animation-title").count(), 0);
     assert.equal(

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#111114"/>
+  <!-- flight path -->
+  <path d="M9 40 C3 16 22 2 41 12" stroke="#f5f1e8" stroke-opacity="0.5" stroke-width="1.6" stroke-dasharray="1.5 3.5" stroke-linecap="round" fill="none"/>
+  <!-- light bulb silhouette -->
+  <g fill="#999999">
+    <path d="M22 41 C15 35 15 24 22 18 C28 12 38 14 42 21 C46 28 43 35 38 41 L38 45 L22 45 Z"/>
+    <rect x="22" y="46.5" width="16" height="3" rx="1.5"/>
+    <rect x="24" y="51" width="12" height="3" rx="1.5"/>
+    <rect x="27" y="55.5" width="6" height="3" rx="1.5"/>
+  </g>
+  <!-- moth silhouette -->
+  <g fill="#f5f1e8" stroke="#f5f1e8" transform="translate(48 20) rotate(135) scale(0.4) translate(-32 -31)">
+    <path stroke="none" d="M32 26 C24 26 14 37 6 46 C4 49 6 51 9 51.5 C14 52.5 18 51.5 21 50 C24 51.5 27 51.5 29.5 50.5 L29.5 40 L32 40 Z"/>
+    <path stroke="none" d="M32 26 C40 26 50 37 58 46 C60 49 58 51 55 51.5 C50 52.5 46 51.5 43 50 C40 51.5 37 51.5 34.5 50.5 L34.5 40 L32 40 Z"/>
+    <ellipse stroke="none" cx="32" cy="45" rx="3" ry="8.5"/>
+    <ellipse stroke="none" cx="32" cy="23.5" rx="3.2" ry="3.8"/>
+    <path fill="none" stroke-width="2.4" stroke-linecap="round" d="M31 20.5 C29 14 24 10 17 8 M33 20.5 C35 14 40 10 47 8"/>
+  </g>
+</svg>

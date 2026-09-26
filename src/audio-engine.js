@@ -34,7 +34,7 @@ function noteToFrequency(note) {
 const ARRIVAL_NOTES = ["C2", "D2", "E2", "G2"];
 const ARRIVAL_ATTACK_SECONDS = 0.15;
 const ARRIVAL_RISE_SECONDS = 0.35;
-const ARRIVAL_PEAK_GAIN = 0.55;
+const ARRIVAL_PEAK_GAIN = 0.85;
 // A moth only gets a woooow if it's this fresh when first seen, so opening the
 // sound partway through, or a tab catching up after being backgrounded,
 // doesn't fire one for every moth already in the scene.

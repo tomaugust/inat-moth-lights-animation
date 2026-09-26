@@ -51,8 +51,8 @@ describe("getSpeciesStyle", () => {
 });
 
 describe("the moth colour palette", () => {
-  it("is exactly the five chosen colours: white, pine blue, french blue, jungle green, yellow green", () => {
-    assert.deepEqual([...PALETTE], ["#ffffff", "#387d7a", "#334195", "#26a96c", "#97cc04"]);
+  it("is exactly the five chosen colours: stone brown, smoky rose, rosy taupe, azure mist, azure mist 2", () => {
+    assert.deepEqual([...PALETTE], ["#5f5449", "#9b6a6c", "#b09398", "#cedfd9", "#ebfcfb"]);
   });
 
   it("colours every identified moth with one of those five, and uses all of them", () => {
@@ -69,13 +69,13 @@ describe("the moth colour palette", () => {
     assert.ok(!PALETTE.includes(getSpeciesStyle(null).color));
   });
 
-  it("gives each moth a glow in its own colour, so the darker blues stay visible on the dark map", () => {
+  it("gives each moth a glow in its own colour, so the darkest one stays visible on the dark map", () => {
     const expected = {
-      "#ffffff": "rgba(255, 255, 255, 0.55)",
-      "#387d7a": "rgba(56, 125, 122, 0.55)",
-      "#334195": "rgba(51, 65, 149, 0.55)",
-      "#26a96c": "rgba(38, 169, 108, 0.55)",
-      "#97cc04": "rgba(151, 204, 4, 0.55)"
+      "#5f5449": "rgba(95, 84, 73, 0.55)",
+      "#9b6a6c": "rgba(155, 106, 108, 0.55)",
+      "#b09398": "rgba(176, 147, 152, 0.55)",
+      "#cedfd9": "rgba(206, 223, 217, 0.55)",
+      "#ebfcfb": "rgba(235, 252, 251, 0.55)"
     };
     for (let taxonId = 1; taxonId <= 60; taxonId += 1) {
       const style = getSpeciesStyle(taxonId);

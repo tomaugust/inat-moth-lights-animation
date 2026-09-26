@@ -6,15 +6,15 @@
 // instead.
 import { hashString, seededUnit } from "./animation-engine.js";
 
-// The moths' colours: white, pine blue, french blue, jungle green and yellow
-// green. Exported so a test (and anything else that needs to know) can check
-// against the one list.
-export const PALETTE = Object.freeze(["#ffffff", "#387d7a", "#334195", "#26a96c", "#97cc04"]);
+// The moths' colours: stone brown, smoky rose, rosy taupe, azure mist and a
+// paler second azure mist. Exported so a test (and anything else that needs
+// to know) can check against the one list.
+export const PALETTE = Object.freeze(["#5f5449", "#9b6a6c", "#b09398", "#cedfd9", "#ebfcfb"]);
 
 // The soft glow round a moth, in its own colour. It was one fixed cream for
-// every moth when the palette was all pale; with two fairly dark blues in the
-// palette a colour-matched glow is what keeps them legible against the dark
-// map.
+// every moth when the palette was all pale; with the darkest of these five
+// (stone brown) otherwise easy to lose against the dark map, a colour-matched
+// glow is what keeps every moth legible.
 const GLOW_ALPHA = 0.55;
 
 function glowColor(hex) {

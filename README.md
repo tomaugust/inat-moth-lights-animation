@@ -216,6 +216,11 @@ The Robinson-projection world map explored as a standalone concept prototype (`g
 - **The page title is "moths.live"** (the custom domain in `CNAME`), replacing "Luma".
 - An e2e test checks the credit's text and link, the favicon link, and that `favicon.svg` is served.
 
+## Phase 19: a muted palette, and a louder arrival
+
+- **The moth colours changed from the bright Phase 17 set to a muted five: stone brown (#5f5449), smoky rose (#9b6a6c), rosy taupe (#b09398), azure mist (#cedfd9) and a paler azure mist (#ebfcfb)** (`PALETTE` in `species-style.js`). Each moth's glow, and the arrival ripple/idle ring on the map (`world-map.js`, both already keyed off the moth's own colour), follow automatically. Stone brown is the one dark colour in this set — playing the same role the two dark blues played in Phase 17 — so it keeps the same colour-matched glow treatment that was added to keep those legible against the dark map.
+- **The arrival "woooow" is louder**: `ARRIVAL_PEAK_GAIN` in `audio-engine.js` raised from 0.55 to 0.85 (about 55% louder). Checked against the worst case of three concurrent arrivals at peak envelope and maximum user volume — still comfortably under clipping headroom against `masterGain`'s 0.35 cap.
+
 ## Testing
 
 ```sh

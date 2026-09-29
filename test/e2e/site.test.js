@@ -108,8 +108,9 @@ describe("moths.live site", () => {
     await mockObservationsApi(page, { results: [] });
     await page.goto(site.url, { waitUntil: "networkidle" });
 
-    assert.equal(await page.locator(".credit").textContent(), "Created by Tom August");
-    assert.equal(await page.locator(".credit a").getAttribute("href"), "https://www.ceh.ac.uk/staff/tom-august");
+    assert.equal(await page.locator(".credit").textContent(), "Created by Tom August · Code on GitHub");
+    assert.equal(await page.locator(".credit a").nth(0).getAttribute("href"), "https://www.ceh.ac.uk/staff/tom-august");
+    assert.equal(await page.locator(".credit a").nth(1).getAttribute("href"), "https://github.com/tomaugust/inat-moth-lights-animation");
     assert.equal(await page.locator('link[rel="icon"]').getAttribute("href"), "favicon.svg");
     const favicon = await page.request.get(new URL("favicon.svg", site.url).href);
     assert.equal(favicon.status(), 200);

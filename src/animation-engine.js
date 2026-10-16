@@ -453,9 +453,7 @@ const FLAP_MAX_HZ = 9;
 // makes it read as flapping. It flaps whatever the
 // visitor's "reduce motion" setting says: the moths orbit and the rings pulse
 // regardless, and a ~20px wing is not the kind of large, sweeping or flashing
-// motion that setting is about. (An earlier version held the wings still under
-// that setting, and on a machine with Windows animations switched off — which
-// reports it — the moths simply never flapped.)
+// motion that setting is about.
 const WING_UP_ANGLE = (80 * Math.PI) / 180;
 const WING_DOWN_ANGLE = (-80 * Math.PI) / 180;
 // The wing's length axis, when fully raised, in degrees above the body's
@@ -893,9 +891,8 @@ function drawLightFixture(context, cx, cy) {
 }
 
 // Always the same subtle ambient shimmer — there's deliberately no separate
-// "loading" look here any more (an earlier version sputtered the light like a
-// failing bulb while data loaded). The loading state is a greyed-out scene
-// with a central spinner instead, done in CSS/DOM (see .is-loading in
+// "loading" look here. The loading state is a greyed-out scene with a
+// central spinner instead, done in CSS/DOM (see .is-loading in
 // styles/main.css), so the light itself never flashes.
 function drawLight(context, cx, cy, elapsed) {
   const flicker = lightFlicker(elapsed);
@@ -989,15 +986,11 @@ function formatIdentification(moth) {
 }
 
 // The short facts under a moth's name, one per line, shared by the pop-out
-// and (built separately in app.js from the same helpers) the cards. entryTime/
-// exitTime are seconds on the animation's own clock — a monotonic
-// performance.now()-based clock for live moths, with no fixed relationship to
-// a calendar time — so the real upload time (see observation-time.js) is what
-// gets shown; the old entryTime/exitTime range remains the fallback for moths
-// that don't carry it (e.g. the static demo config's fixed timeline).
+// and (built separately in app.js from the same helpers) the cards. The
+// animation's own clock is monotonic and unrelated to calendar time, so the
+// real upload time (see observation-time.js) is what gets shown.
 function formatPopoutDetails(moth) {
-  const lines = [formatUploadedTime(moth), formatIdentification(moth)].filter(Boolean);
-  return lines.length > 0 ? lines : [formatClockTime(moth.entryTime) + " - " + formatClockTime(moth.exitTime)];
+  return [formatUploadedTime(moth), formatIdentification(moth)].filter(Boolean);
 }
 
 // "CC-BY-NC · A. Person" — the license code and the photographer's
@@ -1160,7 +1153,7 @@ function drawHoverPopout(context, moth, width, height, animationTime, imageCache
     cursorY += descriptionLines.length * descriptionLineHeight;
   }
 
-  // Required whenever a licensed photo is shown (inat_website.txt 6.6/8): the
+  // Required whenever a licensed photo is shown (iNaturalist photo licensing): the
   // license code and the photographer's attribution, e.g. "CC-BY-NC · A.
   // Person". observationUrl is threaded through the moth record too (see
   // moth-store.js) for a future clickable "view on iNaturalist" link — canvas
@@ -1227,51 +1220,16 @@ function drawScene(context, moths, width, height, elapsed, animationTime, hoverS
   drawHoverPopout(context, hoveredMoth, width, height, animationTime, hoverState ? hoverState.imageCache : null, hoverState ? hoverState.rightInset : 0);
 }
 
-function parseClockTime(value) {
-  const match = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(String(value || ""));
-  if (!match) {
-    return 0;
-  }
-
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  const seconds = Number(match[3] || 0);
-  return ((hours * 60 + minutes) * 60 + seconds) % 86400;
-}
-
-function formatClockTime(animationTime) {
-  const startSeconds = parseClockTime(config.animation.startClockTime);
-  const totalSeconds = Math.floor(startSeconds + animationTime * 60) % 86400;
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  return String(hours).padStart(2, "0") + ":" + String(minutes).padStart(2, "0");
-}
-
-function normalizeAnimationTime(animationTime) {
-  if (config.animation.loop) {
-    return ((animationTime % config.animation.duration) + config.animation.duration) % config.animation.duration;
-  }
-
-  return Math.max(0, Math.min(config.animation.duration, animationTime));
-}
-
-function clampAnimationTime(animationTime) {
-  return Math.max(0, Math.min(config.animation.duration, animationTime));
-}
-
 export {
-  clampAnimationTime,
   colorWithAlpha,
   createMoths,
   drawScene,
   easeInOut,
-  formatClockTime,
   formatIdentification,
   formatPhotoCredit,
   getExitStartTime,
   getMothSprite,
   hashString,
-  normalizeAnimationTime,
   projectMoth,
   sampleBiasedApproachAngle,
   seededUnit

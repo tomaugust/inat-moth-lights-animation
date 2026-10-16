@@ -1,19 +1,16 @@
-// A live, mutable replacement for the old fixed-timeline config.moths array
-// (see inat_website.txt section 6.3). Observations are added continuously,
+// The live set of moths on screen. Observations are added continuously,
 // each gets an independent orbit/entry/exit lifecycle from a monotonic clock
 // (pass performance.now() / 1000, not Date.now()), and completed moths are
-// dropped so a display left open for days stays bounded. The output shape
-// matches what animation-engine.js's createMoths() used to produce, so
-// projectMoth()/drawScene() need no changes to consume it.
+// dropped so a display left open for days stays bounded. The output shape is
+// what animation-engine.js's projectMoth()/drawScene() consume.
 import { getExitStartTime, hashString, sampleBiasedApproachAngle, seededUnit } from "./animation-engine.js";
 import { getSpeciesStyle } from "./species-style.js";
 
-// Lowered from 50 concurrent moths at 4-10s each after a real abundant-data
-// review: they flew by too fast to read. 10 at once is a deliberate legibility
-// choice, not a technical limit. Each moth then stayed 8-20s, and Phase 17
-// tripled that to 24-60s (average 42s) because, with the live feed's real
-// pace (a handful of uploads a minute), 8-20s left the scene sparse. Longer
-// stays mean more moths at once (about 0.24 admitted per second at most,
+// 10 concurrent moths is a deliberate legibility choice, not a technical
+// limit: any more fly by too fast to read. Each moth stays 24-60s (average
+// 42s) because, with the live feed's real pace (a handful of uploads a
+// minute), shorter stays leave the scene sparse. Longer stays mean more moths
+// at once (about 0.24 admitted per second at most,
 // 10 / 42s, still comfortably above the live feed's ~0.1/s) — see
 // observation-queue.js's targetSampleSize, sized against these numbers.
 const DEFAULT_OPTIONS = {
@@ -36,8 +33,7 @@ const HOLD_MAX_EXTENSIONS_PER_CALL = 200;
 
 // species-style.js guarantees speed/size stay within these bounds for every
 // taxon, so orbit radius can be derived per-moth instead of relative to
-// whatever else happens to be active right now (unlike the old batch-relative
-// createMoths() formula, which assumed a fixed, immutable moth list).
+// whatever else happens to be active right now.
 const SPEED_RANGE = [0.4, 1.8];
 const MAX_STYLE_SIZE = 5;
 
@@ -50,8 +46,7 @@ function clamp01(value) {
 }
 
 // A taxon id alone isn't enough: iNaturalist observations are routinely
-// identified only to genus, family or coarser. Per inat_website.txt 6.5,
-// anything short of species level gets the same subdued "unknown" profile as
+// identified only to genus, family or coarser. Anything short of species level gets the same subdued "unknown" profile as
 // an observation with no taxon at all, rather than a style that looks
 // specific but isn't.
 function isIdentifiedToSpecies(observation) {

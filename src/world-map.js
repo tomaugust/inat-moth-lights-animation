@@ -5,8 +5,7 @@
 // app.js's own state (queue/store/hover) — every function here just takes
 // what it needs and draws or returns a value, the same separation
 // animation-engine.js's drawScene/projectMoth already keep from the rest of
-// the app. Promoted from a standalone concept mockup (global-map-mockup.js)
-// to the production data path in Phase 15 — see README.md.
+// the app.
 import { easeInOut, getExitStartTime, seededUnit } from "./animation-engine.js";
 
 export function loadWorldBorders() {
@@ -207,8 +206,7 @@ function clamp01(value) {
 //      the moth's fly-out, so it doesn't vanish abruptly.
 //
 // Exit has no ripple of its own: with the map behind the light and other
-// moths, a departure ping was mostly visual noise (Phase 16). (The arrival
-// ripple was three staggered rings for a while; Phase 17 settled on one.)
+// moths, a departure ping was mostly visual noise.
 //
 // Everything is a function of the scene clock t — the same clock the moths
 // use — so hovering (which freezes that clock) freezes the rings too.

@@ -387,8 +387,7 @@ body.launch-screen-active:not(.launch-controls-visible) .debug-status {
   padding: 2px 2px 2px 0;
   /* A clearly visible vertical scrollbar, always shown: with many moths in
      the scene the cards are taller than the panel and the list scrolls
-     (cards never shrink to fit — see .active-moths-card). The old "thin" bar
-     in a barely-there colour was easy to miss entirely. Overlay-scrollbar
+     (cards never shrink to fit — see .active-moths-card). Overlay-scrollbar
      platforms (phones, macOS) may still hide it until you scroll. */
   scrollbar-color: rgba(245, 241, 232, 0.55) rgba(255, 255, 255, 0.08);
   scrollbar-gutter: stable;

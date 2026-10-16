@@ -5,9 +5,7 @@ import {
   CONNECTION_STATES,
   DEFAULT_WITHOUT_TAXON_ID,
   InatClient,
-  MAX_WINDOW_PAGES,
   buildQueryUrl,
-  fetchAllObservationsInWindow,
   mapRawObservationToContract
 } from "../../src/inaturalist-client.js";
 
@@ -239,153 +237,6 @@ describe("InatClient default query scope", () => {
   });
 });
 
-describe("fetchAllObservationsInWindow", () => {
-  const options = { taxonId: 47157, placeId: 6857, photoLicenses: ["cc0"], pageSize: 2 };
-
-  function page(results) {
-    return jsonResponse({ total_results: results.length, results });
-  }
-
-  it("returns a single page's results when it's short (window exhausted)", async () => {
-    const calls = [];
-    const fetchImpl = async (url) => {
-      calls.push(url);
-      return page([{ id: 1 }]);
-    };
-
-    const outcome = await fetchAllObservationsInWindow(options, fetchImpl);
-
-    assert.equal(outcome.ok, true);
-    assert.deepEqual(outcome.results.map((r) => r.id), [1]);
-    assert.equal(outcome.pagesFetched, 1);
-    assert.equal(calls.length, 1);
-    assert.doesNotMatch(calls[0], /id_above/);
-  });
-
-  it("keeps paginating via id_above until a page is short, combining every page's results", async () => {
-    const pages = [
-      [{ id: 1 }, { id: 2 }],
-      [{ id: 3 }, { id: 4 }],
-      [{ id: 5 }]
-    ];
-    const calls = [];
-    const fetchImpl = async (url) => {
-      calls.push(url);
-      return page(pages.shift());
-    };
-
-    const outcome = await fetchAllObservationsInWindow(options, fetchImpl);
-
-    assert.equal(outcome.ok, true);
-    assert.deepEqual(outcome.results.map((r) => r.id), [1, 2, 3, 4, 5]);
-    assert.equal(outcome.pagesFetched, 3);
-    assert.equal(calls.length, 3);
-    assert.doesNotMatch(calls[0], /id_above/);
-    assert.match(calls[1], /id_above=2/);
-    assert.match(calls[2], /id_above=4/);
-    calls.forEach((url) => {
-      assert.match(url, /order_by=id/);
-      assert.match(url, /order=asc/);
-    });
-  });
-
-  it("stops at maxPages even if every page comes back full, so a single refresh can't run away", async () => {
-    let nextId = 1;
-    const fetchImpl = async () => {
-      const results = Array.from({ length: options.pageSize }, () => ({ id: nextId++ }));
-      return page(results);
-    };
-
-    const outcome = await fetchAllObservationsInWindow(options, fetchImpl, 3);
-
-    assert.equal(outcome.ok, true);
-    assert.equal(outcome.pagesFetched, 3);
-    assert.equal(outcome.results.length, 3 * options.pageSize);
-  });
-
-  it("defaults maxPages to the exported MAX_WINDOW_PAGES constant", () => {
-    assert.equal(MAX_WINDOW_PAGES, 5);
-  });
-
-  it("stops and discards accumulated results the moment a page's HTTP response fails", async () => {
-    const calls = [];
-    const fetchImpl = async (url) => {
-      calls.push(url);
-      if (calls.length === 1) {
-        return page([{ id: 1 }, { id: 2 }]);
-      }
-      return jsonResponse({}, { status: 429, headers: { "Retry-After": "30" } });
-    };
-
-    const outcome = await fetchAllObservationsInWindow(options, fetchImpl);
-
-    assert.equal(outcome.ok, false);
-    assert.equal(outcome.reason, "http-error");
-    assert.equal(outcome.response.status, 429);
-    assert.equal(outcome.response.headers.get("Retry-After"), "30");
-    assert.equal(outcome.pagesFetched, 1, "the first successful page shouldn't count the failing one");
-  });
-
-  it("reports invalid-json when a page's body doesn't parse", async () => {
-    const fetchImpl = async () => ({
-      ok: true,
-      status: 200,
-      headers: { get: () => null },
-      json: async () => {
-        throw new SyntaxError("Unexpected token");
-      }
-    });
-
-    const outcome = await fetchAllObservationsInWindow(options, fetchImpl);
-
-    assert.equal(outcome.ok, false);
-    assert.equal(outcome.reason, "invalid-json");
-  });
-
-  it("reports unexpected-shape when a page has no results array", async () => {
-    const fetchImpl = async () => jsonResponse({ total_results: 0 });
-
-    const outcome = await fetchAllObservationsInWindow(options, fetchImpl);
-
-    assert.equal(outcome.ok, false);
-    assert.equal(outcome.reason, "unexpected-shape");
-  });
-
-  it("paces pages with delayMs between requests, but never before the first page", async () => {
-    const pages = [
-      [{ id: 1 }, { id: 2 }],
-      [{ id: 3 }, { id: 4 }],
-      [{ id: 5 }]
-    ];
-    const fetchImpl = async () => page(pages.shift());
-    const sleeps = [];
-    const sleepImpl = async (ms) => sleeps.push(ms);
-
-    const outcome = await fetchAllObservationsInWindow(options, fetchImpl, MAX_WINDOW_PAGES, 1000, sleepImpl);
-
-    assert.equal(outcome.ok, true);
-    assert.equal(outcome.pagesFetched, 3);
-    assert.deepEqual(sleeps, [1000, 1000], "one delay before each page after the first, none before it");
-  });
-
-  it("defaults delayMs to 0, so it never sleeps unless a caller opts in", async () => {
-    const pages = [
-      [{ id: 1 }, { id: 2 }],
-      [{ id: 3 }]
-    ];
-    const fetchImpl = async () => page(pages.shift());
-    let sleepCalls = 0;
-    const sleepImpl = async () => {
-      sleepCalls += 1;
-    };
-
-    const outcome = await fetchAllObservationsInWindow(options, fetchImpl, MAX_WINDOW_PAGES, undefined, sleepImpl);
-
-    assert.equal(outcome.ok, true);
-    assert.equal(sleepCalls, 0);
-  });
-});
-
 describe("InatClient failure reporting", () => {
   it("records the HTTP status when a poll gets a non-2xx response", async () => {
     const { client } = createClient({ responses: [jsonResponse({}, { status: 502 })] });
@@ -450,7 +301,7 @@ describe("InatClient polling", () => {
     assert.equal(scheduler.lastDelayMs(), 60000);
   });
 
-  it("normalizes inat-v2 batches the same way adapter-contract responses already arrive, so onBatch never has to special-case the upstream shape", async () => {
+  it("normalizes batches into the validated observation contract before calling onBatch", async () => {
     const { client, batches } = createClient({
       responses: [
         jsonResponse({
@@ -705,61 +556,3 @@ describe("InatClient.getStats", () => {
   });
 });
 
-describe("InatClient in adapter-contract mode (Phase 4)", () => {
-  it("treats the response as an already-normalized contract payload, with no client-side mapping", async () => {
-    const { client, batches } = createClient({
-      responses: [
-        jsonResponse({
-          fetchedAt: "2026-01-01T00:00:00Z",
-          stale: false,
-          cursor: "999",
-          observations: [{ id: "inat-1", taxonId: 1, scientificName: "X", createdAt: "2026-01-01T00:00:00Z" }]
-        })
-      ],
-      options: {
-        upstreamShape: "adapter-contract",
-        buildUrl: () => "https://adapter.example.invalid/observations"
-      }
-    });
-
-    client.isRunning = true;
-    await client._pollNow();
-
-    assert.equal(batches.length, 1);
-    assert.deepEqual(batches[0].observations, [
-      { id: "inat-1", taxonId: 1, scientificName: "X", createdAt: "2026-01-01T00:00:00Z" }
-    ]);
-    assert.equal(batches[0].cursor, "999");
-  });
-
-  it("requests the adapter's own URL rather than building a direct-API query", async () => {
-    const { client, fake } = createClient({
-      responses: [jsonResponse({ fetchedAt: "2026-01-01T00:00:00Z", stale: false, cursor: "", observations: [] })],
-      options: {
-        upstreamShape: "adapter-contract",
-        buildUrl: () => "https://adapter.example.invalid/observations"
-      }
-    });
-
-    client.isRunning = true;
-    await client._pollNow();
-
-    assert.equal(fake.calls[0].url, "https://adapter.example.invalid/observations");
-  });
-
-  it("treats a raw v2-shaped response (missing .observations) as a fatal schema error", async () => {
-    const { client, states } = createClient({
-      responses: [jsonResponse({ total_results: 1, results: [rawObservation()] })],
-      options: {
-        upstreamShape: "adapter-contract",
-        buildUrl: () => "https://adapter.example.invalid/observations"
-      }
-    });
-
-    client.isRunning = true;
-    await client._pollNow();
-
-    assert.ok(states.includes(CONNECTION_STATES.FATAL_SCHEMA_ERROR));
-    assert.equal(client.isRunning, false);
-  });
-});

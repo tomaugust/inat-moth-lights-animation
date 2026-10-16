@@ -1,20 +1,13 @@
-// Direct iNaturalist client (originally a Phase 3 prototype, promoted to the
-// production data path in Phase 14 — see README.md). Talks to the real v2
-// observations endpoint straight from the browser — the Phase 0 spike
-// confirmed CORS allows this — and hands normalized batches to a
-// caller-supplied onBatch(), which is expected to feed them through
-// observation-adapter.js's parseObservationsResponse() exactly like the
-// recorded fixtures did in Phase 2. This file only fetches and maps; it
-// never touches the queue, store or renderer directly (see 6.2: data
-// acquisition and rendering stay independent).
+// Direct iNaturalist client. Talks to the v2 observations endpoint straight
+// from the browser (the API allows cross-origin reads) and hands normalized
+// batches to a caller-supplied onBatch(), which feeds them to the queue. This
+// file only fetches and maps; it never touches the queue, store or renderer
+// directly, so data acquisition and rendering stay independent.
 //
 // A known, accepted limitation: a browser fetch() cannot set a custom
 // User-Agent header (browsers silently strip it), so this can never send the
-// descriptive User-Agent iNaturalist's API etiquette asks for the way a
-// server-side request could. Phase 4 built a Cloudflare Worker adapter
-// specifically to meet that (and to share one cache across every visitor);
-// Phase 14 later removed it in favor of this simpler, cache-free,
-// server-free design, accepting this one tradeoff in exchange.
+// descriptive User-Agent iNaturalist's API etiquette asks for. Every visitor
+// also queries iNaturalist independently, in exchange for needing no server.
 import { parseObservationsResponse } from "./observation-adapter.js";
 
 const API_BASE = "https://api.inaturalist.org/v2/observations";
@@ -36,13 +29,6 @@ export const CONNECTION_STATES = Object.freeze({
   FATAL_SCHEMA_ERROR: "fatal-schema-error"
 });
 
-// iNaturalist place_id for the United Kingdom (admin_level 0), confirmed
-// against GET /v1/places/autocomplete?q=United%20Kingdom. Scopes the feed to
-// UK records instead of the unfiltered global stream. Exported so
-// geolocation.js can fall back to the same place when it can't resolve the
-// visitor's own country.
-export const DEFAULT_PLACE_ID = 6857;
-
 // iNaturalist taxon id for Papilionoidea (superfamily "Butterflies"),
 // confirmed against GET /v1/taxa?q=Papilionoidea&rank=superfamily — its
 // preferred_common_name is literally "Butterflies", and it's a *child* of
@@ -52,26 +38,22 @@ export const DEFAULT_PLACE_ID = 6857;
 // current taxonomy nests them under this same superfamily (parent_id 47224 —
 // confirmed via GET /v1/taxa?q=Hesperiidae&rank=family), so this one id is
 // enough to exclude both without a second, harder-to-maintain family list.
-// The scope was always "moths and butterflies" (see taxonId's own history);
-// this narrows it to moths only, per a later, explicit product decision.
+// The feed is therefore moths only.
 export const DEFAULT_WITHOUT_TAXON_ID = 47224;
 
-// Every query this client (or the Worker adapter) builds MUST be bounded to
+// Every query this client builds MUST be bounded to
 // a recent window — never "however far back per_page=200 happens to reach,"
 // which drifts with upload volume and, worse, asks iNaturalist to sort
 // through its full history on every single poll instead of a recent slice.
-// created_d1 (lower bound on created_at) is the proven mechanism: the
-// project's own Phase 0 measurement spike (scripts/inat-api-spike.ps1) used
-// exactly this param against this same v2 endpoint. This is intentionally a
-// hardcoded constant, not a Worker env var like PLACE_ID/TAXON_ID — an env
-// var could be left blank or misconfigured and silently reintroduce an
-// unbounded query, which is exactly what this exists to prevent.
+// created_d1 (lower bound on created_at) is the mechanism. This is
+// intentionally a hardcoded default that is always applied, so it can never
+// be left blank and silently reintroduce an unbounded query.
 export const DEFAULT_LOOKBACK_HOURS = 24;
 
 const DEFAULT_OPTIONS = {
   taxonId: 47157,
   withoutTaxonId: DEFAULT_WITHOUT_TAXON_ID,
-  placeId: DEFAULT_PLACE_ID,
+  placeId: null,
   lookbackHours: DEFAULT_LOOKBACK_HOURS,
   // When set (minutes), the very first request — the one with no cursor yet —
   // only asks for uploads from this recent a window, instead of the full
@@ -89,18 +71,11 @@ const DEFAULT_OPTIONS = {
   getCursor: () => null,
   onBatch: () => {},
   onStateChange: () => {},
-  // How to build the request URL and interpret its response. Defaults to
-  // talking directly to the real iNaturalist v2 API (Phase 3). Pass
-  // upstreamShape: "adapter-contract" (with a buildUrl pointed at a deployed
-  // Phase 4 worker) to talk through the shared cache/adapter instead — its
-  // response is already the project-owned contract, not a raw v2 page, so it
-  // needs no client-side mapping.
-  buildUrl: buildQueryUrl,
-  upstreamShape: "inat-v2"
+  // How to build the request URL.
+  buildUrl: buildQueryUrl
 };
 
-// Matches the medium.<ext> rewrite from research/phase-0.md: v2 currently
-// returns a square-sized url even when medium_url is requested.
+// Rewrites the size token to medium.<ext>: v2 currently returns a square-sized url even when medium_url is requested.
 function toMediumPhotoUrl(url) {
   if (!url) {
     return "";
@@ -202,107 +177,6 @@ export function buildQueryUrl(options, cursor) {
   }
 
   return `${API_BASE}?${params.toString()}`;
-}
-
-// Ascending-by-id, optionally starting after afterId — the single ordering
-// used for every page of a full-window fetch (see fetchAllObservationsInWindow
-// below), never mixed with buildQueryUrl's freshest-first single-page mode,
-// so consecutive pages can never skip or re-cover the same records.
-function buildWindowPageUrl(options, afterId) {
-  const params = new URLSearchParams();
-  setSharedParams(params, options);
-  params.set("order_by", "id");
-  params.set("order", "asc");
-  if (afterId !== null && afterId !== undefined) {
-    params.set("id_above", String(afterId));
-  }
-  return `${API_BASE}?${params.toString()}`;
-}
-
-// Hard cap on how many pages a single fetchAllObservationsInWindow call will
-// walk, so a single refresh can never balloon into unbounded upstream
-// request volume. Deliberately set below today's measured real volume
-// (window has ranged 745-1,997 records, ~4-10 pages) as a safety valve on
-// request burst size, not a "stay above real volume" ceiling — on a
-// busier-than-1,000-records window it truncates and silently misses
-// whatever falls past page 5, an accepted trade for a tighter worst-case
-// burst against iNaturalist's rate limiter (see PAGE_DELAY_MS in
-// worker/src/index.js for the other half of that mitigation).
-export const MAX_WINDOW_PAGES = 5;
-
-// Walks every page of the created_d1-bounded window in ascending id order,
-// accumulating raw results, so a caller gets everything in the last
-// lookbackHours instead of just the newest per_page records. Stops once a
-// page returns fewer than a full page (the window is exhausted) or maxPages
-// is hit.
-//
-// delayMs paces consecutive requests (no delay before the first page) so a
-// window that takes several pages doesn't fire them at iNaturalist back to
-// back — its guidance caps sustained traffic at roughly one request per
-// second, and a burst of 7-10+ unpaced requests from one refresh is exactly
-// the kind of pattern that gets a client rate-limited. Defaults to 0 (no
-// delay) so existing callers/tests run at full speed; the Worker passes a
-// real delay (see worker/src/index.js).
-//
-// Returns { ok: true, results, pagesFetched } on a clean run. Returns
-// { ok: false, reason, pagesFetched, response? } the moment any page fails —
-// reason is "http-error" (response.ok is false; the Response is included so
-// a caller can inspect status/headers, e.g. a 429's Retry-After),
-// "invalid-json" (the page's body didn't parse), or "unexpected-shape" (no
-// results array). A mid-pagination failure (e.g. a 429 on page 4 of 7)
-// discards what was already fetched rather than silently caching a partial
-// window as if it were complete — the caller's existing stale-fallback path
-// (a full, previously-cached window) is a safer answer than a truncated
-// new one.
-export async function fetchAllObservationsInWindow(
-  options,
-  fetchImpl,
-  maxPages = MAX_WINDOW_PAGES,
-  delayMs = 0,
-  sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-) {
-  const allRaw = [];
-  let afterId = null;
-  let pagesFetched = 0;
-
-  for (let page = 0; page < maxPages; page += 1) {
-    if (page > 0 && delayMs > 0) {
-      await sleepImpl(delayMs);
-    }
-
-    const url = buildWindowPageUrl(options, afterId);
-    const response = await fetchImpl(url);
-
-    if (!response.ok) {
-      return { ok: false, reason: "http-error", response, pagesFetched };
-    }
-
-    let payload;
-    try {
-      payload = await response.json();
-    } catch {
-      return { ok: false, reason: "invalid-json", pagesFetched };
-    }
-
-    if (!Array.isArray(payload.results)) {
-      return { ok: false, reason: "unexpected-shape", pagesFetched };
-    }
-
-    pagesFetched += 1;
-    const results = payload.results;
-    if (results.length === 0) {
-      break;
-    }
-
-    allRaw.push(...results);
-    const lastId = results[results.length - 1].id;
-    if (results.length < options.pageSize || lastId === afterId) {
-      break;
-    }
-    afterId = lastId;
-  }
-
-  return { ok: true, results: allRaw, pagesFetched };
 }
 
 export class InatClient {
@@ -487,36 +361,20 @@ export class InatClient {
       }
 
       const payload = await response.json();
-      let observations;
-      let newCursor;
-
-      if (this.options.upstreamShape === "adapter-contract") {
-        if (!Array.isArray(payload.observations)) {
-          this._setState(CONNECTION_STATES.FATAL_SCHEMA_ERROR);
-          console.error("iNaturalist client: unexpected adapter response shape, stopping ingestion.", payload);
-          this.stop();
-          return;
-        }
-        observations = payload.observations;
-        newCursor = payload.cursor || cursor;
-      } else {
-        if (!Array.isArray(payload.results)) {
-          this._setState(CONNECTION_STATES.FATAL_SCHEMA_ERROR);
-          console.error("iNaturalist client: unexpected response shape, stopping ingestion.", payload);
-          this.stop();
-          return;
-        }
-        // Normalize here too so onBatch always receives the same validated
-        // contract shape adapter-contract mode already delivers — callers
-        // must not have to know or care which upstream shape produced a
-        // batch (see observation-adapter.js's normalizeObservation).
-        const mapped = payload.results.map(mapRawObservationToContract);
-        observations = parseObservationsResponse({ observations: mapped }).observations;
-        const numericIds = payload.results
-          .map((raw) => Number(raw && raw.id))
-          .filter((id) => Number.isFinite(id));
-        newCursor = numericIds.length > 0 ? Math.max(Number(cursor) || 0, ...numericIds) : cursor;
+      if (!Array.isArray(payload.results)) {
+        this._setState(CONNECTION_STATES.FATAL_SCHEMA_ERROR);
+        console.error("iNaturalist client: unexpected response shape, stopping ingestion.", payload);
+        this.stop();
+        return;
       }
+      // Normalize here so onBatch always receives the validated contract
+      // shape (see observation-adapter.js's normalizeObservation).
+      const mapped = payload.results.map(mapRawObservationToContract);
+      const observations = parseObservationsResponse({ observations: mapped }).observations;
+      const numericIds = payload.results
+        .map((raw) => Number(raw && raw.id))
+        .filter((id) => Number.isFinite(id));
+      const newCursor = numericIds.length > 0 ? Math.max(Number(cursor) || 0, ...numericIds) : cursor;
 
       this.stats.observationsReceived += observations.length;
       this.backoffSeconds = 0;

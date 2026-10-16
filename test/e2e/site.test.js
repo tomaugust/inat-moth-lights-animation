@@ -45,7 +45,7 @@ async function mockPhotoHost(page) {
 }
 
 // The production site talks directly to api.inaturalist.org — no server
-// component sits in front of it (see README's Phase 14). Every test here
+// component sits in front of it. Every test here
 // intercepts that exact URL and answers with a canned raw-v2-shaped
 // response, so nothing ever reaches the real iNaturalist API from CI.
 async function mockObservationsApi(page, { results = [], status = 200 } = {}) {
@@ -60,8 +60,7 @@ async function mockObservationsApi(page, { results = [], status = 200 } = {}) {
 }
 
 // A raw iNaturalist v2 API result — the shape InatClient's mapRawObservationToContract
-// expects, not the already-normalized contract shape the old Worker adapter used to
-// hand back.
+// expects.
 function rawObservation(overrides = {}) {
   const nowIso = new Date().toISOString();
   return {

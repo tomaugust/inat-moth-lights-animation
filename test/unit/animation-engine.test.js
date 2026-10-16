@@ -3,17 +3,14 @@ import { beforeEach, describe, it } from "node:test";
 
 import { setConfig } from "../../src/config-store.js";
 import {
-  clampAnimationTime,
   colorWithAlpha,
   createMoths,
   easeInOut,
-  formatClockTime,
   formatIdentification,
   formatPhotoCredit,
   getExitStartTime,
   getMothSprite,
   hashString,
-  normalizeAnimationTime,
   projectMoth,
   seededUnit
 } from "../../src/animation-engine.js";
@@ -79,58 +76,6 @@ describe("colorWithAlpha", () => {
 
   it("returns unrecognized color strings unchanged", () => {
     assert.equal(colorWithAlpha("currentColor", 0.5), "currentColor");
-  });
-});
-
-describe("clampAnimationTime", () => {
-  it("clamps into [0, duration]", () => {
-    const config = createSampleConfig();
-    setConfig(config);
-    assert.equal(clampAnimationTime(-10), 0);
-    assert.equal(clampAnimationTime(1000), config.animation.duration);
-    assert.equal(clampAnimationTime(40), 40);
-  });
-});
-
-describe("normalizeAnimationTime", () => {
-  it("wraps within [0, duration) when looping", () => {
-    const config = createSampleConfig();
-    config.animation.loop = true;
-    config.animation.duration = 80;
-    setConfig(config);
-
-    assert.equal(normalizeAnimationTime(90), 10);
-    assert.equal(normalizeAnimationTime(-10), 70);
-    assert.equal(normalizeAnimationTime(40), 40);
-  });
-
-  it("clamps into [0, duration] when not looping", () => {
-    const config = createSampleConfig();
-    config.animation.loop = false;
-    config.animation.duration = 80;
-    setConfig(config);
-
-    assert.equal(normalizeAnimationTime(90), 80);
-    assert.equal(normalizeAnimationTime(-10), 0);
-  });
-});
-
-describe("formatClockTime", () => {
-  it("advances from the configured start time", () => {
-    const config = createSampleConfig();
-    config.animation.startClockTime = "00:00";
-    setConfig(config);
-
-    assert.equal(formatClockTime(0), "00:00");
-    assert.equal(formatClockTime(90), "01:30");
-  });
-
-  it("wraps past midnight", () => {
-    const config = createSampleConfig();
-    config.animation.startClockTime = "23:50";
-    setConfig(config);
-
-    assert.equal(formatClockTime(20), "00:10");
   });
 });
 

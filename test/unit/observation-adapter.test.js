@@ -97,9 +97,9 @@ describe("normalizeObservation", () => {
 });
 
 describe("parseObservationsResponse", () => {
-  it("normalizes every fixture file committed for Phase 0 without throwing", () => {
+  it("normalizes every committed fixture file without throwing", () => {
     ["observations-page-1.json", "observations-empty.json", "observations-error.json"].forEach((name) => {
-      const payload = JSON.parse(fs.readFileSync(new URL(`../../fixtures/${name}`, import.meta.url), "utf8"));
+      const payload = JSON.parse(fs.readFileSync(new URL(`../fixtures/observations/${name}`, import.meta.url), "utf8"));
       const parsed = parseObservationsResponse(payload);
       assert.ok(Array.isArray(parsed.observations));
     });
@@ -107,7 +107,7 @@ describe("parseObservationsResponse", () => {
 
   it("carries the stale/error markers through", () => {
     const payload = JSON.parse(
-      fs.readFileSync(new URL("../../fixtures/observations-error.json", import.meta.url), "utf8")
+      fs.readFileSync(new URL("../fixtures/observations/observations-error.json", import.meta.url), "utf8")
     );
     const parsed = parseObservationsResponse(payload);
     assert.equal(parsed.stale, true);

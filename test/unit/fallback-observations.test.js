@@ -75,7 +75,7 @@ describe("fallback-observations: the last-resort static dataset", () => {
     });
   });
 
-  // Backfilled (Phase 15) by re-querying the same captured window with the
+  // Backfilled by re-querying the same captured window with the
   // location field added, so the world map can plot the fallback set at real
   // reported locations, not just play it through the light. A real minority
   // has no location at all (obscured/private, or never set) — those are left

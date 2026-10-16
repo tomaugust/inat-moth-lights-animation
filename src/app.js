@@ -11,29 +11,26 @@ import { createMapProjector } from "./robinson-projection.js";
 import { drawMothRings, findMothRingAt, loadWorldBorders, renderMapToOffscreenCanvas } from "./world-map.js";
 
 // The production site's one and only data source: api.inaturalist.org
-// itself, called directly from this browser via InatClient's default direct
-// mode (see README's Phase 14) — there is no server component, no shared
-// cache, and no custom User-Agent (a browser fetch() can't set one). No
-// place_id is ever sent (see startClient's explicit placeId: null below) —
-// the feed is global, not scoped to any one visitor's country, matching the
-// world map now behind the light (Phase 15).
+// itself, called directly from this browser via InatClient — there is no
+// server component, no shared cache, and no custom User-Agent (a browser
+// fetch() can't set one). No place_id is ever sent (see startClient's
+// explicit placeId: null below) — the feed is global, matching the world map
+// behind the light.
 
 // The last line of defense: a small, bundled-in-the-app dataset of real
 // iNaturalist observations (see fallback-observations.js), shown only when a
 // fresh page load can't get live data from anywhere — there's no server-side
-// cache standing in front of it anymore (Phase 14), so this is the only
-// thing left once iNaturalist itself is unreachable. Normalized once here
+// cache, so this is the only thing left once iNaturalist itself is
+// unreachable. Normalized once here
 // (module load), not per fallback trigger, since it never changes.
 const FALLBACK_NORMALIZED_OBSERVATIONS = parseObservationsResponse({ observations: FALLBACK_OBSERVATIONS }).observations;
 
 // Every queue this page ever constructs — the live feed's and the fallback
 // set's alike — runs at real, uncompressed time (sourceTimeScale: 1),
-// overriding ObservationQueue's own default (~1440x compression, tuned for
-// the old Worker's full-24h-window-per-poll behavior — see
-// observation-queue.js's DEFAULT_SOURCE_TIME_SCALE). Now that Phase 14's
-// direct client only ever returns a handful of genuinely-recent
-// observations per poll, real-time pacing is what actually makes the scene
-// read as a live feed: a moth appears roughly when it was really posted
+// overriding ObservationQueue's own default (~1440x compression, a time-lapse
+// suited to replaying a whole day at once). The direct client only returns a
+// handful of genuinely-recent observations per poll, so real-time pacing is
+// what makes the scene read as a live feed: a moth appears roughly when it was really posted
 // relative to the others, not sped up into a time-lapse. This also means
 // the fallback set (a real, time-spread capture — see
 // fallback-observations.js) plays out over a comparably long stretch of
@@ -55,11 +52,6 @@ function createQueue() {
     maxReleaseIntervalSeconds: 30
   });
 }
-
-// Shown in #debug-status purely so a screenshot from a real device proves
-// which deployed build that browser is actually running, rather than leaving
-// it ambiguous whether a cached older bundle is being served.
-const BUILD_ID = "2026-09-25a";
 
 function setupOrbitAnimation(initialPresentationMode = "normal") {
   const canvas = document.getElementById("orbit-canvas");
@@ -83,7 +75,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     : null;
   const audio = setupAudio();
 
-  // The Robinson-projection world map behind the light (Phase 15): built
+  // The Robinson-projection world map behind the light: built
   // once the borders finish loading (fire-and-forget, not awaited before the
   // rest of the scene starts — a visitor's first paint shouldn't wait on it)
   // and rebuilt on resize alongside the canvas itself. mapCanvas is an
@@ -554,7 +546,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
 
     const stats = client.getStats();
     const lines = [
-      `build=${BUILD_ID} state=${client.state} reqs=${stats.requestCount} obs=${stats.observationsReceived}`,
+      `state=${client.state} reqs=${stats.requestCount} obs=${stats.observationsReceived}`,
       `pending=${queue.pendingCount} seen=${queue.seenIds.size} active=${store.getActiveMoths().length}`
     ];
     if (client.lastError) {
@@ -828,7 +820,7 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
         // STALE/OFFLINE) — but only while this client has never once
         // succeeded. Once real data has ever arrived, later failures don't
         // re-trigger the static fallback (there's no server-side cache left
-        // to fall back to either, see README's Phase 14) — they just mean no
+        // to fall back to either) — they just mean no
         // new observations until the next successful poll, while whatever
         // was already admitted keeps playing out.
         if (
@@ -968,7 +960,7 @@ async function bootstrap() {
   // clears the canvas and fills it with this opaque color every frame,
   // regardless of showGround — reasonable when it's the only thing drawing
   // to the canvas, but it would erase the world map drawn underneath it
-  // here (Phase 15). Making it transparent, combined with drawing the map
+  // here. Making it transparent, combined with drawing the map
   // via globalCompositeOperation "destination-over" (see tick() in
   // setupOrbitAnimation), is what actually gets the map to sit behind the
   // light/moths rather than behind an opaque rectangle.

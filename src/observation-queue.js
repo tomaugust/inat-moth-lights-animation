@@ -1,6 +1,6 @@
 // Decouples API/fixture bursts from the calm visual entry cadence.
 //
-// Responsibilities (see inat_website.txt section 6.4):
+// Responsibilities:
 // - deduplicate by observation ID against a bounded recently-seen window;
 // - sort newly queued records deterministically (oldest createdAt first);
 // - release observations paced by their source createdAt gaps, scaled and
@@ -71,21 +71,18 @@ export function selectDiverseSample(observations, targetSize) {
   return selected.sort((a, b) => a.createdAtMs - b.createdAtMs || (a.id < b.id ? -1 : 1));
 }
 
-// Compresses the ~24h created_at span the Worker now fetches in full (see
-// fetchAllObservationsInWindow in inaturalist-client.js) into about one
-// minute of animation time: a real day plays out as a one-minute time-lapse
-// rather than at 1:1 real-time pace, which at today's ~1,300-1,400
-// records/24h would otherwise take the better part of a day to fully drain.
+// Default time compression: a real day of created_at gaps plays out as a
+// one-minute time-lapse rather than at 1:1 real-time pace. (The live page
+// overrides this with real time — see app.js.)
 // 1/1440 = 60 animation-seconds / 86400 real-seconds-per-day.
 export const DEFAULT_SOURCE_TIME_SCALE = 1 / 1440;
 
 const DEFAULT_OPTIONS = {
   seenIdCapacity: 2000,
   // Sized against moth-store.js's maxActiveMoths (10) and its duration range.
-  // It was 45 when moths stayed 8-20s (avg 14s: sustainable throughput
-  // maxActiveMoths / averageDurationSeconds ≈ 0.71/s, so a ~60s cycle drained
-  // about 43). At the current 24-60s (avg 42s) throughput is ≈ 0.24/s, so 45
-  // is now about a three-minute buffer — still fine, since the live feed
+  // Sustainable throughput is maxActiveMoths / averageDurationSeconds, about
+  // 10 / 42s ≈ 0.24/s with moths staying 24-60s, so 45 is about a
+  // three-minute buffer — still fine, since the live feed
   // (~6 uploads a minute) is well under that and this only bites when a
   // backlog builds up. Revisit together with those moth-store.js values.
   targetSampleSize: 45,

@@ -1,8 +1,7 @@
-// Validates and normalizes the project-owned observation contract (see
-// research/phase-0.md and fixtures/observations-*.json) into records the rest
-// of the app can trust. Nothing here talks to the network — it only shapes
-// whatever payload it is handed (a fixture today, a live adapter response in
-// Phase 3+) so that missing or malformed fields never reach the renderer.
+// Validates and normalizes the project-owned observation contract into
+// records the rest of the app can trust. Nothing here talks to the network —
+// it only shapes whatever payload it is handed so that missing or malformed
+// fields never reach the renderer.
 
 function toTrimmedString(value) {
   return typeof value === "string" ? value.trim() : "";

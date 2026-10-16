@@ -10,10 +10,8 @@ A living animation of moths being recorded around the world, right now. Every mo
 
 ## Aims
 
-- **Make citizen science tangible.** Moth recording is usually experienced as a database of records. Here you can watch it happen: people in different countries and time zones adding sightings of the same group of insects, minute by minute.
+- **Make citizen science tangible.** Moth records is usually experienced as a database of observations. Here you can watch it happen: people in different countries and time zones adding sightings of moths, minute by minute.
 - **Evoke a moth light trap.** The scene deliberately echoes the experience of running a light trap on a summer night: a bright light in the dark, moths drifting in from the edges, circling, and leaving again.
-- **Stay honest about the data.** The animation shows *recently shared records*, not real-time moth abundance or movement. Moths are shown in the order they were uploaded, and the only time displayed is the upload time.
-- **Be calm and legible.** No more than ten moths are on screen at once, each stays for 24–60 seconds, and every moth has a card with its name, photo, who photographed it and a link back to the original observation.
 - **Need no backend.** It is a static website that talks directly to the public iNaturalist API.
 
 The visual design and animation engine build on [tomaugust/moth-lights-animation](https://github.com/tomaugust/moth-lights-animation).
@@ -24,7 +22,7 @@ The visual design and animation engine build on [tomaugust/moth-lights-animation
 - **The light and the moths.** Each moth orbits the light as a flapping, side-on moth. Its colour, size, speed and flight style are derived deterministically from its taxon, so the same species always looks the same. Moths not identified to species level share a neutral grey style.
 - **The world map.** A Robinson-projection map of the world sits behind the scene, fading into the background at its edges. When a moth arrives, a ripple spreads from where it was observed, followed by a small breathing ring that stays for as long as the moth is on screen.
 - **Active moths panel.** A side panel lists every moth currently on screen as a card: photo, common or scientific name, upload time, how precisely it was identified, where it was observed, photo credit and licence, and a "View observation" link.
-- **Hover to pause.** Hovering a moth, its card or its ring on the map freezes the whole scene and shows a pop-out with the same details. Moving away resumes exactly where it left off.
+- **Hover to pause.** Hovering a moth, its card or its ring on the map freezes the whole scene and shows a pop-out with the same details. Moving away resumes.
 - **Sound.** Off by default; the toggle at the bottom right turns on a soft drone, pentatonic chimes for each species, and a low "woooow" timed with each arrival ripple.
 - **Loading state.** While the first response is pending, the scene is greyed out with a spinner around the light.
 

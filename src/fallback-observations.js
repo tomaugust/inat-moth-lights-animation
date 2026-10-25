@@ -23,7 +23,7 @@
 // identified that coarsely would. This is a real, representative mix for
 // what a live feed's freshest observations actually look like, not a defect.
 //
-// lat/lon (Phase 15) were backfilled by re-querying this exact captured
+// lat/lon were backfilled by re-querying this exact captured
 // window with the location field added — 477 of 478 resolved to a real
 // point; the one that did not is left with lat/lon: null, which the world
 // map (src/world-map.js) treats as "no known point for this one" and skips
@@ -31,7 +31,7 @@
 //
 // This is the last line of defense for a visitor whose very first load can't
 // get live data at all (see app.js's fallback-mode wiring). The site has no
-// server-side cache of its own (see README's website-only-design phase) — a
+// server-side cache of its own — a
 // sustained iNaturalist outage now has nothing else standing between it and
 // this set, so it deliberately holds enough real, time-spread observations
 // (fed through the same ObservationQueue/MothStore pipeline live moths use, at

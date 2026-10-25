@@ -1,56 +1,6 @@
 import { config } from "./config-store.js";
 import { formatUploadedTime } from "./observation-time.js";
 
-function createMoths(config, width, height) {
-  const maxMothSize = config.moths.reduce((largest, moth) => Math.max(largest, moth.size), 0);
-  const orbitRadiusScale = Math.max(0.1, Math.min(1.15, config.scene.orbitRadiusScale || 0.92));
-  const usableRadius = Math.max(32, (Math.min(width, height) * 0.48 - maxMothSize - 18) * orbitRadiusScale);
-  const minRadius = Math.min(72, usableRadius);
-  const speeds = config.moths.map((moth) => moth.speed);
-  const minSpeed = Math.min(...speeds);
-  const maxSpeed = Math.max(...speeds);
-  const speedRange = Math.max(0.001, maxSpeed - minSpeed);
-  const radiusRange = Math.max(0, usableRadius - minRadius);
-
-  return config.moths.map((moth, index) => {
-    const speedRatio = (moth.speed - minSpeed) / speedRange;
-    const baseRadius = minRadius + (1 - speedRatio) * radiusRange;
-    const noiseSeed = hashString(moth.id || moth.species || String(index));
-    const offset = (seededUnit(noiseSeed, 7) - 0.5) * radiusRange * 0.08;
-    const radius = Math.max(minRadius, Math.min(usableRadius, baseRadius + offset));
-
-    return {
-    angle: (moth.angle * Math.PI) / 180,
-    chimeNote: moth.chimeNote,
-    color: moth.color,
-    entryAngle: (sampleBiasedApproachAngle(noiseSeed, 173) * Math.PI) / 180,
-    entryTime: moth.entryTime,
-    erraticness: moth.erraticness,
-    exitAngle: (sampleBiasedApproachAngle(noiseSeed, 211) * Math.PI) / 180,
-    exitTime: moth.exitTime,
-    id: moth.id,
-    imageAttribution: moth.imageAttribution,
-    imageLicense: moth.imageLicense,
-    inclinationDriftSpeed: moth.inclinationDriftSpeed,
-    label: moth.label,
-    nodeDriftSpeed: moth.nodeDriftSpeed,
-    noiseSeed,
-    observationUrl: moth.observationUrl,
-    orbitDirection: seededUnit(noiseSeed, 131) < 0.5 ? -1 : 1,
-    radius,
-    shadowBlur: moth.shadowBlur,
-    shadowColor: moth.shadowColor,
-    size: moth.size,
-    species: moth.species,
-    speciesDescription: moth.speciesDescription,
-    imageURL: moth.imageURL,
-    speciesName: moth.speciesName,
-    speed: moth.speed,
-    trailLength: moth.trailLength
-    };
-  });
-}
-
 function easeInOut(value) {
   const t = Math.max(0, Math.min(1, value));
   return t * t * (3 - 2 * t);
@@ -1222,7 +1172,6 @@ function drawScene(context, moths, width, height, elapsed, animationTime, hoverS
 
 export {
   colorWithAlpha,
-  createMoths,
   drawScene,
   easeInOut,
   formatIdentification,

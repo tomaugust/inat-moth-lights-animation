@@ -4,7 +4,6 @@ import { beforeEach, describe, it } from "node:test";
 import { setConfig } from "../../src/config-store.js";
 import {
   colorWithAlpha,
-  createMoths,
   easeInOut,
   formatIdentification,
   formatPhotoCredit,
@@ -79,57 +78,28 @@ describe("colorWithAlpha", () => {
   });
 });
 
-describe("createMoths", () => {
-  it("returns one entry per configured moth", () => {
-    const config = createSampleConfig();
-    setConfig(config);
-
-    const moths = createMoths(config, 800, 600);
-    assert.equal(moths.length, config.moths.length);
-  });
-
-  it("is deterministic given the same config and dimensions", () => {
-    const config = createSampleConfig();
-    setConfig(config);
-
-    const first = createMoths(config, 800, 600);
-    const second = createMoths(config, 800, 600);
-    assert.deepEqual(first, second);
-  });
-
-  it("keeps orbit radius within the usable canvas area", () => {
-    const config = createSampleConfig();
-    setConfig(config);
-
-    const moths = createMoths(config, 800, 600);
-    moths.forEach((moth) => {
-      assert.ok(moth.radius > 0, "radius should be positive");
-      assert.ok(Number.isFinite(moth.radius), "radius should be finite");
-    });
-  });
-});
+function createTestMoth() {
+  return { id: "moth-1", entryTime: 0, exitTime: 20, angle: 0, speed: 1, radius: 100, size: 5, shadowBlur: 9, erraticness: 1, orbitDirection: 1, inclinationDriftSpeed: 0.4, nodeDriftSpeed: 0.3, noiseSeed: 1, entryAngle: 0, exitAngle: 0, trailLength: 10 };
+}
 
 describe("projectMoth", () => {
   it("returns null before the moth has entered", () => {
-    const config = createSampleConfig();
-    setConfig(config);
-    const [moth] = createMoths(config, 800, 600);
+    setConfig(createSampleConfig());
+    const moth = createTestMoth();
 
     assert.equal(projectMoth(moth, -1, 800, 600, 400, 330), null);
   });
 
   it("returns null after the moth has exited", () => {
-    const config = createSampleConfig();
-    setConfig(config);
-    const [moth] = createMoths(config, 800, 600);
+    setConfig(createSampleConfig());
+    const moth = createTestMoth();
 
     assert.equal(projectMoth(moth, moth.exitTime + 1, 800, 600, 400, 330), null);
   });
 
   it("returns a projected point with valid opacity while active", () => {
-    const config = createSampleConfig();
-    setConfig(config);
-    const [moth] = createMoths(config, 800, 600);
+    setConfig(createSampleConfig());
+    const moth = createTestMoth();
     const midTime = (moth.entryTime + moth.exitTime) / 2;
 
     const projected = projectMoth(moth, midTime, 800, 600, 400, 330);

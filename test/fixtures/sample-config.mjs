@@ -1,31 +1,15 @@
-// Small, hand-written config used by unit tests. Mirrors the shape produced
-// by scripts/build-standalone.ps1's Read-AnimationConfig / config/site-config.json,
-// with just enough species and moths to exercise the animation engine.
+// Small, hand-written config used by unit tests. Mirrors the shape of
+// config/site-config.json (animation, audio, light and scene sections).
 export function createSampleConfig() {
   return {
     animation: {
       autoplay: true,
       backgroundColor: "#101114",
-      canvasBackground: "radial-gradient(circle at center, #252018 0%, #111114 58%, #07080a 100%)",
-      canvasBorderColor: "rgba(255, 255, 255, 0.16)",
-      description: "Test animation",
-      descriptionColor: "#f5f1e8",
-      descriptionSize: "clamp(0.78rem, 1.1vw, 0.98rem)",
-      duration: 80,
       launchScreenEnabled: false,
-      loop: true,
-      minMothDuration: 4,
-      playbackSpeed: 1,
       speciesTag: true,
       speciesTagColor: "",
       speciesTagDuration: 5.5,
-      speciesTagSize: 13,
-      startClockTime: "20:00",
-      textColor: "#f5f1e8",
-      timeLabel: "Time",
-      title: "Test Moths",
-      titleColor: "#f5f1e8",
-      titleSize: "clamp(1.25rem, 2.4vw, 2.35rem)"
+      speciesTagSize: 13
     },
     audio: {
       chimeProbability: 0.3,
@@ -68,88 +52,6 @@ export function createSampleConfig() {
       orbitRadiusScale: 0.92,
       orbitTilt: 0.3,
       showGround: true
-    },
-    species: [
-      {
-        id: "species-a",
-        name: "Species A",
-        color: "#ffffff",
-        speed: 1,
-        size: 5,
-        trailLength: 10,
-        erraticness: 1,
-        chimeNote: "C4",
-        chimeNotes: ["C4", "E4"],
-        shadowBlur: 9,
-        shadowColor: "rgba(247, 239, 217, 0.22)",
-        inclinationDriftSpeed: 0.4,
-        nodeDriftSpeed: 0.3,
-        speciesDescription: "",
-        imageURL: ""
-      },
-      {
-        id: "species-b",
-        name: "Species B",
-        color: "#ff9a88",
-        speed: 0.6,
-        size: 4,
-        trailLength: 8,
-        erraticness: 1.5,
-        chimeNote: "G4",
-        chimeNotes: ["G4"],
-        shadowBlur: 7,
-        shadowColor: "rgba(120, 124, 130, 0.18)",
-        inclinationDriftSpeed: 0.2,
-        nodeDriftSpeed: 0.25,
-        speciesDescription: "A test species.",
-        imageURL: ""
-      }
-    ],
-    moths: [
-      {
-        id: "moth-1",
-        species: "species-a",
-        speciesName: "Species A",
-        label: "Species A",
-        color: "#ffffff",
-        angle: 0,
-        entryTime: 0,
-        exitTime: 20,
-        speed: 1,
-        size: 5,
-        trailLength: 10,
-        erraticness: 1,
-        chimeNote: "C4",
-        chimeNotes: ["C4", "E4"],
-        shadowBlur: 9,
-        shadowColor: "rgba(247, 239, 217, 0.22)",
-        inclinationDriftSpeed: 0.4,
-        nodeDriftSpeed: 0.3,
-        speciesDescription: "",
-        imageURL: ""
-      },
-      {
-        id: "moth-2",
-        species: "species-b",
-        speciesName: "Species B",
-        label: "Species B",
-        color: "#ff9a88",
-        angle: 180,
-        entryTime: 10,
-        exitTime: 35,
-        speed: 0.6,
-        size: 4,
-        trailLength: 8,
-        erraticness: 1.5,
-        chimeNote: "G4",
-        chimeNotes: ["G4"],
-        shadowBlur: 7,
-        shadowColor: "rgba(120, 124, 130, 0.18)",
-        inclinationDriftSpeed: 0.2,
-        nodeDriftSpeed: 0.25,
-        speciesDescription: "A test species.",
-        imageURL: ""
-      }
-    ]
+    }
   };
 }

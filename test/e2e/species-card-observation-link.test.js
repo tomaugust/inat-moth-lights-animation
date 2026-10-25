@@ -5,8 +5,6 @@ import { chromium } from "playwright";
 import { startStaticServer } from "../helpers/static-server.mjs";
 
 const API_URL = "https://api.inaturalist.org/v2/observations";
-// The real client appends ?place_id=<resolved country> — see app.js's
-// resolveUserPlace() wiring.
 const API_URL_PATTERN = `${API_URL}*`;
 
 let site;

@@ -13,9 +13,8 @@ import { drawMothRings, findMothRingAt, loadWorldBorders, renderMapToOffscreenCa
 // The production site's one and only data source: api.inaturalist.org
 // itself, called directly from this browser via InatClient — there is no
 // server component, no shared cache, and no custom User-Agent (a browser
-// fetch() can't set one). No place_id is ever sent (see startClient's
-// explicit placeId: null below) — the feed is global, matching the world map
-// behind the light.
+// fetch() can't set one). No place_id is ever sent — the feed is global,
+// matching the world map behind the light.
 
 // The last line of defense: a small, bundled-in-the-app dataset of real
 // iNaturalist observations (see fallback-observations.js), shown only when a
@@ -760,9 +759,8 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
   window.addEventListener("resize", resizeCanvas);
   resizeCanvas();
 
-  // Constructs and starts the one and only InatClient this page ever needs —
-  // no place_id, ever (see the file header): the feed is global, matching
-  // the world map now behind the light.
+  // Constructs and starts the one and only InatClient this page ever needs
+  // (see the file header: the feed is global).
   function startClient() {
     let hasReceivedLiveData = false;
     let fallbackActive = false;
@@ -795,7 +793,6 @@ function setupOrbitAnimation(initialPresentationMode = "normal") {
     }
 
     client = new InatClient({
-      placeId: null,
       // Live feel: the first request only asks for the last couple of minutes
       // of uploads (later ones continue from the cursor, so they only return
       // what's new), and it checks twice as often as the client's default.

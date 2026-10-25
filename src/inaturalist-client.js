@@ -53,7 +53,6 @@ export const DEFAULT_LOOKBACK_HOURS = 24;
 const DEFAULT_OPTIONS = {
   taxonId: 47157,
   withoutTaxonId: DEFAULT_WITHOUT_TAXON_ID,
-  placeId: null,
   lookbackHours: DEFAULT_LOOKBACK_HOURS,
   // When set (minutes), the very first request — the one with no cursor yet —
   // only asks for uploads from this recent a window, instead of the full
@@ -70,9 +69,7 @@ const DEFAULT_OPTIONS = {
   maxBackoffSeconds: 900,
   getCursor: () => null,
   onBatch: () => {},
-  onStateChange: () => {},
-  // How to build the request URL.
-  buildUrl: buildQueryUrl
+  onStateChange: () => {}
 };
 
 // Rewrites the size token to medium.<ext>: v2 currently returns a square-sized url even when medium_url is requested.
@@ -142,12 +139,6 @@ function setSharedParams(params, options, lookbackMsOverride = null) {
   // silently reaching the real API as without_taxon_id=0.
   if (options.withoutTaxonId) {
     params.set("without_taxon_id", String(options.withoutTaxonId));
-  }
-  // place_id (not a lat/lng bounding box) is the documented way to scope
-  // /v1/observations to a place: "Must be observed within the place with
-  // this ID" — see GET /v1/observations in the iNaturalist API docs.
-  if (options.placeId) {
-    params.set("place_id", String(options.placeId));
   }
   // Unconditional and defensively defaulted (never skipped, never disabled
   // by a falsy/zero/missing option) — see DEFAULT_LOOKBACK_HOURS above.
@@ -330,7 +321,7 @@ export class InatClient {
     this.stats.requestCount += 1;
 
     const cursor = this.options.getCursor();
-    const url = this.options.buildUrl(this.options, cursor);
+    const url = buildQueryUrl(this.options, cursor);
     const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
     this.currentAbortController = controller;
     const timeoutHandle = controller

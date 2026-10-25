@@ -935,14 +935,6 @@ function formatIdentification(moth) {
   return moth.taxonRank ? `Identified to ${moth.taxonRank}` : "";
 }
 
-// The short facts under a moth's name, one per line, shared by the pop-out
-// and (built separately in app.js from the same helpers) the cards. The
-// animation's own clock is monotonic and unrelated to calendar time, so the
-// real upload time (see observation-time.js) is what gets shown.
-function formatPopoutDetails(moth) {
-  return [formatUploadedTime(moth), formatIdentification(moth)].filter(Boolean);
-}
-
 // "CC-BY-NC · A. Person" — the license code and the photographer's
 // attribution. Only present when the adapter confirmed a licensed, attributed
 // photo (see observation-adapter.js) — an image without both is never shown
@@ -965,7 +957,9 @@ function drawHoverPopout(context, moth, width, height, animationTime, imageCache
   const descriptionStyle = descriptionElement ? window.getComputedStyle(descriptionElement) : null;
   const fontSize = descriptionStyle ? parseFloat(descriptionStyle.fontSize) : 15;
   const speciesName = moth.speciesName || moth.label || moth.species || moth.id;
-  const detailTexts = formatPopoutDetails(moth);
+  // One fact per line: the real upload time (the animation clock is monotonic
+  // and unrelated to calendar time) and how precisely it was identified.
+  const detailTexts = [formatUploadedTime(moth), formatIdentification(moth)].filter(Boolean);
   const usableWidth = width - Math.max(0, rightInset);
   const paddingX = 12;
   const paddingY = 9;
